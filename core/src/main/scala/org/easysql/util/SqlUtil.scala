@@ -24,7 +24,7 @@ def toSqlString(sqlStatement: SqlStatement, db: DB): String = {
     visitor.sql()
 }
 
-def anyToExpr(value: Any): Expr[_] = {
+def anyToExpr(value: Any): Expr[_, _] = {
     value match {
         case null => const(null)
         case s: String => const(s)

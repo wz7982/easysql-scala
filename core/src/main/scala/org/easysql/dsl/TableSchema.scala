@@ -14,35 +14,35 @@ import scala.language.dynamics
 trait TableSchema {
     val tableName: String
 
-    var $columns: ListBuffer[TableColumnExpr[?]] = ListBuffer[TableColumnExpr[?]]()
+    var $columns: ListBuffer[TableColumnExpr[?, this.type]] = ListBuffer[TableColumnExpr[?, this.type]]()
 
-    def column[T <: SqlSingleConstType](name: String): TableColumnExpr[T] = {
-        val c = TableColumnExpr[T](tableName, name)
+    def column[T <: SqlSingleConstType](name: String): TableColumnExpr[T, this.type] = {
+        val c = TableColumnExpr[T, this.type](tableName, name)
         $columns.addOne(c)
         c
     }
 
-    def intColumn(name: String): TableColumnExpr[Int] = this.column[Int](name)
+    def intColumn(name: String): TableColumnExpr[Int, this.type] = this.column[Int](name)
     
-    def varcharColumn(name: String): TableColumnExpr[String] = this.column[String](name)
+    def varcharColumn(name: String): TableColumnExpr[String, this.type] = this.column[String](name)
 
-    def longColumn(name: String): TableColumnExpr[Long] = this.column[Long](name)
+    def longColumn(name: String): TableColumnExpr[Long, this.type] = this.column[Long](name)
 
-    def floatColumn(name: String): TableColumnExpr[Float] = this.column[Float](name)
+    def floatColumn(name: String): TableColumnExpr[Float, this.type] = this.column[Float](name)
 
-    def doubleColumn(name: String): TableColumnExpr[Double] = this.column[Double](name)
+    def doubleColumn(name: String): TableColumnExpr[Double, this.type] = this.column[Double](name)
 
-    def booleanColumn(name: String): TableColumnExpr[Boolean] = this.column[Boolean](name)
+    def booleanColumn(name: String): TableColumnExpr[Boolean, this.type] = this.column[Boolean](name)
 
-    def dateColumn(name: String): TableColumnExpr[Date] = this.column[Date](name)
+    def dateColumn(name: String): TableColumnExpr[Date, this.type] = this.column[Date](name)
 
-    def decimalColumn(name: String): TableColumnExpr[BigDecimal] = this.column[BigDecimal](name)
+    def decimalColumn(name: String): TableColumnExpr[BigDecimal, this.type] = this.column[BigDecimal](name)
 }
 
 object TableSchema {
     inline given tableToQuery[T <: TableSchema]: Conversion[T, Query[T]] = Query[T](_)
 }
- 
+
 class NothingTable extends TableSchema {
     override val tableName: String = ""
 }
@@ -71,7 +71,7 @@ extension[T <: TableSchema] (t: T) {
     infix def fullJoin(table: TableSchema | JoinTableSchema | AliasedTableSchema) = JoinTableSchema(t, SqlJoinType.FULL_JOIN, table)
 }
 
-case class AliasedTableSchema(tableName: String, aliasName: String, columns: Map[String, TableColumnExpr[?]]) extends Dynamic {
+case class AliasedTableSchema(tableName: String, aliasName: String, columns: Map[String, TableColumnExpr[_, _]]) extends Dynamic {
     def selectDynamic(name: String) = columns(name).copy(table = aliasName)
 
     infix def join(table: TableSchema | JoinTableSchema | AliasedTableSchema) = JoinTableSchema(this, SqlJoinType.JOIN, table)
@@ -87,7 +87,7 @@ case class AliasedTableSchema(tableName: String, aliasName: String, columns: Map
     infix def fullJoin(table: TableSchema | JoinTableSchema | AliasedTableSchema) = JoinTableSchema(this, SqlJoinType.FULL_JOIN, table)
 }
 
-case class JoinTableSchema(left: TableSchema | JoinTableSchema | AliasedTableSchema, joinType: SqlJoinType, right: TableSchema | JoinTableSchema | AliasedTableSchema, var onCondition: Option[Expr[_]] = None) {
+case class JoinTableSchema(left: TableSchema | JoinTableSchema | AliasedTableSchema, joinType: SqlJoinType, right: TableSchema | JoinTableSchema | AliasedTableSchema, var onCondition: Option[Expr[_, _]] = None) {
     infix def join(table: TableSchema | JoinTableSchema | AliasedTableSchema) = JoinTableSchema(this, SqlJoinType.JOIN, table)
 
     infix def leftJoin(table: TableSchema | JoinTableSchema | AliasedTableSchema) = JoinTableSchema(this, SqlJoinType.LEFT_JOIN, table)
@@ -100,7 +100,7 @@ case class JoinTableSchema(left: TableSchema | JoinTableSchema | AliasedTableSch
 
     infix def fullJoin(table: TableSchema | JoinTableSchema | AliasedTableSchema) = JoinTableSchema(this, SqlJoinType.FULL_JOIN, table)
 
-    infix def on(expr: Expr[_]) = {
+    infix def on(expr: Expr[_, _]) = {
         this.onCondition = Some(expr)
         this
     }

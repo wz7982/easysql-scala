@@ -28,7 +28,7 @@ class WithSelect extends SelectQueryImpl[Nothing] {
         this
     }
 
-    def select(query: Select[_] => SelectQuery[_]): WithSelect = {
+    def select(query: Select[_, _] => SelectQuery[_]): WithSelect = {
         sqlWithSelect.query = Some(query(Select()).getSelect)
         this
     }

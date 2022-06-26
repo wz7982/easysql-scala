@@ -14,13 +14,13 @@ trait DBTransaction(db: DB) {
 
     def queryTuple[T <: Tuple](query: SelectQuery[T]): List[MapUnionNull[T]]
 
-    def findMap(query: Select[_]): Option[Map[String, Any]]
+    def findMap(query: Select[_, _]): Option[Map[String, Any]]
 
-    def findTuple[T <: Tuple](query: Select[T]): Option[MapUnionNull[T]]
+    def findTuple[T <: Tuple](query: Select[T, _]): Option[MapUnionNull[T]]
 
-    def pageMap(query: Select[_])(pageSize: Int, pageNum: Int, needCount: Boolean = true): Page[Map[String, Any]]
+    def pageMap(query: Select[_, _])(pageSize: Int, pageNum: Int, needCount: Boolean = true): Page[Map[String, Any]]
 
-    def pageTuple[T <: Tuple](query: Select[T])(pageSize: Int, pageNum: Int, needCount: Boolean = true): Page[MapUnionNull[T]]
+    def pageTuple[T <: Tuple](query: Select[T, _])(pageSize: Int, pageNum: Int, needCount: Boolean = true): Page[MapUnionNull[T]]
     
-    def fetchCount(query: Select[_]): Int
+    def fetchCount(query: Select[_, _]): Int
 }

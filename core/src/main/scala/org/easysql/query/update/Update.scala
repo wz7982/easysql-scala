@@ -33,12 +33,12 @@ class Update extends ReviseQuery {
         this
     }
 
-    def set[T <: SqlSingleConstType | Null](items: (TableColumnExpr[_] | ColumnExpr[_], T | Expr[_] | SelectQuery[_])*): Update = {
+    def set[T <: SqlSingleConstType | Null](items: (TableColumnExpr[_, _] | ColumnExpr[_], T | Expr[_, _] | SelectQuery[_])*): Update = {
         items.foreach { item =>
             val (column, value) = item
 
             val columnExpr = column match {
-                case t: TableColumnExpr[_] => visitExpr(ColumnExpr(t.column))
+                case t: TableColumnExpr[_, _] => visitExpr(ColumnExpr(t.column))
                 case c: ColumnExpr[_] => visitExpr(c)
             }
 
@@ -49,19 +49,19 @@ class Update extends ReviseQuery {
         this
     }
 
-    infix def where(condition: Expr[_]): Update = {
+    infix def where(condition: Expr[_, _]): Update = {
         sqlUpdate.addCondition(getExpr(condition))
         this
     }
 
-    def where(test: () => Boolean, condition: Expr[_]): Update = {
+    def where(test: () => Boolean, condition: Expr[_, _]): Update = {
         if (test()) {
             sqlUpdate.addCondition(getExpr(condition))
         }
         this
     }
 
-    def where(test: Boolean, condition: Expr[_]): Update = {
+    def where(test: Boolean, condition: Expr[_, _]): Update = {
         if (test) {
             sqlUpdate.addCondition(getExpr(condition))
         }

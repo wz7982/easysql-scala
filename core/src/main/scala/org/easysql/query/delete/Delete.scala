@@ -28,19 +28,19 @@ class Delete extends ReviseQuery {
         deleteMacro[T](this, pk)
     }
 
-    infix def where(condition: Expr[_]): Delete = {
+    infix def where(condition: Expr[_, _]): Delete = {
         sqlDelete.addCondition(getExpr(condition))
         this
     }
 
-    def where(test: () => Boolean, condition: Expr[_]): Delete = {
+    def where(test: () => Boolean, condition: Expr[_, _]): Delete = {
         if (test()) {
             sqlDelete.addCondition(getExpr(condition))
         }
         this
     }
 
-    def where(test: Boolean, condition: Expr[_]): Delete = {
+    def where(test: Boolean, condition: Expr[_, _]): Delete = {
         if (test) {
             sqlDelete.addCondition(getExpr(condition))
         }

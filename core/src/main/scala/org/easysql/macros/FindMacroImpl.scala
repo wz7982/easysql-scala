@@ -7,7 +7,7 @@ import org.easysql.query.select.Select
 import java.sql.SQLException
 import scala.quoted.{Expr, Quotes, Type}
 
-def findMacroImpl[T <: TableEntity[_]](select: Expr[Select[_]], primaryKey: Expr[Any])(using quotes: Quotes, tpe: Type[T]): Expr[Select[_]] = {
+def findMacroImpl[T <: TableEntity[_]](select: Expr[Select[_, _]], primaryKey: Expr[Any])(using quotes: Quotes, tpe: Type[T]): Expr[Select[_, _]] = {
     import quotes.reflect.*
 
     val sym = TypeTree.of[T].symbol
@@ -25,8 +25,8 @@ def findMacroImpl[T <: TableEntity[_]](select: Expr[Select[_]], primaryKey: Expr
 
     '{
         val pkCols = $identsExpr
-            .filter(it => it.isInstanceOf[PrimaryKeyColumnExpr[_]])
-            .map(it => it.asInstanceOf[PrimaryKeyColumnExpr[_]])
+            .filter(it => it.isInstanceOf[PrimaryKeyColumnExpr[_, _]])
+            .map(it => it.asInstanceOf[PrimaryKeyColumnExpr[_, _]])
 
         if (pkCols.isEmpty) {
             throw SQLException(s"实体类${$typeName}伴生对象中未定义主键字段")
@@ -40,13 +40,13 @@ def findMacroImpl[T <: TableEntity[_]](select: Expr[Select[_]], primaryKey: Expr
                 throw SQLException(s"实体类${$typeName}中定义的主键字段数目与伴生对象不相符")
             }
             for (i <- pkValues.indices) {
-                sel.where(pkCols(i).equal(pkValues(i)))
+                sel.unsafeWhere(pkCols(i).equal(pkValues(i)))
             }
             sel
         } else {
             val pkCol = pkCols.head
 
-            sel.where(pkCol.equal($primaryKey))
+            sel.unsafeWhere(pkCol.equal($primaryKey))
         }
     }
 }
