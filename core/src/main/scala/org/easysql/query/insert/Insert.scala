@@ -23,8 +23,8 @@ class Insert[T <: Tuple, S <: InsertState] extends ReviseQuery {
         this.asInstanceOf[Insert[_, InsertEntity]]
     }
 
-    infix def insertInto(table: TableSchema)(columns: Tuple): Insert[InverseMap[columns.type, Expr], Nothing] = {
-        type ValueTypes = InverseMap[columns.type, Expr]
+    infix def insertInto(table: TableSchema)(columns: Tuple): Insert[InverseMap[columns.type], Nothing] = {
+        type ValueTypes = InverseMap[columns.type]
 
         val insert = new Insert[ValueTypes, Nothing]()
         insert.sqlInsert.table = Some(SqlIdentifierExpr(table.tableName))

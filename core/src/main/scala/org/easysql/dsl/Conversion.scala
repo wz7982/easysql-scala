@@ -23,15 +23,15 @@ given dateToExpr: Conversion[Date, ConstExpr[Date]] = ConstExpr[Date](_)
 
 given queryToExpr[T <: SqlSingleConstType | Null]: Conversion[SelectQuery[Tuple1[T]], SubQueryExpr[T]] = SubQueryExpr(_)
 
-type InverseMap[X <: Tuple, F[_ <: SqlSingleConstType | Null, _ <: TableSchema | Tuple]] <: Tuple = X match {
-    case F[x, _] *: t => x *: InverseMap[t, F]
+type InverseMap[X <: Tuple] <: Tuple = X match {
+    case Expr[x, _] *: t => x *: InverseMap[t]
     case EmptyTuple => EmptyTuple
 }
 
-type RecursiveInverseMap[X <: Tuple, F[_ <: SqlSingleConstType | Null, _ <: TableSchema | Tuple]] <: Tuple = X match {
+type RecursiveInverseMap[X <: Tuple] <: Tuple = X match {
     case x *: t => x match {
-        case Tuple => Tuple.Concat[RecursiveInverseMap[x, F], RecursiveInverseMap[t, F]]
-        case F[y, _] => y *: RecursiveInverseMap[t, F]
+        case Tuple => Tuple.Concat[RecursiveInverseMap[x], RecursiveInverseMap[t]]
+        case Expr[y, _] => y *: RecursiveInverseMap[t]
     }
     case EmptyTuple => EmptyTuple
 }
@@ -102,7 +102,7 @@ type TableContains[From <: TableSchema | Tuple, X <: TableSchema | Tuple] = From
             case NothingTable => Any
             case _ => Nothing
         }
-        case _ => Nothing
+        case _ => TupleContains[From *: EmptyTuple, X]
     }
     case Tuple => X match {
         case NothingTable => Any
@@ -135,3 +135,29 @@ type TupleContains[T1 <: Tuple, T2 <: Tuple] = T2 match {
     }
     case EmptyTuple => Any
 }
+
+type InverseMapOrderBy[X <: Tuple | OrderBy[_]] <: Tuple = X match {
+    case OrderBy[t] => Tuple1[t]
+    case OrderBy[x] *: t => x *: InverseMapOrderBy[t]
+    case EmptyTuple => EmptyTuple
+}
+
+type CheckOrderBy[From <: TableSchema | Tuple, O <: OrderBy[_] | Tuple] = TableContains[From, InverseMapOrderBy[O]]
+
+type InverseMapExpr[X <: Tuple | Expr[_, _]] <: Tuple = X match {
+    case Expr[_, t] => Tuple1[t]
+    case Expr[_, x] *: t => x *: InverseMapExpr[t]
+    case EmptyTuple => EmptyTuple
+}
+
+type CheckGroupBy[From <: TableSchema | Tuple, G <: Expr[_, _] | Tuple] = TableContains[From, InverseMapExpr[G]]
+
+type RecursiveInverseMapExpr[X <: Tuple] <: Tuple = X match {
+    case x *: t => x match {
+        case Tuple => Tuple.Concat[RecursiveInverseMapExpr[x], RecursiveInverseMapExpr[t]]
+        case Expr[_, y] => y *: RecursiveInverseMapExpr[t]
+    }
+    case EmptyTuple => EmptyTuple
+}
+
+type CheckSelect[From <: TableSchema | Tuple, S <: Tuple] = TableContains[From, RecursiveInverseMapExpr[S]]

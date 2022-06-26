@@ -40,12 +40,6 @@ extension [T <: SqlSingleConstType | Null, Table <: TableSchema](e: TableColumnE
 
 def ** = AllColumnExpr()
 
-//def select[U <: Tuple](items: U): Select[RecursiveInverseMap[U, Expr]] = Select().select(items)
-//
-//def select[I <: SqlSingleConstType | Null](item: Expr[I, _]): Select[InverseMap[Tuple1[Expr[I, _]], Expr]] = Select().select(item)
-//
-//def dynamicSelect(columns: Expr[_, _]*): Select[Tuple1[Nothing]] = Select().dynamicSelect(columns: _*)
-
 def from(table: TableSchema) = Select().from(table)
 
 inline def find[T <: TableEntity[_]](pk: PK[T]): Select[_, _] = findMacro[T](Select(), pk)

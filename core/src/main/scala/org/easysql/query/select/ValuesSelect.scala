@@ -15,8 +15,8 @@ import java.sql.Connection
 class ValuesSelect[T <: Tuple] extends SelectQueryImpl[T] {
     private var sqlValuesSelect = SqlValuesSelect()
 
-    def addRow[U <: Tuple](row: U): ValuesSelect[InverseMap[MapUnionNull[U], Expr]] = {
-        val valuesSelect = new ValuesSelect[InverseMap[MapUnionNull[U], Expr]]()
+    def addRow[U <: Tuple](row: U): ValuesSelect[InverseMap[MapUnionNull[U]]] = {
+        val valuesSelect = new ValuesSelect[InverseMap[MapUnionNull[U]]]()
         valuesSelect.sqlValuesSelect = sqlValuesSelect
         val addRow = row.toList.map(it => getExpr(anyToExpr(it)))
         valuesSelect.sqlValuesSelect.values.addOne(addRow)

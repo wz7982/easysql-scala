@@ -26,22 +26,22 @@ class JdbcConnection(db: DB, dataSource: DataSource) extends DBConnection(db) {
 
     inline def queryEntity[T <: TableEntity[_]](query: SelectQuery[_]): List[T] = exec(conn => jdbcQuery(conn, query.sql(db)).map(it => bindEntityMacro[T](it.toMap)))
 
-    override def findMap(query: Select[_]): Option[Map[String, Any]] = exec(conn => jdbcQuery(conn, query.sql(db)).headOption.map(_.toMap))
+    override def findMap(query: Select[_, _]): Option[Map[String, Any]] = exec(conn => jdbcQuery(conn, query.sql(db)).headOption.map(_.toMap))
 
-    override def findTuple[T <: Tuple](query: Select[T]): Option[MapUnionNull[T]] = exec(conn => jdbcQuery(conn, query.sql(db)).headOption.map(it => Tuple.fromArray(it.map(_._2).toArray).asInstanceOf[MapUnionNull[T]]))
+    override def findTuple[T <: Tuple](query: Select[T, _]): Option[MapUnionNull[T]] = exec(conn => jdbcQuery(conn, query.sql(db)).headOption.map(it => Tuple.fromArray(it.map(_._2).toArray).asInstanceOf[MapUnionNull[T]]))
 
-    inline def findEntity[T <: TableEntity[_]](query: Select[_]): Option[T] = exec(conn => jdbcQuery(conn, query.sql(db)).headOption.map(it => bindEntityMacro[T](it.toMap)))
+    inline def findEntity[T <: TableEntity[_]](query: Select[_, _]): Option[T] = exec(conn => jdbcQuery(conn, query.sql(db)).headOption.map(it => bindEntityMacro[T](it.toMap)))
 
-    override def pageMap(query: Select[_])(pageSize: Int, pageNum: Int, needCount: Boolean = true): Page[Map[String, Any]] =
+    override def pageMap(query: Select[_, _])(pageSize: Int, pageNum: Int, needCount: Boolean = true): Page[Map[String, Any]] =
         page(query)(pageSize, pageNum, needCount)(it => it.toMap)
 
-    override def pageTuple[T <: Tuple](query: Select[T])(pageSize: Int, pageNum: Int, needCount: Boolean = true): Page[MapUnionNull[T]] =
+    override def pageTuple[T <: Tuple](query: Select[T, _])(pageSize: Int, pageNum: Int, needCount: Boolean = true): Page[MapUnionNull[T]] =
         page(query)(pageSize, pageNum, needCount)(it => Tuple.fromArray(it.map(_._2).toArray).asInstanceOf[MapUnionNull[T]])
 
-    inline def pageEntity[T <: TableEntity[_]](query: Select[_])(pageSize: Int, pageNum: Int, needCount: Boolean = true): Page[T] =
+    inline def pageEntity[T <: TableEntity[_]](query: Select[_, _])(pageSize: Int, pageNum: Int, needCount: Boolean = true): Page[T] =
         page(query)(pageSize, pageNum, needCount)(it => bindEntityMacro[T](it.toMap))
 
-    override def fetchCount(query: Select[_]): Int = exec(conn => jdbcQueryCount(conn, query.fetchCountSql(db)))
+    override def fetchCount(query: Select[_, _]): Int = exec(conn => jdbcQueryCount(conn, query.fetchCountSql(db)))
 
     def transaction(isolation: Int)(query: JdbcTransaction => Unit): Unit = {
         val conn = getConnection
@@ -89,7 +89,7 @@ class JdbcConnection(db: DB, dataSource: DataSource) extends DBConnection(db) {
         result
     }
 
-    private def page[T](query: Select[_])(pageSize: Int, pageNum: Int, needCount: Boolean)(bind: List[(String, Any)] => T): Page[T] = {
+    private def page[T](query: Select[_, _])(pageSize: Int, pageNum: Int, needCount: Boolean)(bind: List[(String, Any)] => T): Page[T] = {
         val data = if (pageSize == 0) {
             List[T]()
         } else {
