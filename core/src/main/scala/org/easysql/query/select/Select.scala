@@ -119,7 +119,7 @@ class Select[T <: Tuple, Table <: TableSchema | Tuple] extends SelectQueryImpl[T
         this.asInstanceOf[Select[Tuple.Concat[T, RecursiveInverseMap[U]], Table]]
     }
 
-    infix def select[I <: SqlSingleConstType | Null, ST <: TableSchema | Tuple](item: Expr[I, ST]): Select[Tuple.Concat[T, InverseMap[Tuple1[Expr[I, ST]]]], Table] = {
+    infix def select[I <: SqlSingleConstType | Null, ST <: TableSchema | Tuple](item: Expr[I, ST])(using TableContains[Table, ST] =:= Any): Select[Tuple.Concat[T, InverseMap[Tuple1[Expr[I, ST]]]], Table] = {
         if (this.sqlSelect.selectList.size == 1 && this.sqlSelect.selectList.head.expr.isInstanceOf[SqlAllColumnExpr]) {
             this.sqlSelect.selectList.clear()
         }

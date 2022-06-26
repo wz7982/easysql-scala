@@ -9,7 +9,7 @@ import org.easysql.query.truncate.Truncate
 import org.easysql.query.update.Update
 import org.easysql.macros.findMacro
 
-object S {
+object Q {
     infix def from(table: TableSchema) = Select().from(table)
 
     inline infix def find[T <: TableEntity[_]](pk: PK[T]): Select[_, _] = findMacro[T](Select(), pk)
