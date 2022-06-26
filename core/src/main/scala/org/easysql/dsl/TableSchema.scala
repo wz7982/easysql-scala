@@ -47,6 +47,10 @@ class NothingTable extends TableSchema {
     override val tableName: String = ""
 }
 
+class AnyTable extends TableSchema {
+    override val tableName: String = ""
+}
+
 extension[T <: TableSchema] (t: T) {
     inline infix def as(aliasName: String)(using NonEmpty[aliasName.type] =:= Any): AliasedTableSchema = {
         val columns = columnsMacro[T](t)

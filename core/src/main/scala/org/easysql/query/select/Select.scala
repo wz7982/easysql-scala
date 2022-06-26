@@ -33,7 +33,7 @@ class Select[T <: Tuple, Table <: TableSchema | Tuple] extends SelectQueryImpl[T
         this.asInstanceOf[Select[T, table.type]]
     }
 
-    infix def from(table: AliasedTableSchema | String) = {
+    infix def from(table: AliasedTableSchema | String): Select[T, NothingTable] = {
         val tableName = table match {
             case aliasedTableSchema: AliasedTableSchema => aliasedTableSchema.tableName
             case string: String => string
@@ -46,49 +46,49 @@ class Select[T <: Tuple, Table <: TableSchema | Tuple] extends SelectQueryImpl[T
         joinLeft = from.get
         sqlSelect.from = from
 
-        this
+        this.asInstanceOf[Select[T, NothingTable]]
     }
 
-    infix def from(table: SelectQuery[_]) = {
+    infix def from(table: SelectQuery[_]): Select[T, NothingTable] = {
         val from = Some(SqlSubQueryTableSource(table.getSelect))
         joinLeft = from.get
         sqlSelect.from = from
-        this
+        this.asInstanceOf[Select[T, NothingTable]]
     }
 
-    infix def from(table: Select[_, _]) = {
+    infix def from(table: Select[_, _]): Select[T, NothingTable] = {
         val from = SqlSubQueryTableSource(table.getSelect)
         if (table.aliasName.nonEmpty) {
             from.alias = table.aliasName
         }
         joinLeft = from
         sqlSelect.from = Some(from)
-        this
+        this.asInstanceOf[Select[T, NothingTable]]
     }
 
-    infix def fromLateral(query: SelectQuery[_]) = {
+    infix def fromLateral(query: SelectQuery[_]): Select[T, NothingTable] = {
         val from = Some(SqlSubQueryTableSource(query.getSelect, true))
         joinLeft = from.get
         sqlSelect.from = from
-        this
+        this.asInstanceOf[Select[T, NothingTable]]
     }
 
-    infix def fromLateral(table: Select[_, _]) = {
+    infix def fromLateral(table: Select[_, _]): Select[T, NothingTable] = {
         val from = SqlSubQueryTableSource(table.getSelect, true)
         if (table.aliasName.nonEmpty) {
             from.alias = table.aliasName
         }
         joinLeft = from
         sqlSelect.from = Some(from)
-        this
+        this.asInstanceOf[Select[T, NothingTable]]
     }
 
-    infix def as(name: String)(using NonEmpty[name.type] =:= Any) = {
+    infix def as(name: String)(using NonEmpty[name.type] =:= Any): Select[T, Table] = {
         this.aliasName = Some(name)
         this
     }
 
-    infix def unsafeAs(name: String) = {
+    infix def unsafeAs(name: String): Select[T, Table] = {
         this.aliasName = Some(name)
         this
     }
@@ -146,36 +146,36 @@ class Select[T <: Tuple, Table <: TableSchema | Tuple] extends SelectQueryImpl[T
         this.asInstanceOf[Select[Tuple1[Nothing], Table]]
     }
 
-    def distinct = {
+    def distinct: Select[T, Table] = {
         sqlSelect.distinct = true
         this
     }
 
-    infix def where[ET <: TableSchema | Tuple](condition: Expr[_, ET])(using TableContains[Table, ET] == true) = {
+    infix def where[ET <: TableSchema | Tuple](condition: Expr[_, ET])(using TableContains[Table, ET] =:= Any): Select[T, Table] = {
         sqlSelect.addCondition(getExpr(condition))
         this
     }
 
-    def unsafeWhere(condition: Expr[_, _]) = {
+    def unsafeWhere(condition: Expr[_, _]): Select[T, Table] = {
         sqlSelect.addCondition(getExpr(condition))
         this
     }
 
-    def where[ET <: TableSchema | Tuple](test: () => Boolean, condition: Expr[_, ET])(using TableContains[Table, ET] == true) = {
+    def where[ET <: TableSchema | Tuple](test: () => Boolean, condition: Expr[_, ET])(using TableContains[Table, ET] =:= Any): Select[T, Table] = {
         if (test()) {
             sqlSelect.addCondition(getExpr(condition))
         }
         this
     }
 
-    def where[ET <: TableSchema | Tuple](test: Boolean, condition: Expr[_, ET])(using TableContains[Table, ET] == true) = {
+    def where[ET <: TableSchema | Tuple](test: Boolean, condition: Expr[_, ET])(using TableContains[Table, ET] =:= Any): Select[T, Table] = {
         if (test) {
             sqlSelect.addCondition(getExpr(condition))
         }
         this
     }
 
-    infix def having[ET <: TableSchema | Tuple](condition: Expr[_, ET])(using TableContains[Table, ET] == true) = {
+    infix def having[ET <: TableSchema | Tuple](condition: Expr[_, ET])(using TableContains[Table, ET] =:= Any): Select[T, Table] = {
         sqlSelect.addHaving(getExpr(condition))
         this
     }
@@ -188,7 +188,7 @@ class Select[T <: Tuple, Table <: TableSchema | Tuple] extends SelectQueryImpl[T
     //        this
     //    }
 
-    infix def limit(count: Int) = {
+    infix def limit(count: Int): Select[T, Table] = {
         if (this.sqlSelect.limit.isEmpty) {
             this.sqlSelect.limit = Some(SqlLimit(count, 0))
         } else {
@@ -197,7 +197,7 @@ class Select[T <: Tuple, Table <: TableSchema | Tuple] extends SelectQueryImpl[T
         this
     }
 
-    infix def offset(offset: Int) = {
+    infix def offset(offset: Int): Select[T, Table] = {
         if (this.sqlSelect.limit.isEmpty) {
             this.sqlSelect.limit = Some(SqlLimit(1, offset))
         } else {
@@ -213,10 +213,19 @@ class Select[T <: Tuple, Table <: TableSchema | Tuple] extends SelectQueryImpl[T
     //        this
     //    }
 
-    private def joinClause(table: String | TableSchema | AliasedTableSchema, joinType: SqlJoinType) = {
+    private def joinClause(table: TableSchema, joinType: SqlJoinType): Select[T, TableConcat[Table, table.type]] = {
+        val joinTable = SqlIdentifierTableSource(table.tableName)
+
+        val join = SqlJoinTableSource(joinLeft, joinType, joinTable)
+        sqlSelect.from = Some(join)
+        joinLeft = join
+
+        this.asInstanceOf[Select[T, TableConcat[Table, table.type]]]
+    }
+
+    private def joinClause(table: String | AliasedTableSchema, joinType: SqlJoinType): Select[T, TableConcat[Table, NothingTable]] = {
         val tableName = table match {
             case string: String => string
-            case tableSchema: TableSchema => tableSchema.tableName
             case aliasedTableSchema: AliasedTableSchema => aliasedTableSchema.tableName
         }
         val joinTable = SqlIdentifierTableSource(tableName)
@@ -228,23 +237,20 @@ class Select[T <: Tuple, Table <: TableSchema | Tuple] extends SelectQueryImpl[T
         sqlSelect.from = Some(join)
         joinLeft = join
 
-        table match {
-            case tableSchema: TableSchema => this.asInstanceOf[Select[T, TableConcat[Table, tableSchema.type]]]
-            case _ => this
-        }
+        this.asInstanceOf[Select[T, TableConcat[Table, NothingTable]]]
     }
 
-    private def joinClause(table: SelectQuery[_], joinType: SqlJoinType, isLateral: Boolean = false) = {
+    private def joinClause(table: SelectQuery[_], joinType: SqlJoinType, isLateral: Boolean = false): Select[T, TableConcat[Table, NothingTable]] = {
         val join = SqlJoinTableSource(joinLeft, joinType, SqlSubQueryTableSource(table.getSelect, isLateral = isLateral))
         if (table.isInstanceOf[Select[_, _]]) {
             join.alias = table.asInstanceOf[Select[_, _]].aliasName
         }
         sqlSelect.from = Some(join)
         joinLeft = join
-        this
+        this.asInstanceOf[Select[T, TableConcat[Table, NothingTable]]]
     }
 
-    private def joinClause(table: JoinTableSchema, joinType: SqlJoinType) = {
+    private def joinClause(table: JoinTableSchema, joinType: SqlJoinType): Select[T, TableConcat[Table, AnyTable]] = {
         def unapplyTable(t: TableSchema | JoinTableSchema | AliasedTableSchema): SqlTableSource = {
             t match {
                 case table: TableSchema => SqlIdentifierTableSource(table.tableName)
@@ -262,10 +268,10 @@ class Select[T <: Tuple, Table <: TableSchema | Tuple] extends SelectQueryImpl[T
 
         sqlSelect.from = Some(join)
         joinLeft = join
-        this
+        this.asInstanceOf[Select[T, TableConcat[Table, AnyTable]]]
     }
 
-    infix def on[ET <: TableSchema | Tuple](onCondition: Expr[_, ET])(using TableContains[Table, ET] == true) = {
+    infix def on[ET <: TableSchema | Tuple](onCondition: Expr[_, ET])(using TableContains[Table, ET] =:= Any): Select[T, Table] = {
         val from = this.sqlSelect.from.get
         from match {
             case table: SqlJoinTableSource => table.on = Some(visitExpr(onCondition))
@@ -274,103 +280,127 @@ class Select[T <: Tuple, Table <: TableSchema | Tuple] extends SelectQueryImpl[T
         this
     }
 
-    infix def join(table: String | TableSchema | AliasedTableSchema) = {
+    infix def join(table: TableSchema): Select[T, TableConcat[Table, table.type]] = {
         joinClause(table, SqlJoinType.JOIN)
     }
 
-    infix def join(query: SelectQuery[_]) = {
+    infix def join(table: String | AliasedTableSchema): Select[T, TableConcat[Table, NothingTable]] = {
+        joinClause(table, SqlJoinType.JOIN)
+    }
+
+    infix def join(query: SelectQuery[_]): Select[T, TableConcat[Table, NothingTable]] = {
         joinClause(query, SqlJoinType.JOIN)
     }
 
-    infix def join(table: JoinTableSchema) = {
+    infix def join(table: JoinTableSchema): Select[T, TableConcat[Table, AnyTable]] = {
         joinClause(table, SqlJoinType.JOIN)
     }
 
-    infix def joinLateral(query: SelectQuery[_]) = {
+    infix def joinLateral(query: SelectQuery[_]): Select[T, TableConcat[Table, NothingTable]] = {
         joinClause(query, SqlJoinType.JOIN, true)
     }
 
-    infix def leftJoin(table: String | TableSchema | AliasedTableSchema) = {
+    infix def leftJoin(table: TableSchema): Select[T, TableConcat[Table, table.type]] = {
         joinClause(table, SqlJoinType.LEFT_JOIN)
     }
 
-    infix def leftJoin(query: SelectQuery[_]) = {
+    infix def leftJoin(table: String | AliasedTableSchema): Select[T, TableConcat[Table, NothingTable]] = {
+        joinClause(table, SqlJoinType.LEFT_JOIN)
+    }
+
+    infix def leftJoin(query: SelectQuery[_]): Select[T, TableConcat[Table, NothingTable]] = {
         joinClause(query, SqlJoinType.LEFT_JOIN)
     }
 
-    infix def leftJoin(table: JoinTableSchema) = {
+    infix def leftJoin(table: JoinTableSchema): Select[T, TableConcat[Table, AnyTable]] = {
         joinClause(table, SqlJoinType.LEFT_JOIN)
     }
 
-    infix def leftJoinLateral(query: SelectQuery[_]) = {
+    infix def leftJoinLateral(query: SelectQuery[_]): Select[T, TableConcat[Table, NothingTable]] = {
         joinClause(query, SqlJoinType.LEFT_JOIN, true)
     }
 
-    infix def rightJoin(table: String | TableSchema | AliasedTableSchema) = {
+    infix def rightJoin(table: TableSchema): Select[T, TableConcat[Table, table.type]] = {
         joinClause(table, SqlJoinType.RIGHT_JOIN)
     }
 
-    infix def rightJoin(query: SelectQuery[_]) = {
+    infix def rightJoin(table: String | AliasedTableSchema): Select[T, TableConcat[Table, NothingTable]] = {
+        joinClause(table, SqlJoinType.RIGHT_JOIN)
+    }
+
+    infix def rightJoin(query: SelectQuery[_]): Select[T, TableConcat[Table, NothingTable]] = {
         joinClause(query, SqlJoinType.RIGHT_JOIN)
     }
 
-    infix def rightJoin(table: JoinTableSchema) = {
+    infix def rightJoin(table: JoinTableSchema): Select[T, TableConcat[Table, AnyTable]] = {
         joinClause(table, SqlJoinType.RIGHT_JOIN)
     }
 
-    infix def rightJoinLateral(query: SelectQuery[_]) = {
+    infix def rightJoinLateral(query: SelectQuery[_]): Select[T, TableConcat[Table, NothingTable]] = {
         joinClause(query, SqlJoinType.RIGHT_JOIN, true)
     }
 
-    infix def innerJoin(table: String | TableSchema | AliasedTableSchema) = {
+    infix def innerJoin(table: TableSchema): Select[T, TableConcat[Table, table.type]] = {
         joinClause(table, SqlJoinType.INNER_JOIN)
     }
 
-    infix def innerJoin(query: SelectQuery[_]) = {
+    infix def innerJoin(table: String | AliasedTableSchema): Select[T, TableConcat[Table, NothingTable]] = {
+        joinClause(table, SqlJoinType.INNER_JOIN)
+    }
+
+    infix def innerJoin(query: SelectQuery[_]): Select[T, TableConcat[Table, NothingTable]] = {
         joinClause(query, SqlJoinType.INNER_JOIN)
     }
 
-    infix def innerJoin(table: JoinTableSchema) = {
+    infix def innerJoin(table: JoinTableSchema): Select[T, TableConcat[Table, AnyTable]] = {
         joinClause(table, SqlJoinType.INNER_JOIN)
     }
 
-    infix def innerJoinLateral(query: SelectQuery[_]) = {
+    infix def innerJoinLateral(query: SelectQuery[_]): Select[T, TableConcat[Table, NothingTable]] = {
         joinClause(query, SqlJoinType.INNER_JOIN, true)
     }
 
-    infix def crossJoin(table: String | TableSchema | AliasedTableSchema) = {
+    infix def crossJoin(table: TableSchema): Select[T, TableConcat[Table, table.type]] = {
         joinClause(table, SqlJoinType.CROSS_JOIN)
     }
 
-    infix def crossJoin(query: SelectQuery[_]) = {
+    infix def crossJoin(table: String | AliasedTableSchema): Select[T, TableConcat[Table, NothingTable]] = {
+        joinClause(table, SqlJoinType.CROSS_JOIN)
+    }
+
+    infix def crossJoin(query: SelectQuery[_]): Select[T, TableConcat[Table, NothingTable]] = {
         joinClause(query, SqlJoinType.CROSS_JOIN)
     }
 
-    infix def crossJoin(table: JoinTableSchema) = {
+    infix def crossJoin(table: JoinTableSchema): Select[T, TableConcat[Table, AnyTable]] = {
         joinClause(table, SqlJoinType.CROSS_JOIN)
     }
 
-    infix def crossJoinLateral(query: SelectQuery[_]) = {
+    infix def crossJoinLateral(query: SelectQuery[_]): Select[T, TableConcat[Table, NothingTable]] = {
         joinClause(query, SqlJoinType.CROSS_JOIN, true)
     }
 
-    infix def fullJoin(table: String | TableSchema | AliasedTableSchema) = {
+    infix def fullJoin(table: TableSchema): Select[T, TableConcat[Table, table.type]] = {
         joinClause(table, SqlJoinType.FULL_JOIN)
     }
 
-    infix def fullJoin(query: SelectQuery[_]) = {
+    infix def fullJoin(table: String | AliasedTableSchema): Select[T, TableConcat[Table, NothingTable]] = {
+        joinClause(table, SqlJoinType.FULL_JOIN)
+    }
+
+    infix def fullJoin(query: SelectQuery[_]): Select[T, TableConcat[Table, NothingTable]] = {
         joinClause(query, SqlJoinType.FULL_JOIN)
     }
 
-    infix def fullJoin(table: JoinTableSchema) = {
+    infix def fullJoin(table: JoinTableSchema): Select[T, TableConcat[Table, AnyTable]] = {
         joinClause(table, SqlJoinType.FULL_JOIN)
     }
 
-    infix def fullJoinLateral(query: SelectQuery[_]) = {
+    infix def fullJoinLateral(query: SelectQuery[_]): Select[T, TableConcat[Table, NothingTable]] = {
         joinClause(query, SqlJoinType.FULL_JOIN, true)
     }
 
-    def forUpdate = {
+    def forUpdate: Select[T, Table] = {
         this.sqlSelect.forUpdate = true
         this
     }

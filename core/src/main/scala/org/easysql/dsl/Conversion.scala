@@ -80,16 +80,12 @@ type NonEmpty[T <: String] = T == "" match {
 }
 
 type TableConcat[A <: TableSchema | Tuple, B <: TableSchema | Tuple] <: Tuple = A match {
-    case NothingTable => Tuple1[NothingTable]
     case TableSchema => B match {
         case TableSchema => A *: B *: EmptyTuple
         case Tuple => Tuple.Concat[Tuple1[A], B]
     }
-    case Tuple1[NothingTable] => Tuple1[NothingTable]
     case Tuple => B match {
-        case NothingTable => Tuple1[NothingTable]
         case TableSchema => Tuple.Concat[A, Tuple1[B]]
-        case Tuple1[NothingTable] => Tuple1[NothingTable]
         case Tuple => Tuple.Concat[A, B]
     }
 }
@@ -111,21 +107,26 @@ type TableContains[From <: TableSchema | Tuple, X <: TableSchema | Tuple] = From
     case Tuple => X match {
         case NothingTable => Any
         case TableSchema => TableInTuple[From, X]
-        case Tuple1[NothingTable] => Nothing
+        case Tuple1[NothingTable] => Any
         case _ => TupleContains[From, X]
     }
 }
 
-type TableInTuple[T <: Tuple, Table <: TableSchema] = T match {
-    case h *: t => h match {
-        case Table => Any
-        case _ => TableInTuple[t, Table]
+type TableInTuple[T <: Tuple, Table <: TableSchema] = Table match {
+    case NothingTable => Any
+    case _ => T match {
+        case h *: t => h match {
+            case AnyTable => Any
+            case Table => Any
+            case _ => TableInTuple[t, Table]
+        }
+        case EmptyTuple => Nothing
     }
-    case EmptyTuple => Nothing
 }
 
 type TupleContains[T1 <: Tuple, T2 <: Tuple] = T2 match {
     case h *: t => h match {
+        case AnyTable => Any
         case TableSchema => TableInTuple[T1, h] match {
             case Any => TupleContains[T1, t]
             case Nothing => Nothing
