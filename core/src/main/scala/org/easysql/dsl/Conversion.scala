@@ -78,3 +78,59 @@ type NonEmpty[T <: String] = T == "" match {
     case false => Any
     case true => Nothing
 }
+
+type TableConcat[A <: TableSchema | Tuple, B <: TableSchema | Tuple] <: Tuple = A match {
+    case NothingTable => Tuple1[NothingTable]
+    case TableSchema => B match {
+        case TableSchema => A *: B *: EmptyTuple
+        case Tuple => Tuple.Concat[Tuple1[A], B]
+    }
+    case Tuple1[NothingTable] => Tuple1[NothingTable]
+    case Tuple => B match {
+        case NothingTable => Tuple1[NothingTable]
+        case TableSchema => Tuple.Concat[A, Tuple1[B]]
+        case Tuple1[NothingTable] => Tuple1[NothingTable]
+        case Tuple => Tuple.Concat[A, B]
+    }
+}
+
+type TableContains[From <: TableSchema | NonEmptyTuple, X <: TableSchema | NonEmptyTuple] <: Boolean = From match {
+    case TableSchema => X match {
+        case NothingTable => true
+        case TableSchema => From match {
+            case X => true
+            case _ => false
+        }
+        case Tuple1[t] => t match {
+            case From => true
+            case NothingTable => true
+            case _ => false
+        }
+        case _ => false
+    }
+    case Tuple => X match {
+        case NothingTable => true
+        case TableSchema => TableInTuple[From, X]
+        case Tuple1[NothingTable] => true
+        case _ => TupleContains[From, X]
+    }
+}
+
+type TableInTuple[T <: Tuple, Table <: TableSchema] <: Boolean = T match {
+    case h *: t => h match {
+        case Table => true
+        case _ => TableInTuple[t, Table]
+    }
+    case EmptyTuple => false
+}
+
+type TupleContains[T1 <: NonEmptyTuple, T2 <: NonEmptyTuple] <: Boolean = T2 match {
+    case h *: t => h match {
+        case TableSchema => TableInTuple[T1, h] match {
+            case true => TupleContains[T1, t]
+            case false => false
+        }
+        case _ => false
+    }
+    case EmptyTuple => true
+}

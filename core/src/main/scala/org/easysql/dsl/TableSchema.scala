@@ -42,6 +42,10 @@ trait TableSchema {
 object TableSchema {
     inline given tableToQuery[T <: TableSchema]: Conversion[T, Query[T]] = Query[T](_)
 }
+ 
+class NothingTable extends TableSchema {
+    override val tableName: String = ""
+}
 
 extension[T <: TableSchema] (t: T) {
     inline infix def as(aliasName: String)(using NonEmpty[aliasName.type] =:= Any): AliasedTableSchema = {
