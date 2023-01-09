@@ -52,11 +52,16 @@ class Select[T <: Tuple, AliasNames <: Tuple] extends SelectQuery[T, AliasNames]
     infix def select[U <: Tuple](items: U): Select[Tuple.Concat[T, RecursiveInverseMap[U]], Tuple.Concat[AliasNames, ExtractAliasNames[U]]] = {
         def addExpr(column: Expr[_]): Unit = {
             sqlSelect.addSelectItem(visitExpr(column))
+            column match {
+                case TableColumnExpr(_, column, ident, _) => selectItems.addOne(ident, column)
+                case PrimaryKeyColumnExpr(_, column, ident, _, _) => selectItems.addOne(ident, column)
+                case _ =>
+            }
         }
 
         def addItem(item: AliasExpr[_, _]): Unit = {
             sqlSelect.addSelectItem(visitExpr(item.expr), Some(item.name))
-            selectItems.addOne(item.name)
+            selectItems.addOne(item.name, item.name)
         }
 
         def spread(items: Tuple): Unit = {
@@ -76,6 +81,20 @@ class Select[T <: Tuple, AliasNames <: Tuple] extends SelectQuery[T, AliasNames]
 
         this.asInstanceOf[Select[Tuple.Concat[T, RecursiveInverseMap[U]], Tuple.Concat[AliasNames, ExtractAliasNames[U]]]]
     }
+    
+    infix def select[I <: SqlDataType, N <: String](item: TableColumnExpr[I, N]): Select[Tuple.Concat[T, Tuple1[I]], Tuple.Concat[AliasNames, Tuple1[N]]] = {
+        sqlSelect.addSelectItem(visitExpr(item))
+        selectItems.addOne(item.ident, item.column)
+        
+        this.asInstanceOf[Select[Tuple.Concat[T, Tuple1[I]], Tuple.Concat[AliasNames, Tuple1[N]]]]
+    }
+    
+    infix def select[I <: SqlDataType, N <: String](item: PrimaryKeyColumnExpr[I, N]): Select[Tuple.Concat[T, Tuple1[I]], Tuple.Concat[AliasNames, Tuple1[N]]] = {
+        sqlSelect.addSelectItem(visitExpr(item))
+        selectItems.addOne(item.ident, item.column)
+        
+        this.asInstanceOf[Select[Tuple.Concat[T, Tuple1[I]], Tuple.Concat[AliasNames, Tuple1[N]]]]
+    }
 
     infix def select[I <: SqlDataType](item: Expr[I]): Select[Tuple.Concat[T, Tuple1[I]], AliasNames] = {
         sqlSelect.addSelectItem(visitExpr(item))
@@ -85,7 +104,7 @@ class Select[T <: Tuple, AliasNames <: Tuple] extends SelectQuery[T, AliasNames]
 
     infix def select[I <: SqlDataType, N <: String](item: AliasExpr[I, N]): Select[Tuple.Concat[T, Tuple1[I]], Tuple.Concat[AliasNames, Tuple1[N]]] = {
         sqlSelect.addSelectItem(visitExpr(item.expr), Some(item.name))
-        selectItems.addOne(item.name)
+        selectItems.addOne(item.name, item.name)
 
         this.asInstanceOf[Select[Tuple.Concat[T, Tuple1[I]], Tuple.Concat[AliasNames, Tuple1[N]]]]
     }
@@ -99,15 +118,19 @@ class Select[T <: Tuple, AliasNames <: Tuple] extends SelectQuery[T, AliasNames]
     }
 
     infix def dynamicSelect(columns: Expr[_] | AliasExpr[_, _]*): Select[T, AliasNames] = {
-        columns.foreach { item =>
-            item match {
-                case e: Expr[_] => sqlSelect.addSelectItem(visitExpr(e))
-                case s: AliasExpr[_, _] => {
-                    sqlSelect.addSelectItem(visitExpr(s.expr), Some(s.name))
-                    selectItems.append(s.name)
+        columns.foreach {
+            case e: Expr[_] => {
+                sqlSelect.addSelectItem(visitExpr(e))
+                e match {
+                    case TableColumnExpr(_, column, ident, _) => selectItems.addOne(ident, column)
+                    case PrimaryKeyColumnExpr(_, column, ident, _, _) => selectItems.addOne(ident, column)
+                    case _ =>
                 }
             }
-        
+            case s: AliasExpr[_, _] => {
+                sqlSelect.addSelectItem(visitExpr(s.expr), Some(s.name))
+                selectItems.addOne(s.name, s.name)
+            }
         }
 
         this

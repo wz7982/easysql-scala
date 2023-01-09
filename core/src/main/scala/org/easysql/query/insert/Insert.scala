@@ -41,8 +41,8 @@ class Insert[T <: Tuple, S <: InsertState] extends ReviseQuery {
         val insert = new Insert[ValueTypes, Nothing]()
         insert.sqlInsert.table = Some(SqlIdentTable(table._tableName))
         insert.sqlInsert.columns.addAll(columns.toArray.map {
-            case t: TableColumnExpr[_] => getExpr(col(t.column))
-            case p: PrimaryKeyColumnExpr[_] => getExpr(col(p.column))
+            case t: TableColumnExpr[_, _] => getExpr(col(t.column))
+            case p: PrimaryKeyColumnExpr[_, _] => getExpr(col(p.column))
         })
 
         insert

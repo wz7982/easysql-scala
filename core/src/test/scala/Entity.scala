@@ -4,7 +4,7 @@ import org.easysql.dsl.*
 import java.util.Date
 
 @Table("user")
-case class User(@IncrKey id: Int, name: String, createTime: Date, longCol: Long, doubleCol: Double)
+case class User(@IncrKey("uid") id: Int, name: String, createTime: Date, longCol: Long, doubleCol: Double)
 
 val user = asTable[User]
 

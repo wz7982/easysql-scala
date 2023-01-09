@@ -47,15 +47,15 @@ def table(name: String) = new TableSchema() {
 inline def asTable[T <: Product] = new TableSchema[T] {
     override val _tableName: String = fetchTableNameMacro[T]
 
-    override val _cols: mutable.ListBuffer[TableColumnExpr[?]] = {
-        val cols = mutable.ListBuffer[TableColumnExpr[_]]()
-        val colList = fieldNamesMacro[T].map(n => TableColumnExpr(_tableName, n, this))
+    override val _cols: mutable.ListBuffer[TableColumnExpr[_, _]] = {
+        val cols = mutable.ListBuffer[TableColumnExpr[_, _]]()
+        val colList = fieldNamesMacro[T].zip(identNamesMacro[T]).map((n, i) => TableColumnExpr(_tableName, n, i, this))
         cols.addAll(colList)
         cols
     }
 }
 
-extension [T <: SqlDataType] (e: TableColumnExpr[T] | ColumnExpr[T]) {
+extension [T <: SqlDataType] (e: TableColumnExpr[T, _] | ColumnExpr[T]) {
     def to[V <: UpdateType[T]](value: V | Expr[V] | SelectQuery[Tuple1[V], _]) = (e, value)
 }
 
@@ -66,6 +66,10 @@ object AllColumn {
 def select[U <: Tuple](items: U) = Select().select(items)
 
 def select[I <: SqlDataType](item: Expr[I]) = Select().select(item)
+
+def select[I <: SqlDataType, N <: String](item: TableColumnExpr[I, N]) = Select().select(item)
+
+def select[I <: SqlDataType, N <: String](item: PrimaryKeyColumnExpr[I, N]) = Select().select(item)
 
 def select[I <: SqlDataType, N <: String](item: AliasExpr[I, N]) = Select().select(item)
 

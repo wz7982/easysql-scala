@@ -28,23 +28,23 @@ object Test extends App {
     // println(s.toSql)
 
 
-    val testTable = TestTable("1", None)
-    val i = insert(testTable)
-    println(i.toSql)
-
-    val u = update(testTable, false)
-    println(u.toSql)
-
-    val d = delete[TestTable]("1")
-    println(d.toSql)
-
-    val sv = save[TestTable](testTable)
-    println(sv.sql(DB.MYSQL))
-    println(sv.sql(DB.PGSQL))
-    println(sv.sql(DB.SQLITE))
-
-    val f = findQuery[TestTable]("1")
-    println(f.toSql)
+//    val testTable = TestTable("1", None)
+//    val i = insert(testTable)
+//    println(i.toSql)
+//
+//    val u = update(testTable, false)
+//    println(u.toSql)
+//
+//    val d = delete[TestTable]("1")
+//    println(d.toSql)
+//
+//    val sv = save[TestTable](testTable)
+//    println(sv.sql(DB.MYSQL))
+//    println(sv.sql(DB.PGSQL))
+//    println(sv.sql(DB.SQLITE))
+//
+//    val f = findQuery[TestTable]("1")
+//    println(f.toSql)
 
     // val s = from (tt) where tt.id === "x" || tt.name === "y"
     // println(s.toSql)
@@ -60,23 +60,28 @@ object Test extends App {
     // val s = select (sub.c1, sub.c2) from sub
     // println(s.toSql)
 
-    val s = (
-        select (user) 
-        from user 
-        where true 
-            && user.createTime.between("2020-01-01", "2022-01-01") 
-            && user.id + 1.0 > 2.3 
-            || false
-    )
+//    val s = (
+//        select (user)
+//        from user
+//        where true
+//            && user.createTime.between("2020-01-01", "2022-01-01")
+//            && user.id + 1.0 > 2.3
+//            || false
+//    )
+//
+//    println(s.toSql)
 
-    println(s.toSql)
+    val q1 = select (user.id, count() + sum(user.id) as "c1") from user as "q1"
+    
+    val q2 = select (q1.id, q1.c1) from q1 as "q2"
+    
+    val q3 = select (q2.id) from q2 as "q3"
+    
+    val q4 = select (q3.id as "c1") from q3 as "q4"
 
-    val sub = select (user.id as "c1", user.name as "c2") from user as "q1"
-
-    val s1 = select (sub.c1 as "x1", sub.c2 as "x2") from sub
-    println(s1.toSql)
-
-    val plus = 1.0 + user.id * user.longCol
+    val q5 = select (q4.c1) from q4
+    
+    println(q5.toSql)
 }
 
 @Table
