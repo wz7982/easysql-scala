@@ -8,7 +8,6 @@ import org.easysql.dsl.AllColumn.`*`
 import org.easysql.ast.SqlDataType
 import org.easysql.macros.bindSelect
 
-import reflect.Selectable.reflectiveSelectable
 import scala.concurrent.Future
 
 abstract class DBOperator[F[_]](val db: DB)(using m: DBMonad[F]) {
@@ -24,20 +23,20 @@ abstract class DBOperator[F[_]](val db: DB)(using m: DBMonad[F]) {
 
     inline def runMonad(query: ReviseQuery)(using logger: Logger): F[Int] = {
         val sql = query.sql(db)
-        logger.info(s"execute sql: ${sql.replaceAll("\n", " ")}")
+        logger.apply(s"execute sql: ${sql.replaceAll("\n", " ")}")
 
         runSql(sql)
     }
 
     inline def runAndReturnKeyMonad(query: Insert[_, _])(using logger: Logger): F[List[Long]] = {
         val sql = query.sql(db)
-        logger.info(s"execute sql: ${sql.replaceAll("\n", " ")}")
+        logger.apply(s"execute sql: ${sql.replaceAll("\n", " ")}")
 
         runSqlAndReturnKey(sql)
     }
 
     inline def queryMonad(sql: String)(using logger: Logger): F[List[Map[String, Any]]] = {
-        logger.info(s"execute sql: $sql")
+        logger.apply(s"execute sql: $sql")
 
         querySqlToMap(sql)
     }
@@ -46,7 +45,7 @@ abstract class DBOperator[F[_]](val db: DB)(using m: DBMonad[F]) {
         import scala.compiletime.erasedValue
 
         val sql = query.sql(db)
-        logger.info(s"execute sql: ${sql.replaceAll("\n", " ")}")
+        logger.apply(s"execute sql: ${sql.replaceAll("\n", " ")}")
 
         inline erasedValue[T] match {
             case _: Tuple1[t] =>
@@ -65,7 +64,7 @@ abstract class DBOperator[F[_]](val db: DB)(using m: DBMonad[F]) {
             case s: Select[_, _] => s.limit(1).sql(db)
             case _ => query.sql(db)
         }
-        logger.info(s"execute sql: ${sql.replaceAll("\n", " ")}")
+        logger.apply(s"execute sql: ${sql.replaceAll("\n", " ")}")
 
         inline erasedValue[T] match {
             case _: Tuple1[t] => 
@@ -85,7 +84,7 @@ abstract class DBOperator[F[_]](val db: DB)(using m: DBMonad[F]) {
                 case s: Select[_, _] => s.pageSql(pageSize, pageNum)(db)
                 case _ => select(*).from(query.as("_q1")).pageSql(pageSize, pageNum)(db)
             }
-            logger.info(s"execute sql: ${sql.replaceAll("\n", " ")}")
+            logger.apply(s"execute sql: ${sql.replaceAll("\n", " ")}")
 
             querySql(sql).map(datum => datum.map(i => bindSelect[ResultType[T]].apply(i)))
         }
@@ -122,7 +121,7 @@ abstract class DBOperator[F[_]](val db: DB)(using m: DBMonad[F]) {
             case s: Select[_, _] => s.countSql(db)
             case _ => select(*).from(query.as("_q1")).countSql(db)
         }
-        logger.info(s"execute sql: ${sql.replaceAll("\n", " ")}")
+        logger.apply(s"execute sql: ${sql.replaceAll("\n", " ")}")
         
         querySqlCount(sql)
     }
@@ -170,4 +169,4 @@ case class Id[T](x: T) {
     def flatMap[R](f: T => Id[R]): Id[R] = f(x)
 }
 
-type Logger = { def info(text: String): Unit }
+type Logger = String => Unit
