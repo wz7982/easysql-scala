@@ -1,10 +1,3 @@
 package org.easysql.database
 
-import org.easysql.query.ReviseQuery
-import org.easysql.query.delete.Delete
-import org.easysql.query.insert.Insert
-import org.easysql.query.save.Save
-import org.easysql.query.select.*
-import org.easysql.query.update.Update
-
-abstract class DBConnection(override val db: DB) extends DBOperater(db)
+abstract class DBConnection[F[_]](override val db: DB)(using DbMonad[F]) extends DBOperater[F](db)

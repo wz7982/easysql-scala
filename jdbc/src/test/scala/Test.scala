@@ -25,6 +25,7 @@ object Test extends App {
 
     val q = select (tt) from tt
 
+    
     val data = db.query(q)
     val data1 = db.find(q)
 }
