@@ -11,7 +11,7 @@ import org.easysql.macros.bindSelect
 import reflect.Selectable.reflectiveSelectable
 import scala.concurrent.Future
 
-abstract class DBOperater[F[_]](val db: DB)(using m: DbMonad[F]) {
+abstract class DBOperator[F[_]](val db: DB)(using m: DBMonad[F]) {
     private[database] def runSql(sql: String): F[Int]
 
     private[database] def runSqlAndReturnKey(sql: String): F[List[Long]]
@@ -131,7 +131,7 @@ abstract class DBOperater[F[_]](val db: DB)(using m: DbMonad[F]) {
 object DBOperator {
     import scala.concurrent.ExecutionContext
 
-    given dbMonadId: DbMonad[Id] with {
+    given dbMonadId: DBMonad[Id] with {
         def pure[T](x: T): Id[T] = Id(x)
 
         extension [T] (x: Id[T]) {
@@ -141,7 +141,7 @@ object DBOperator {
         }
     }
 
-    given dbMoandFuture(using ExecutionContext): DbMonad[Future] with {
+    given dbMoandFuture(using ExecutionContext): DBMonad[Future] with {
         def pure[T](x: T): Future[T] = Future(x)
 
         extension [T] (x: Future[T]) {
@@ -152,11 +152,11 @@ object DBOperator {
     }
 }
 
-trait DbFunctor[F[_]] {
+trait DBFunctor[F[_]] {
     extension [T] (x: F[T]) def map[R](f: T => R): F[R]
 }
 
-trait DbMonad[F[_]] extends DbFunctor[F] {
+trait DBMonad[F[_]] extends DBFunctor[F] {
     def pure[T](x: T): F[T]
 
     extension [T] (x: F[T]) def flatMap[R](f: T => F[R]): F[R]
