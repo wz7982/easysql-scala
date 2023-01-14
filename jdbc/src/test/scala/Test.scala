@@ -4,7 +4,6 @@ import org.easysql.dsl.TableSchema
 import org.easysql.database.*
 
 import java.util.Date
-import scala.compiletime.{erasedValue, error}
 import scala.util.Random
 import scala.compiletime.ops.int
 
