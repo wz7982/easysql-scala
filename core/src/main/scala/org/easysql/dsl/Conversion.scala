@@ -22,6 +22,8 @@ type RecursiveInverseMap[X <: Tuple] <: Tuple = X match {
 
 type ExtractAliasNames[T <: Tuple] <: Tuple = T match {
     case AliasExpr[_, n] *: t => n *: ExtractAliasNames[t]
+    case TableColumnExpr[_, n] *: t => n *: ExtractAliasNames[t]
+    case PrimaryKeyColumnExpr[_, n] *: t => n *: ExtractAliasNames[t]
     case _ => EmptyTuple
 }
 

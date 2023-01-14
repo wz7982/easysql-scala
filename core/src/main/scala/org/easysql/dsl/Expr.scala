@@ -34,13 +34,13 @@ trait ExprOperator[T <: SqlDataType] {
         infix def in(list: List[Expr[T]]): Expr[Boolean] =
             if list.isEmpty then const(false) else InListExpr(const(v), list)
 
-        infix def in(list: (Expr[T])*): Expr[Boolean] =
+        infix def in(list: Expr[T]*): Expr[Boolean] =
             InListExpr(const(v), list.toList)
 
         infix def notIn(list: List[Expr[T]]): Expr[Boolean] =
             if list.isEmpty then const(true) else InListExpr(const(v), list, true)
 
-        infix def notIn(list: (Expr[T])*): Expr[Boolean] =
+        infix def notIn(list: Expr[T]*): Expr[Boolean] =
             InListExpr(const(v), list.toList, true)
 
         infix def between(start: Expr[T], end: Expr[T]): Expr[Boolean] =
@@ -556,15 +556,17 @@ case class BinaryExpr[T <: SqlDataType](
 
 case class ColumnExpr[T <: SqlDataType](column: String) extends Expr[T]()
 
-case class TableColumnExpr[T <: SqlDataType](
+case class TableColumnExpr[T <: SqlDataType, Name <: String](
     table: String,
     column: String,
+    ident: Name,
     schema: TableSchema[_]
 ) extends Expr[T]
 
-case class PrimaryKeyColumnExpr[T <: SqlDataType](
+case class PrimaryKeyColumnExpr[T <: SqlDataType, Name <: String](
     table: String,
     column: String,
+    ident: Name,
     schema: TableSchema[_],
     isIncr: Boolean = false
 ) extends Expr[T]

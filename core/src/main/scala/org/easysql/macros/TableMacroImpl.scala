@@ -102,3 +102,16 @@ def fieldNamesMacroImpl[T](using q: Quotes, t: Type[T]): Expr[List[String]] = {
 
     Expr.ofList(fields)
 }
+
+def identNamesMacroImpl[T](using q: Quotes, t: Type[T]): Expr[List[String]] = {
+    import q.reflect.*
+
+    val sym = TypeTree.of[T].symbol
+    val fields = sym.declaredFields.map { f =>
+        var fieldName = f.name
+
+        Expr(fieldName)
+    }
+
+    Expr.ofList(fields)
+}

@@ -6,14 +6,14 @@ import org.easysql.dsl.*
 import org.easysql.query.BasedQuery
 import org.easysql.ast.SqlDataType
 
-import scala.collection.mutable.ListBuffer
+import scala.collection.mutable.Map
 import scala.language.dynamics
 import scala.compiletime.ops.int.*
 
 trait SelectQuery[T <: Tuple, AliasNames <: Tuple] extends BasedQuery with Dynamic {
     def getSelect: SqlSelectQuery
 
-    private[select] val selectItems: ListBuffer[String] = ListBuffer()
+    private[select] val selectItems: Map[String, String] = Map()
 
     var aliasName: Option[String] = None
 
@@ -89,9 +89,9 @@ trait SelectQuery[T <: Tuple, AliasNames <: Tuple] extends BasedQuery with Dynam
     infix def intersectAll(list: List[T]) = unionClause(list, SqlUnionType.INTERSECT_ALL)
 
     transparent inline def selectDynamic(inline name: String) = {
-        val item = selectItems.find(_ == name).get
+        val item = selectItems(name)
 
-        col[FindTypeByName[Tuple.Zip[T, AliasNames], Tuple.Size[T] - 1, name.type] & SqlDataType](s"${aliasName.get}.$item")
+        TableColumnExpr[FindTypeByName[Tuple.Zip[T, AliasNames], Tuple.Size[T] - 1, name.type] & SqlDataType, name.type](aliasName.get, item, name, table(aliasName.get))
     }
 }
 

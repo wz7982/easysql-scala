@@ -31,18 +31,18 @@ trait TableSchema[E <: Product] extends AnyTable with Dynamic with SelectItem[E]
 
     var _aliasName: Option[String] = None
 
-    val _cols: ListBuffer[TableColumnExpr[_]] = ListBuffer()
+    val _cols: ListBuffer[TableColumnExpr[_, _]] = ListBuffer()
 
     transparent inline def selectDynamic(inline name: String)(using m: Mirror.ProductOf[E]) = {
         inline exprMetaMacro[E](name) match {
-            case ("pk", n) => PrimaryKeyColumnExpr[ElementType[m.MirroredElemTypes, m.MirroredElemLabels, name.type] & SqlDataType](_tableName, n, this)
-            case ("incr", n) => PrimaryKeyColumnExpr[ElementType[m.MirroredElemTypes, m.MirroredElemLabels, name.type] & SqlDataType](_tableName, n, this, true)
-            case (_, n) => TableColumnExpr[ElementType[m.MirroredElemTypes, m.MirroredElemLabels, name.type] & SqlDataType](_tableName, n, this)
+            case ("pk", n) => PrimaryKeyColumnExpr[ElementType[m.MirroredElemTypes, m.MirroredElemLabels, name.type] & SqlDataType, name.type](_tableName, n, name, this)
+            case ("incr", n) => PrimaryKeyColumnExpr[ElementType[m.MirroredElemTypes, m.MirroredElemLabels, name.type] & SqlDataType, name.type](_tableName, n, name, this, true)
+            case (_, n) => TableColumnExpr[ElementType[m.MirroredElemTypes, m.MirroredElemLabels, name.type] & SqlDataType, name.type](_tableName, n, name, this)
         }
     }
 
     transparent inline def * (using m: Mirror.ProductOf[E]) = {
-        val fields = fieldNamesMacro[E].toArray.map(n => TableColumnExpr(_tableName, n, this))
+        val fields = fieldNamesMacro[E].zip(identNamesMacro[E]).toArray.map((n, i) => TableColumnExpr(_tableName, n, i, this))
         Tuple.fromArray(fields).asInstanceOf[ExprType[m.MirroredElemTypes]]
     }
 

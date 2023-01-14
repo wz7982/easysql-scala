@@ -18,9 +18,9 @@ def visitExpr(query: Expr[_]): SqlExpr = {
             SqlBinaryExpr(visitExpr(left), op, visitExpr(right))
         case column: ColumnExpr[_] =>
             visitColumnExpr(column)
-        case TableColumnExpr(_, column, schema) =>
+        case TableColumnExpr(_, column, _, schema) =>
             SqlPropertyExpr(schema._aliasName.getOrElse(schema._tableName), column)
-        case PrimaryKeyColumnExpr(_, column, schema, _) =>
+        case PrimaryKeyColumnExpr(_, column, _, schema, _) =>
             SqlPropertyExpr(schema._aliasName.getOrElse(schema._tableName), column)
         case SubQueryExpr(selectQuery) =>
             SqlSelectQueryExpr(selectQuery.getSelect)

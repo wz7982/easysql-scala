@@ -9,3 +9,5 @@ inline def fetchTableNameMacro[T <: Product]: String = ${ fetchTableNameMacroImp
 inline def exprMetaMacro[T](inline name: String): (String, String) = ${ exprMetaMacroImpl[T]('name) }
 
 inline def fieldNamesMacro[T]: List[String] = ${ fieldNamesMacroImpl[T] }
+
+inline def identNamesMacro[T]: List[String] = ${ identNamesMacroImpl[T] }
