@@ -10,7 +10,7 @@ import org.easysql.macros.bindSelect
 
 import reflect.Selectable.reflectiveSelectable
 
-abstract class  DBOperater(val db: DB) {
+abstract class DBOperater(val db: DB) {
     private[database] def runSql(sql: String): Int
 
     private[database] def runSqlAndReturnKey(sql: String): List[Long]
@@ -42,20 +42,34 @@ abstract class  DBOperater(val db: DB) {
     }
 
     inline def query[T <: Tuple](query: SelectQuery[T, _])(using logger: Logger): List[ResultType[T]] = {
+        import scala.compiletime.erasedValue
+
         val sql = query.sql(db)
         logger.info(s"execute sql: ${sql.replaceAll("\n", " ")}")
 
-        querySql(sql).map(i => bindSelect[ResultType[T]].apply(i))
+        inline erasedValue[T] match {
+            case _: Tuple1[t] => 
+                querySql(sql).map(i => bindSelect[Option[t]].apply(i)).filter(_.nonEmpty).map(_.get.asInstanceOf[ResultType[T]])
+            case _ => 
+                querySql(sql).map(i => bindSelect[ResultType[T]].apply(i))
+        }
     }
 
     inline def find[T <: Tuple](query: SelectQuery[T, _])(using logger: Logger): Option[ResultType[T]] = {
+        import scala.compiletime.erasedValue
+
         val sql = inline query match {
             case s: Select[?, ?] => s.limit(1).sql(db)
             case _ => query.sql(db)
         }
         logger.info(s"execute sql: ${sql.replaceAll("\n", " ")}")
 
-        querySql(sql).headOption.map(i => bindSelect[ResultType[T]].apply(i))
+        inline erasedValue[T] match {
+            case _: Tuple1[t] => 
+                querySql(sql).map(i => bindSelect[Option[t]].apply(i)).filter(_.nonEmpty).map(_.get.asInstanceOf[ResultType[T]]).headOption
+            case _ => 
+                querySql(sql).headOption.map(i => bindSelect[ResultType[T]].apply(i))
+        }
     }
     
     inline def page[T <: Tuple](query: SelectQuery[T, _])(pageSize: Int, pageNum: Int, queryCount: Boolean)(using logger: Logger): Page[ResultType[T]] = {

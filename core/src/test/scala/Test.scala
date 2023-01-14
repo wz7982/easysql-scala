@@ -82,6 +82,12 @@ object Test extends App {
     val q5 = select (q4.c1) from q4
     
     println(q5.toSql)
+
+    val list: List[Option[Int]] = List(None)
+    val f = list.filter(_.nonEmpty).map(_.get)
+    println(f)
+    val head = list.filter(_.nonEmpty).map(_.get).headOption
+    println(head)
 }
 
 @Table
