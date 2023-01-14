@@ -9,110 +9,165 @@ import org.easysql.ast.SqlDataType
 import org.easysql.macros.bindSelect
 
 import reflect.Selectable.reflectiveSelectable
+import scala.concurrent.Future
 
-abstract class DBOperater(val db: DB) {
-    private[database] def runSql(sql: String): Int
+abstract class DBOperater[F[_]](val db: DB)(using m: DbMonad[F]) {
+    private[database] def runSql(sql: String): F[Int]
 
-    private[database] def runSqlAndReturnKey(sql: String): List[Long]
+    private[database] def runSqlAndReturnKey(sql: String): F[List[Long]]
 
-    private[database] def querySql(sql: String): List[Array[Any]]
+    private[database] def querySql(sql: String): F[List[Array[Any]]]
 
-    private[database] def querySqlToMap(sql: String): List[Map[String, Any]]
+    private[database] def querySqlToMap(sql: String): F[List[Map[String, Any]]]
 
-    private[database] def querySqlCount(sql: String): Long
+    private[database] def querySqlCount(sql: String): F[Long]
 
-    inline def run(query: ReviseQuery)(using logger: Logger): Int = {
+    inline def runMonad(query: ReviseQuery)(using logger: Logger): F[Int] = {
         val sql = query.sql(db)
         logger.info(s"execute sql: ${sql.replaceAll("\n", " ")}")
 
         runSql(sql)
     }
 
-    inline def runAndReturnKey(query: Insert[_, _])(using logger: Logger): List[Long] = {
+    inline def runAndReturnKeyMonad(query: Insert[_, _])(using logger: Logger): F[List[Long]] = {
         val sql = query.sql(db)
         logger.info(s"execute sql: ${sql.replaceAll("\n", " ")}")
 
         runSqlAndReturnKey(sql)
     }
 
-    inline def query(sql: String)(using logger: Logger): List[Map[String, Any]] = {
+    inline def queryMonad(sql: String)(using logger: Logger): F[List[Map[String, Any]]] = {
         logger.info(s"execute sql: $sql")
 
         querySqlToMap(sql)
     }
 
-    inline def query[T <: Tuple](query: SelectQuery[T, _])(using logger: Logger): List[ResultType[T]] = {
+    inline def queryMonad[T <: Tuple](query: SelectQuery[T, _])(using logger: Logger): F[List[ResultType[T]]] = {
         import scala.compiletime.erasedValue
 
         val sql = query.sql(db)
         logger.info(s"execute sql: ${sql.replaceAll("\n", " ")}")
 
         inline erasedValue[T] match {
-            case _: Tuple1[t] => 
-                querySql(sql).map(i => bindSelect[Option[t]].apply(i)).filter(_.nonEmpty).map(_.get.asInstanceOf[ResultType[T]])
+            case _: Tuple1[t] =>
+                querySql(sql).map { datum =>
+                    datum.map(i => bindSelect[Option[t]].apply(i)).filter(_.nonEmpty).map(_.get.asInstanceOf[ResultType[T]])
+                }          
             case _ => 
-                querySql(sql).map(i => bindSelect[ResultType[T]].apply(i))
+                querySql(sql).map(datum => datum.map(i => bindSelect[ResultType[T]].apply(i)))
         }
     }
 
-    inline def find[T <: Tuple](query: SelectQuery[T, _])(using logger: Logger): Option[ResultType[T]] = {
+    inline def findMonad[T <: Tuple](query: SelectQuery[T, _])(using logger: Logger): F[Option[ResultType[T]]] = {
         import scala.compiletime.erasedValue
 
         val sql = inline query match {
-            case s: Select[?, ?] => s.limit(1).sql(db)
+            case s: Select[_, _] => s.limit(1).sql(db)
             case _ => query.sql(db)
         }
         logger.info(s"execute sql: ${sql.replaceAll("\n", " ")}")
 
         inline erasedValue[T] match {
             case _: Tuple1[t] => 
-                querySql(sql).map(i => bindSelect[Option[t]].apply(i)).filter(_.nonEmpty).map(_.get.asInstanceOf[ResultType[T]]).headOption
+                querySql(sql).map { datum => 
+                    datum.map(i => bindSelect[Option[t]].apply(i)).filter(_.nonEmpty).map(_.get.asInstanceOf[ResultType[T]]).headOption
+                }
             case _ => 
-                querySql(sql).headOption.map(i => bindSelect[ResultType[T]].apply(i))
+                querySql(sql).map(datum => datum.headOption.map(i => bindSelect[ResultType[T]].apply(i)))
         }
     }
     
-    inline def page[T <: Tuple](query: SelectQuery[T, _])(pageSize: Int, pageNum: Int, queryCount: Boolean)(using logger: Logger): Page[ResultType[T]] = {
+    inline def pageMonad[T <: Tuple](query: SelectQuery[T, _])(pageSize: Int, pageNum: Int, queryCount: Boolean)(using logger: Logger): F[Page[ResultType[T]]] = {
         val data = if (pageSize == 0) {
-            List[ResultType[T]]()
+            m.pure(Nil)
         } else {
             val sql = inline query match {
-                case s: Select[?, ?] => s.pageSql(pageSize, pageNum)(db)
+                case s: Select[_, _] => s.pageSql(pageSize, pageNum)(db)
                 case _ => select(*).from(query.as("_q1")).pageSql(pageSize, pageNum)(db)
             }
             logger.info(s"execute sql: ${sql.replaceAll("\n", " ")}")
 
-            querySql(sql).map(i => bindSelect[ResultType[T]].apply(i))
+            querySql(sql).map(datum => datum.map(i => bindSelect[ResultType[T]].apply(i)))
         }
 
         val count = if (queryCount) {
-            fetchCount(query)(using logger)
+            fetchCountMonad(query)(using logger)
         } else {
-            0l
+            m.pure(0L)
         }
 
-        val totalPage = if (count == 0 || pageSize == 0) {
-            0
-        } else {
-            if (count % pageSize == 0) {
-                count / pageSize
+        val totalPage = for {
+            c <- count
+        } yield {
+            if (c == 0 || pageSize == 0) {
+                0
             } else {
-                count / pageSize + 1
+                if (c % pageSize == 0) {
+                    c / pageSize 
+                } else {
+                    c / pageSize + 1
+                }
             }
         }
 
-        new Page[ResultType[T]](totalPage, count, data)
+        for {
+            t <- totalPage
+            c <- count
+            d <- data
+        } yield new Page[ResultType[T]](t, c, d)
     }
 
-    inline def fetchCount(query: SelectQuery[_, _])(using logger: Logger): Long = {
+    inline def fetchCountMonad(query: SelectQuery[_, _])(using logger: Logger): F[Long] = {
         val sql = inline query match {
-            case s: Select[?, ?] => s.countSql(db)
+            case s: Select[_, _] => s.countSql(db)
             case _ => select(*).from(query.as("_q1")).countSql(db)
         }
         logger.info(s"execute sql: ${sql.replaceAll("\n", " ")}")
         
         querySqlCount(sql)
     }
+}
+
+object DBOperator {
+    import scala.concurrent.ExecutionContext
+
+    given dbMonadId: DbMonad[Id] with {
+        def pure[T](x: T): Id[T] = Id(x)
+
+        extension [T] (x: Id[T]) {
+            def map[R](f: T => R): Id[R] = x.map(f)
+
+            def flatMap[R](f: T => Id[R]): Id[R] = x.flatMap(f)
+        }
+    }
+
+    given dbMoandFuture(using ExecutionContext): DbMonad[Future] with {
+        def pure[T](x: T): Future[T] = Future(x)
+
+        extension [T] (x: Future[T]) {
+            def map[R](f: T => R): Future[R] = x.map(f)
+
+            def flatMap[R](f: T => Future[R]): Future[R] = x.flatMap(f)
+        }
+    }
+}
+
+trait DbFunctor[F[_]] {
+    extension [T] (x: F[T]) def map[R](f: T => R): F[R]
+}
+
+trait DbMonad[F[_]] extends DbFunctor[F] {
+    def pure[T](x: T): F[T]
+
+    extension [T] (x: F[T]) def flatMap[R](f: T => F[R]): F[R]
+}
+
+case class Id[T](x: T) {
+    def get: T = x
+
+    def map[R](f: T => R): Id[R] = Id(f(x))
+
+    def flatMap[R](f: T => Id[R]): Id[R] = f(x)
 }
 
 type Logger = { def info(text: String): Unit }

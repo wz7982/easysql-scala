@@ -88,6 +88,8 @@ object Test extends App {
     println(f)
     val head = list.filter(_.nonEmpty).map(_.get).headOption
     println(head)
+
+    val flat = Some(1).flatMap(x => Some(1).map(i => x + i))
 }
 
 @Table

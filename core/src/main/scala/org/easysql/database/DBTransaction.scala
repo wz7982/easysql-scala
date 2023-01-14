@@ -1,7 +1,3 @@
 package org.easysql.database
 
-import org.easysql.query.ReviseQuery
-import org.easysql.query.insert.Insert
-import org.easysql.query.select.{Select, SelectQuery}
-
-abstract class DBTransaction(override val db: DB) extends DBOperater(db)
+abstract class DBTransaction[F[_]](override val db: DB)(using DbMonad[F]) extends DBOperater[F](db)
