@@ -7,7 +7,7 @@ import java.util.Date
 import scala.util.Random
 import scala.compiletime.ops.int
 
-given Logger = java.util.logging.Logger.getLogger("")
+given Logger = println
 
 object Test extends App {
     // val bind = bindSelect[Tuple3[TestTable, TestTable, TestTable]]
