@@ -82,7 +82,7 @@ def from[P <: Product](table: TableSchema[P]) = Select().select(table).from(tabl
 inline def findQuery[T <: Product](pk: SqlDataType | Tuple): Select[Tuple1[T], _] = {
     val (tableName, cols) = pkMacro[T, pk.type]
 
-    val select = Select()
+    val select = Select().select(asTable[T])
     select.from(table(tableName))
     inline pk match {
         case t: Tuple => t.toArray.zip(cols).foreach { (p, c) =>
@@ -91,7 +91,7 @@ inline def findQuery[T <: Product](pk: SqlDataType | Tuple): Select[Tuple1[T], _
         case _ => select.where(ColumnExpr(cols.head).equal(pk))
     }
 
-    select.asInstanceOf[Select[Tuple1[T], _]]
+    select
 }
 
 def insertInto(table: TableSchema[_])(columns: Tuple) = Insert().insertInto(table)(columns)

@@ -50,7 +50,7 @@ abstract class DBOperator[F[_]](val db: DB)(using m: DBMonad[F]) {
         inline erasedValue[T] match {
             case _: Tuple1[t] =>
                 querySql(sql).map { datum =>
-                    datum.map(i => bindSelect[Option[t]](0, i)).filter(_.nonEmpty).map(_.get.asInstanceOf[ResultType[T]])
+                    datum.map(i => bindSelect[Option[ResultType[T]]](0, i)).filter(_.nonEmpty).map(_.get)
                 }          
             case _ => 
                 querySql(sql).map(datum => datum.map(i => bindSelect[ResultType[T]](0, i)))
@@ -69,7 +69,7 @@ abstract class DBOperator[F[_]](val db: DB)(using m: DBMonad[F]) {
         inline erasedValue[T] match {
             case _: Tuple1[t] => 
                 querySql(sql).map { datum => 
-                    datum.map(i => bindSelect[Option[t]](0, i)).filter(_.nonEmpty).map(_.get.asInstanceOf[ResultType[T]]).headOption
+                    datum.map(i => bindSelect[Option[ResultType[T]]](0, i)).filter(_.nonEmpty).map(_.get).headOption
                 }
             case _ => 
                 querySql(sql).map(datum => datum.headOption.map(i => bindSelect[ResultType[T]](0, i)))
