@@ -8,12 +8,12 @@ import scala.quoted.{Expr, Quotes, Type}
 import scala.collection.mutable.*
 import scala.annotation.experimental
 
-def insertMacroImpl[T <: Product](using q: Quotes, tpe: Type[T]): Expr[(String, List[(String, (T => Any) | (() => Any))])] = {
+def insertMacroImpl[T <: Product](using q: Quotes, tpe: Type[T]): Expr[(String, List[(String, T => Any)])] = {
     import q.reflect.*
 
     val sym = TypeTree.of[T].symbol
     val insertFieldExprs = ListBuffer[Expr[String]]()
-    val insertFunctionExprs = ListBuffer[Expr[(T => Any) | (() => Any)]]()
+    val insertFunctionExprs = ListBuffer[Expr[T => Any]]()
 
     val tableName = sym.annotations.map {
         case Apply(Select(New(TypeIdent(name)), _), Literal(v) :: Nil) if name == "Table" => v.value.toString()
@@ -51,11 +51,11 @@ def insertMacroImpl[T <: Product](using q: Quotes, tpe: Type[T]): Expr[(String, 
         }
 
         def createGeneratorLambda(s: Statement) = {
-            val mtpe = MethodType(Nil)(_ => Nil, _ => TypeRepr.of[Any])
+            val mtpe = MethodType(List("x"))(_ => List(TypeRepr.of[T]), _ => TypeRepr.of[Any])
             def rhsFn(sym: Symbol, paramRefs: List[Tree]): Tree = s match {
                 case DefDef(_, _, _, t) => t.get
             }
-            Lambda(field, mtpe, rhsFn).asExprOf[() => Any]
+            Lambda(field, mtpe, rhsFn).asExprOf[T => Any]
         }
 
         val lambda = annoInfo.find(_._1 != "") match {

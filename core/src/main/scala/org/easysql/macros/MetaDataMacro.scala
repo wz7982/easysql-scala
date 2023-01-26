@@ -2,7 +2,7 @@ package org.easysql.macros
 
 import org.easysql.ast.SqlDataType
 
-inline def insertMacro[T <: Product]: (String, List[(String, (T => Any) | (() => Any))]) = ${ insertMacroImpl[T] }
+inline def insertMacro[T <: Product]: (String, List[(String, T => Any)]) = ${ insertMacroImpl[T] }
 
 inline def updateMacro[T <: Product]: (String, List[(String, T => Any)], List[(String, T => Any)]) = ${ updateMacroImpl[T] }
 

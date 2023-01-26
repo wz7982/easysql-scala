@@ -14,36 +14,33 @@ import org.easysql.macros.*
 import java.sql.Connection
 import scala.collection.mutable.ListBuffer
 
-class Insert[T <: Tuple, S <: InsertState] extends ReviseQuery {
-    var sqlInsert: SqlInsert = SqlInsert()
-
-    inline def insert[T <: Product, SS >: S <: InsertEntity](entities: T*): Insert[_, InsertEntity] = {
+class Insert[T <: Tuple, S <: InsertState](val sqlInsert: SqlInsert = SqlInsert()) extends ReviseQuery {
+    inline def insert[T <: Product, SS >: S <: InsertEntity](entities: T*): Insert[Tuple1[T], InsertEntity] = {
         val insertMetaData = insertMacro[T]
 
         sqlInsert.table = Some(SqlIdentTable(insertMetaData._1))
         val insertList = entities.toList map { entity =>
             insertMetaData._2 map { i =>
-                i._2 match {
-                    case f: Function1[_, _] => visitExpr(anyToExpr(f.asInstanceOf[T => Any].apply(entity)))
-                    case f: Function0[_] => visitExpr(anyToExpr(f.apply()))
-                }
+                visitExpr(anyToExpr(i._2.apply(entity)))
             }
         }
         sqlInsert.values.addAll(insertList)
         sqlInsert.columns.addAll(insertMetaData._2.map(e => visitExpr(ColumnExpr(e._1))))
 
-        this.asInstanceOf[Insert[_, InsertEntity]]
+        new Insert[Tuple1[T], InsertEntity](sqlInsert)
     }
 
     infix def insertInto(table: TableSchema[_])(columns: Tuple): Insert[InverseMap[columns.type], Nothing] = {
         type ValueTypes = InverseMap[columns.type]
 
-        val insert = new Insert[ValueTypes, Nothing]()
+        val insert = new Insert[ValueTypes, Nothing](sqlInsert)
         insert.sqlInsert.table = Some(SqlIdentTable(table._tableName))
-        insert.sqlInsert.columns.addAll(columns.toArray.map {
-            case t: TableColumnExpr[_, _] => getExpr(col(t.column))
-            case p: PrimaryKeyColumnExpr[_, _] => getExpr(col(p.column))
-        })
+        insert.sqlInsert.columns.addAll {
+            columns.toArray.map {
+                case t: TableColumnExpr[_, _] => getExpr(col(t.column))
+                case p: PrimaryKeyColumnExpr[_, _] => getExpr(col(p.column))
+            }
+        }
 
         insert
     }
@@ -54,12 +51,12 @@ class Insert[T <: Tuple, S <: InsertState] extends ReviseQuery {
             sqlInsert.values.addOne(row)
         }
 
-        this.asInstanceOf[Insert[T, InsertValues]]
+        new Insert[T, InsertValues](sqlInsert)
     }
 
     infix def select[SS >: S <: InsertSelect](s: SelectQuery[T, _]): Insert[T, InsertSelect] = {
         sqlInsert.query = Some(s.getSelect)
-        this.asInstanceOf[Insert[T, InsertSelect]]
+        new Insert[T, InsertSelect](sqlInsert)
     }
 
     override def sql(db: DB): String = toSqlString(sqlInsert, db)
