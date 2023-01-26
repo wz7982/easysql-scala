@@ -59,7 +59,7 @@ def jdbcQueryToArray(conn: Connection, sql: String): List[Array[Any]] = {
 
         while (rs.next()) {
             val rowList = (1 to metadata.getColumnCount()).toArray.map { it =>
-                val data = rs.getObject(it) match {
+                val data: Any = rs.getObject(it) match {
                     case null => null
                     case b: java.math.BigDecimal => BigDecimal(b)
                     case l: java.math.BigInteger => l.longValue()
@@ -73,7 +73,7 @@ def jdbcQueryToArray(conn: Connection, sql: String): List[Array[Any]] = {
                     case d: java.util.Date => d
                     case d @ _ => d.toString()
                 }
-                data.asInstanceOf[Any]
+                data
             }
             result.addOne(rowList)
         }

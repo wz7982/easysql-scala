@@ -51,7 +51,7 @@ def visitExpr(query: Expr[_]): SqlExpr = {
 
 def visitColumnExpr(column: ColumnExpr[_]): SqlExpr = {
     if (column.column.contains(".")) {
-        val split = column.column.split("\\.").asInstanceOf[Array[String]]
+        val split = column.column.split("\\.")
         if (split.last.contains("*")) {
             SqlAllColumnExpr(Some(split(0)))
         } else {
@@ -74,7 +74,11 @@ def getExpr(value: SqlDataType | Expr[_] | SelectQuery[_, _]): SqlExpr = {
     value match {
         case null => SqlNullExpr()
         case string: String => SqlCharExpr(string)
-        case number: SqlNumberType => SqlNumberExpr(number.asInstanceOf[Number])
+        case int: Int => SqlNumberExpr(int)
+        case long: Long => SqlNumberExpr(long)
+        case float: Float => SqlNumberExpr(float)
+        case double: Double => SqlNumberExpr(double)
+        case decimal: BigDecimal => SqlNumberExpr(decimal)
         case boolean: Boolean => SqlBooleanExpr(boolean)
         case date: Date => SqlDateExpr(date)
         case expr: Expr[_] => visitExpr(expr)
