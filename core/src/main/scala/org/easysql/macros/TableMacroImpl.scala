@@ -7,7 +7,7 @@ import scala.quoted.{Expr, Quotes, Type}
 import scala.annotation.experimental
 import scala.collection.mutable.ListBuffer
 
-def aliasMacroImpl[E <: Product, T <: TableSchema[E]](table: Expr[T])(using quotes: Quotes, tt: Type[T], et: Type[E]): Expr[T] = {
+def aliasMacroImpl[E <: Product, T <: TableSchema[E]](table: Expr[T])(using quotes: Quotes, tt: Type[T], et: Type[E]): Expr[TableSchema[E]] = {
     import quotes.reflect.*
 
     val className = TypeRepr.of[T].typeSymbol.fullName
@@ -19,7 +19,7 @@ def aliasMacroImpl[E <: Product, T <: TableSchema[E]](table: Expr[T])(using quot
         new TableSchema[E] {
             override val _tableName: String = $table._tableName
             override val _cols = $table._cols
-        }.asInstanceOf[T]
+        }
     }
 }
 

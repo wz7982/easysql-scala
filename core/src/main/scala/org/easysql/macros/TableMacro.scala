@@ -2,7 +2,7 @@ package org.easysql.macros
 
 import org.easysql.dsl.{TableColumnExpr, TableSchema}
 
-inline def aliasMacro[E <: Product, T <: TableSchema[E]](table: T): T = ${ aliasMacroImpl[E, T]('table) }
+inline def aliasMacro[E <: Product, T <: TableSchema[E]](table: T): TableSchema[E] = ${ aliasMacroImpl[E, T]('table) }
 
 inline def fetchTableNameMacro[T <: Product]: String = ${ fetchTableNameMacroImpl[T] }
 
