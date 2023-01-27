@@ -41,24 +41,28 @@ abstract class SqlVisitor {
         query match {
             case select: SqlSelect => visitSqlSelect(select)
             case SqlUnionSelect(left, unionType, right) =>
-                if (!left.isInstanceOf[SqlUnionSelect]) {
-                    sqlBuilder.append("(")
+                left match {
+                    case _: SqlUnionSelect =>
+                    case _ => sqlBuilder.append("(")
                 }
                 visitSqlSelectQuery(left)
-                if (!left.isInstanceOf[SqlUnionSelect]) {
-                    sqlBuilder.append(")")
+                left match {
+                    case _: SqlUnionSelect =>
+                    case _ => sqlBuilder.append(")")
                 }
                 sqlBuilder.append("\n")
                 printSpace(spaceNum)
                 sqlBuilder.append(unionType.unionType)
                 sqlBuilder.append("\n")
                 printSpace(spaceNum)
-                if (!right.isInstanceOf[SqlUnionSelect]) {
-                    sqlBuilder.append("(")
+                right match {
+                    case _: SqlUnionSelect =>
+                    case _ => sqlBuilder.append("(")
                 }
                 visitSqlSelectQuery(right)
-                if (!right.isInstanceOf[SqlUnionSelect]) {
-                    sqlBuilder.append(")")
+                right match {
+                    case _: SqlUnionSelect =>
+                    case _ => sqlBuilder.append(")")
                 }
             case values: SqlValuesSelect => visitSqlValuesSelect(values)
             case withSelect: SqlWithSelect => visitSqlWithSelect(withSelect)
@@ -282,16 +286,17 @@ abstract class SqlVisitor {
             visitSqlExpr(sqlExpr.left)
         }
 
-        if (sqlExpr.right.isInstanceOf[SqlNullExpr]) {
-            if (sqlExpr.operator == SqlBinaryOperator.EQ) {
-                sqlBuilder.append(" IS ")
-            } else if (sqlExpr.operator == SqlBinaryOperator.NE) {
-                sqlBuilder.append(" IS NOT ")
-            } else {
-                sqlBuilder.append(s" ${sqlExpr.operator.operator} ")
+        sqlExpr.right match {
+            case SqlNullExpr() => {
+                if (sqlExpr.operator == SqlBinaryOperator.EQ) {
+                    sqlBuilder.append(" IS ")
+                } else if (sqlExpr.operator == SqlBinaryOperator.NE) {
+                    sqlBuilder.append(" IS NOT ")
+                } else {
+                    sqlBuilder.append(s" ${sqlExpr.operator.operator} ")
+                }
             }
-        } else {
-            sqlBuilder.append(s" ${sqlExpr.operator.operator} ")
+            case _ => sqlBuilder.append(s" ${sqlExpr.operator.operator} ")
         }
 
         val visitRight = needParentheses(sqlExpr, sqlExpr.right)
@@ -456,12 +461,14 @@ abstract class SqlVisitor {
                 sqlBuilder.append("\n")
                 printSpace(spaceNum)
                 sqlBuilder.append(s"${table.joinType.joinType} ")
-                if (table.right.isInstanceOf[SqlJoinTable]) {
-                    sqlBuilder.append("(")
+                table.right match {
+                    case _: SqlJoinTable => sqlBuilder.append("(")
+                    case _ =>
                 }
                 visitSqlTable(table.right)
-                if (table.right.isInstanceOf[SqlJoinTable]) {
-                    sqlBuilder.append(")")
+                table.right match {
+                    case _: SqlJoinTable => sqlBuilder.append(")")
+                    case _ =>
                 }
 
                 table.on.foreach { it =>
