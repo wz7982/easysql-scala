@@ -46,15 +46,8 @@ abstract class DBOperator[F[_]](val db: DB)(using m: DBMonad[F]) {
 
         val sql = query.sql(db)
         logger.apply(s"execute sql: ${sql.replaceAll("\n", " ")}")
-
-        inline erasedValue[T] match {
-            case _: Tuple1[t] =>
-                querySql(sql).map { datum =>
-                    datum.map(i => bindSelect[Option[ResultType[T]]](0, i)).filter(_.nonEmpty).map(_.get)
-                }          
-            case _ => 
-                querySql(sql).map(datum => datum.map(i => bindSelect[ResultType[T]](0, i)))
-        }
+        
+        querySql(sql).map(datum => datum.map(i => bindSelect[ResultType[T]](0, i)))
     }
 
     inline def findMonad[T <: Tuple](query: SelectQuery[T, _])(using logger: Logger): F[Option[ResultType[T]]] = {
@@ -66,14 +59,7 @@ abstract class DBOperator[F[_]](val db: DB)(using m: DBMonad[F]) {
         }
         logger.apply(s"execute sql: ${sql.replaceAll("\n", " ")}")
 
-        inline erasedValue[T] match {
-            case _: Tuple1[t] => 
-                querySql(sql).map { datum => 
-                    datum.map(i => bindSelect[Option[ResultType[T]]](0, i)).filter(_.nonEmpty).map(_.get).headOption
-                }
-            case _ => 
-                querySql(sql).map(datum => datum.headOption.map(i => bindSelect[ResultType[T]](0, i)))
-        }
+        querySql(sql).map(datum => datum.headOption.map(i => bindSelect[ResultType[T]](0, i)))
     }
     
     inline def pageMonad[T <: Tuple](query: SelectQuery[T, _])(pageSize: Int, pageNum: Int, queryCount: Boolean)(using logger: Logger): F[Page[ResultType[T]]] = {

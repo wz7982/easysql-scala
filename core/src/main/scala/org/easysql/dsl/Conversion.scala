@@ -82,7 +82,7 @@ type ExprType[T <: Tuple] = T match {
 }
 
 type ResultType[T <: Tuple] = T match {
-    case Tuple1[t] => t
+    case Tuple1[t] => Option[t]
     case _ => MapOption[T]
 }
 
