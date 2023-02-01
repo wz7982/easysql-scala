@@ -38,6 +38,9 @@ class JdbcTransaction(override val db: DB, conn: Connection) extends DBTransacti
     inline def query[T <: Tuple](query: SelectQuery[T, _])(using logger: Logger): List[ResultType[T]] = 
         queryMonad(query).get
 
+    inline def querySkipNullRows[T](query: SelectQuery[Tuple1[T], _])(using logger: Logger): List[T] =
+        querySkipNullRowsMonad(query).get
+
     inline def find[T <: Tuple](query: SelectQuery[T, _])(using logger: Logger): Option[ResultType[T]] =
         findMonad(query).get
 
@@ -55,6 +58,8 @@ inline def runAndReturnKey(query: Insert[_, _])(using logger: Logger, t: JdbcTra
 inline def query(sql: String)(using logger: Logger, t: JdbcTransaction): List[Map[String, Any]] = t.query(sql)
 
 inline def query[T <: Tuple](query: SelectQuery[T, _])(using logger: Logger, t: JdbcTransaction): List[ResultType[T]] = t.query(query)
+
+inline def querySkipNullRows[T](query: SelectQuery[Tuple1[T], _])(using logger: Logger, t: JdbcTransaction): List[T] = t.querySkipNullRows(query)
 
 inline def find[T <: Tuple](query: SelectQuery[T, _])(using logger: Logger, t: JdbcTransaction): Option[ResultType[T]] = t.find(query)
 
