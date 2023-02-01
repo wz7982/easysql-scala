@@ -25,8 +25,11 @@ object Test extends App {
     val q = select (tt) from tt
 
     
-    val data = db.query(q)
-    val data1 = db.find(q)
+    val data: List[Option[TestTable]] = db.query(q)
+
+    val data1: List[TestTable] = db.querySkipNullRows(q)
+
+    val data2 = db.find(q)
 }
 
 @Table("test_table")

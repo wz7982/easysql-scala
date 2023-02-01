@@ -44,6 +44,9 @@ class JdbcConnection(override val db: DB, dataSource: DataSource) extends DBConn
     inline def query[T <: Tuple](query: SelectQuery[T, _])(using logger: Logger): List[ResultType[T]] = 
         queryMonad(query).get
 
+    inline def querySkipNullRows[T](query: SelectQuery[Tuple1[T], _])(using logger: Logger): List[T] =
+        querySkipNullRowsMonad(query).get
+
     inline def find[T <: Tuple](query: SelectQuery[T, _])(using logger: Logger): Option[ResultType[T]] =
         findMonad(query).get
 

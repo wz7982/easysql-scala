@@ -42,17 +42,20 @@ abstract class DBOperator[F[_]](val db: DB)(using m: DBMonad[F]) {
     }
 
     inline def queryMonad[T <: Tuple](query: SelectQuery[T, _])(using logger: Logger): F[List[ResultType[T]]] = {
-        import scala.compiletime.erasedValue
-
         val sql = query.sql(db)
         logger.apply(s"execute sql: ${sql.replaceAll("\n", " ")}")
         
         querySql(sql).map(datum => datum.map(i => bindSelect[ResultType[T]](0, i)))
     }
 
-    inline def findMonad[T <: Tuple](query: SelectQuery[T, _])(using logger: Logger): F[Option[ResultType[T]]] = {
-        import scala.compiletime.erasedValue
+    inline def querySkipNullRowsMonad[T](query: SelectQuery[Tuple1[T], _])(using logger: Logger): F[List[T]] = {
+        val sql = query.sql(db)
+        logger.apply(s"execute sql: ${sql.replaceAll("\n", " ")}")
 
+        querySql(sql).map(datum => datum.map(i => bindSelect[Option[T]](0, i)).filter(_.nonEmpty).map(_.get))
+    }
+
+    inline def findMonad[T <: Tuple](query: SelectQuery[T, _])(using logger: Logger): F[Option[ResultType[T]]] = {
         val sql = inline query match {
             case s: Select[_, _] => s.limit(1).sql(db)
             case _ => query.sql(db)
