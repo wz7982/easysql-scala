@@ -137,10 +137,10 @@ case class CaseExpr[T <: SqlDataType](branches: List[CaseBranch[_]], default: Ex
     infix def elseIs(value: T): CaseExpr[T] =
         copy(default = LiteralExpr(value))
 
-    infix def elesIs(value: Expr[T]): CaseExpr[T] =
+    infix def elseIs(value: Expr[T]): CaseExpr[T] =
         copy(default = value)
 
-    infix def elesIs(value: Option[T]): CaseExpr[T] =
+    infix def elseIs(value: Option[T]): CaseExpr[T] =
         copy(default = value.map(LiteralExpr(_)).getOrElse(NullExpr))
 }
 
