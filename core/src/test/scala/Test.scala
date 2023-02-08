@@ -1,12 +1,11 @@
-import org.easysql.dsl.*
-import org.easysql.query.delete.Delete
-import org.easysql.query.insert.Insert
-import org.easysql.query.select.*
-import org.easysql.database.DB
-import org.easysql.macros.*
-import org.easysql.ast.SqlDataType
-import org.easysql.ast.table.SqlJoinType
-import org.easysql.util.*
+import easysql.dsl.*
+import easysql.query.nonselect.*
+import easysql.query.select.*
+import easysql.database.DB
+import easysql.macros.*
+import easysql.ast.SqlDataType
+import easysql.ast.table.SqlJoinType
+import easysql.util.*
 
 import scala.compiletime.ops.any.*
 import scala.compiletime.ops.int.+
@@ -86,7 +85,7 @@ object Test extends App {
 
 @Table
 case class TestTable(
-    @PrimaryKey(generator = () => UUID.randomUUID().toString) id: String,
+    @PrimaryKeyGenerator("id", () => UUID.randomUUID().toString) id: String,
     name: Option[String]
 )
 
