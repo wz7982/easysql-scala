@@ -8,17 +8,17 @@ import scala.language.dynamics
 import scala.deriving.*
 
 sealed trait AnyTable {
-    infix def join(table: AnyTable): JoinTable = JoinTable(this, SqlJoinType.JOIN, table)
+    infix def join(table: AnyTable): JoinTable = JoinTable(this, SqlJoinType.JOIN, table, None)
 
-    infix def leftJoin(table: AnyTable): JoinTable = JoinTable(this, SqlJoinType.LEFT_JOIN, table)
+    infix def leftJoin(table: AnyTable): JoinTable = JoinTable(this, SqlJoinType.LEFT_JOIN, table, None)
 
-    infix def rightJoin(table: AnyTable): JoinTable = JoinTable(this, SqlJoinType.RIGHT_JOIN, table)
+    infix def rightJoin(table: AnyTable): JoinTable = JoinTable(this, SqlJoinType.RIGHT_JOIN, table, None)
 
-    infix def innerJoin(table: AnyTable): JoinTable = JoinTable(this, SqlJoinType.INNER_JOIN, table)
+    infix def innerJoin(table: AnyTable): JoinTable = JoinTable(this, SqlJoinType.INNER_JOIN, table, None)
 
-    infix def crossJoin(table: AnyTable): JoinTable = JoinTable(this, SqlJoinType.CROSS_JOIN, table)
+    infix def crossJoin(table: AnyTable): JoinTable = JoinTable(this, SqlJoinType.CROSS_JOIN, table, None)
 
-    infix def fullJoin(table: AnyTable): JoinTable = JoinTable(this, SqlJoinType.FULL_JOIN, table)
+    infix def fullJoin(table: AnyTable): JoinTable = JoinTable(this, SqlJoinType.FULL_JOIN, table, None)
 }
 
 class TableSchema[E <: Product](
@@ -49,7 +49,7 @@ case class JoinTable(
     left: AnyTable, 
     joinType: SqlJoinType, 
     right: AnyTable, 
-    onCondition: Option[Expr[_]] = None
+    onCondition: Option[Expr[Boolean]]
 ) extends AnyTable {
-    infix def on(expr: Expr[_]): JoinTable = this.copy(onCondition = Some(expr))
+    infix def on(expr: Expr[Boolean]): JoinTable = this.copy(onCondition = Some(expr))
 }
