@@ -1,0 +1,24 @@
+package easysql.printer
+
+import easysql.ast.limit.SqlLimit
+import easysql.ast.statement.SqlStatement.SqlUpsert
+
+class SqlitePrinter extends SqlPrinter {
+    override def printLimit(limit: SqlLimit): Unit = {
+        sqlBuilder.append(s"LIMIT ${limit.offset}, ${limit.limit}")
+    }
+
+    override def printUpsert(upsert: SqlUpsert): Unit = {
+        sqlBuilder.append("INSERT OR REPLACE INTO ")
+        printTable(upsert.table.get)
+
+        sqlBuilder.append(" (")
+        printList(upsert.columns)(printExpr)
+        sqlBuilder.append(")")
+
+        sqlBuilder.append(" VALUES")
+        sqlBuilder.append(" (")
+        printList(upsert.value)(printExpr)
+        sqlBuilder.append(")")
+    }
+}

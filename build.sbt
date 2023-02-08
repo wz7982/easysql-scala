@@ -1,7 +1,7 @@
 name := "easysql-scala"
 
 lazy val commonSettings = Seq(
-    organization := "org.easysql",
+    organization := "easysql",
     version := "1.0.0",
     scalaVersion := "3.2.1"
 )

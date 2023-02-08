@@ -1,5 +1,5 @@
-import org.easysql.dsl
-import org.easysql.dsl.*
+import easysql.dsl
+import easysql.dsl.*
 
 import java.util.Date
 
