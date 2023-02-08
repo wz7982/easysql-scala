@@ -111,6 +111,8 @@ case class LiteralExpr[T <: SqlDataType](value: T) extends Expr[T]
 case object NullExpr extends Expr[Nothing]
 
 case class BinaryExpr[T <: SqlDataType](left: Expr[_], op: SqlBinaryOperator, right: Expr[_]) extends Expr[T] {
+    infix def thenIs(value: T): CaseBranch[T] = CaseBranch(this, LiteralExpr(value))
+
     infix def thenIs(value: Expr[T]): CaseBranch[T] = CaseBranch(this, value)
 }
 
@@ -132,6 +134,9 @@ case class AggExpr[T <: SqlDataType](
     }
 
 case class CaseExpr[T <: SqlDataType](branches: List[CaseBranch[_]], default: Expr[_]) extends Expr[T] {
+    infix def elseIs(value: T): CaseExpr[T] =
+        copy(default = LiteralExpr(value))
+
     infix def elesIs(value: Expr[T]): CaseExpr[T] =
         copy(default = value)
 
