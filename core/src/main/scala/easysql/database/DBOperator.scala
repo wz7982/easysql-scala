@@ -43,6 +43,7 @@ trait DBOperator[F[_]](val db: DB)(using m: DBMonad[F]) {
 
     inline def queryMonad[T <: Tuple](query: Query[T, _])(using logger: Logger): F[List[ResultType[T]]] = {
         val sql = query.sql(db)
+        logger.apply(s"execute sql: \n$sql")
         
         querySql(sql).map(datum => datum.map(i => bind[ResultType[T]](0, i)))
     }
