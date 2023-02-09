@@ -59,7 +59,7 @@ trait DBOperator[F[_]](val db: DB)(using m: DBMonad[F]) {
             m.pure(Nil)
         } else {
             val offset = if pageNumber <= 1 then 0 else pageSize * (pageNumber - 1)
-            val pageQuery = query.limit(pageSize).offset(pageNumber)
+            val pageQuery = query.limit(pageSize).offset(offset)
             queryMonad(pageQuery)
         }
 
