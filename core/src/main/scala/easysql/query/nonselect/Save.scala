@@ -39,5 +39,6 @@ class Save(
 }
 
 object Save {
-    def apply(): Save = new Save(SqlStatement.SqlUpsert(None, Nil, Nil, Nil, Nil))
+    def apply(): Save = 
+        new Save(SqlStatement.SqlUpsert(None, Nil, Nil, Nil, Nil))
 }

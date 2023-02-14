@@ -15,5 +15,6 @@ class Truncate(
 }
 
 object Truncate {
-    def apply(): Truncate = new Truncate(SqlStatement.SqlTruncate(None))
+    def apply(): Truncate = 
+        new Truncate(SqlStatement.SqlTruncate(None))
 }

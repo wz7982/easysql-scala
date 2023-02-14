@@ -62,7 +62,8 @@ class Insert[T <: Tuple, S <: InsertState](
 }
 
 object Insert {
-    def apply(): Insert[EmptyTuple, Nothing] = new Insert(SqlStatement.SqlInsert(None, Nil, Nil, None))
+    def apply(): Insert[EmptyTuple, Nothing] = 
+        new Insert(SqlStatement.SqlInsert(None, Nil, Nil, None))
 }
 
 sealed trait InsertState

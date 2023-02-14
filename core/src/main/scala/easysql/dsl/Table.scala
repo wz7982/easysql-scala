@@ -25,7 +25,7 @@ class TableSchema[E <: Product](
     private[easysql] val __tableName: String,
     private[easysql] val __aliasName: Option[String],
     private[easysql] val __cols: List[ColumnExpr[_, _]]
-) extends AnyTable with Dynamic with SelectItem[E] {
+) extends AnyTable with Dynamic {
     transparent inline def selectDynamic[N <: String & Singleton](inline name: N)(using m: Mirror.ProductOf[E]) = {
         val tableName = __aliasName.getOrElse(__tableName)
         inline exprMeta[E](name) match {
@@ -51,5 +51,6 @@ case class JoinTable(
     right: AnyTable, 
     onCondition: Option[Expr[Boolean]]
 ) extends AnyTable {
-    infix def on(expr: Expr[Boolean]): JoinTable = this.copy(onCondition = Some(expr))
+    infix def on(expr: Expr[Boolean]): JoinTable = 
+        copy(onCondition = Some(expr))
 }

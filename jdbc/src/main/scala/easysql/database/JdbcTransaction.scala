@@ -50,18 +50,26 @@ class JdbcTransaction(override val db: DB, conn: Connection) extends DBOperator[
         fetchCountMonad(query).get
 }
 
-def run(query: NonSelect)(using logger: Logger, t: JdbcTransaction): Int = t.run(query)
+def run(query: NonSelect)(using logger: Logger, t: JdbcTransaction): Int = 
+    t.run(query)
 
-def runAndReturnKey(query: Insert[_, _])(using logger: Logger, t: JdbcTransaction): List[Long] = t.runAndReturnKey(query)
+def runAndReturnKey(query: Insert[_, _])(using logger: Logger, t: JdbcTransaction): List[Long] = 
+    t.runAndReturnKey(query)
 
-def query(sql: String)(using logger: Logger, t: JdbcTransaction): List[Map[String, Any]] = t.query(sql)
+def query(sql: String)(using logger: Logger, t: JdbcTransaction): List[Map[String, Any]] = 
+    t.query(sql)
 
-inline def query[T <: Tuple](query: Query[T, _])(using logger: Logger, t: JdbcTransaction): List[ResultType[T]] = t.query(query)
+inline def query[T <: Tuple](query: Query[T, _])(using logger: Logger, t: JdbcTransaction): List[ResultType[T]] = 
+    t.query(query)
 
-inline def querySkipNullRows[T](query: Query[Tuple1[T], _])(using logger: Logger, t: JdbcTransaction): List[T] = t.querySkipNoneRows(query)
+inline def querySkipNullRows[T](query: Query[Tuple1[T], _])(using logger: Logger, t: JdbcTransaction): List[T] = 
+    t.querySkipNoneRows(query)
 
-inline def find[T <: Tuple](query: Select[T, _])(using logger: Logger, t: JdbcTransaction): Option[ResultType[T]] = t.find(query)
+inline def find[T <: Tuple](query: Select[T, _])(using logger: Logger, t: JdbcTransaction): Option[ResultType[T]] = 
+    t.find(query)
 
-inline def page[T <: Tuple](query: Select[T, _])(pageSize: Int, pageNum: Int, queryCount: Boolean)(using logger: Logger, t: JdbcTransaction): Page[ResultType[T]] = t.page(query)(pageSize, pageNum, queryCount)
+inline def page[T <: Tuple](query: Select[T, _])(pageSize: Int, pageNum: Int, queryCount: Boolean)(using logger: Logger, t: JdbcTransaction): Page[ResultType[T]] = 
+    t.page(query)(pageSize, pageNum, queryCount)
 
-def fetchCount(query: Select[_, _])(using logger: Logger, t: JdbcTransaction): Long = t.fetchCount(query)
+def fetchCount(query: Select[_, _])(using logger: Logger, t: JdbcTransaction): Long = 
+    t.fetchCount(query)

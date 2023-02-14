@@ -8,7 +8,6 @@ import scala.util.control.Breaks
 def entityOffsetMacro[T](using q: Quotes, tpe: Type[T]): Expr[Int] = {
     import q.reflect.*
 
-    val tpr = TypeRepr.of[T]
     val size = TypeTree.of[T].symbol.declaredFields.size
 
     Expr(size)

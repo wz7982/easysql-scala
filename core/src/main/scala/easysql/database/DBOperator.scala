@@ -44,15 +44,23 @@ trait DBOperator[F[_]](val db: DB)(using m: DBMonad[F]) {
     inline def queryMonad[T <: Tuple](query: Query[T, _])(using logger: Logger): F[List[ResultType[T]]] = {
         val sql = query.sql(db)
         logger.apply(s"execute sql: \n$sql")
-        
-        querySql(sql).map(datum => datum.map(i => bind[ResultType[T]](0, i)))
+
+        for {
+            data <- querySql(sql)
+        } yield data.map(i => bind[ResultType[T]](0, i))
     }
 
-    inline def querySkipNoneRowsMonad[T](query: Query[Tuple1[T], _])(using logger: Logger): F[List[T]] =
-        queryMonad(query).map(data => data.filter(_.nonEmpty).map(_.get))
+    inline def querySkipNoneRowsMonad[T](query: Query[Tuple1[T], _])(using logger: Logger): F[List[T]] = {
+        for {
+            data <- queryMonad(query)
+        } yield data.filter(_.nonEmpty).map(_.get)
+    }  
 
-    inline def findMonad[T <: Tuple](query: Select[T, _])(using logger: Logger): F[Option[ResultType[T]]] =
-        queryMonad(query.limit(1)).map(data => data.headOption)
+    inline def findMonad[T <: Tuple](query: Select[T, _])(using logger: Logger): F[Option[ResultType[T]]] = {
+        for {
+            data <- queryMonad(query.limit(1))
+        } yield data.headOption
+    }
     
     inline def pageMonad[T <: Tuple](query: Select[T, _])(pageSize: Int, pageNumber: Int, queryCount: Boolean)(using logger: Logger): F[Page[ResultType[T]]] = {
         val data = if (pageSize == 0) {
@@ -98,22 +106,28 @@ object DBOperator {
     import scala.concurrent.ExecutionContext
 
     given dbMonadId: DBMonad[Id] with {
-        def pure[T](x: T): Id[T] = Id(x)
+        def pure[T](x: T): Id[T] = 
+            Id(x)
 
         extension [T] (x: Id[T]) {
-            def map[R](f: T => R): Id[R] = x.map(f)
+            def map[R](f: T => R): Id[R] = 
+                x.map(f)
 
-            def flatMap[R](f: T => Id[R]): Id[R] = x.flatMap(f)
+            def flatMap[R](f: T => Id[R]): Id[R] = 
+                x.flatMap(f)
         }
     }
 
     given dbMoandFuture(using ExecutionContext): DBMonad[Future] with {
-        def pure[T](x: T): Future[T] = Future(x)
+        def pure[T](x: T): Future[T] = 
+            Future(x)
 
         extension [T] (x: Future[T]) {
-            def map[R](f: T => R): Future[R] = x.map(f)
+            def map[R](f: T => R): Future[R] = 
+                x.map(f)
 
-            def flatMap[R](f: T => Future[R]): Future[R] = x.flatMap(f)
+            def flatMap[R](f: T => Future[R]): Future[R] = 
+                x.flatMap(f)
         }
     }
 }
@@ -129,11 +143,14 @@ trait DBMonad[F[_]] extends DBFunctor[F] {
 }
 
 case class Id[T](x: T) {
-    def get: T = x
+    def get: T = 
+        x
 
-    def map[R](f: T => R): Id[R] = Id(f(x))
+    def map[R](f: T => R): Id[R] = 
+        Id(f(x))
 
-    def flatMap[R](f: T => Id[R]): Id[R] = f(x)
+    def flatMap[R](f: T => Id[R]): Id[R] = 
+        f(x)
 }
 
 type Logger = String => Unit

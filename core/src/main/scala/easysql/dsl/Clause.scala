@@ -48,11 +48,13 @@ inline def asTable[T <: Product]: TableSchema[T] = {
 }
 
 extension [T <: SqlDataType] (expr: ColumnExpr[T, _] | IdentExpr[T]) {
-    def to[V <: UpdateType[T]](value: Expr[V]): (ColumnExpr[T, _] | IdentExpr[T], Expr[V]) = (expr, value)
+    def to[V <: UpdateType[T]](value: Expr[V]): (ColumnExpr[T, _] | IdentExpr[T], Expr[V]) = 
+        (expr, value)
 }
 
 object AllColumn {
-    def * : Expr[Nothing] = AllColumnExpr(None)
+    def * : Expr[Nothing] = 
+        AllColumnExpr(None)
 }
 
 def select[U <: Tuple](items: U): Select[InverseMap[U], AliasNames[U]] =

@@ -24,9 +24,11 @@ class With[T <: Tuple](
 }
 
 object With {
-    def apply(): With[EmptyTuple] = new With[EmptyTuple](SqlStatement.SqlWith(Nil, false, None))
+    def apply(): With[EmptyTuple] = 
+        new With[EmptyTuple](SqlStatement.SqlWith(Nil, false, None))
 
     given queryToSql[T <: Tuple]: ToSql[With[T]] with {
-        extension (q: With[T]) def sql(db: DB) = statementToString(q.ast, db)
+        extension (q: With[T]) def sql(db: DB) = 
+            statementToString(q.ast, db)
     }
 }

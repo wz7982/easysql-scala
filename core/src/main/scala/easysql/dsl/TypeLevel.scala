@@ -10,7 +10,9 @@ import scala.Tuple.Concat
 import java.util.Date
 
 type InverseMap[X <: Tuple] <: Tuple = X match {
-    case SelectItem[x] *: t => x *: InverseMap[t]
+    case Expr[x] *: t => x *: InverseMap[t]
+    case AliasExpr[x, _] *: t => x *: InverseMap[t]
+    case TableSchema[x] *: t => x *: InverseMap[t]
     case EmptyTuple => EmptyTuple
 }
 
