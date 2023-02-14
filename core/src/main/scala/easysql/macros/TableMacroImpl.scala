@@ -1,6 +1,5 @@
 package easysql.macros
 
-import easysql.dsl.{ColumnExpr, TableSchema}
 import easysql.util.*
 
 import scala.quoted.{Expr, Quotes, Type}

@@ -38,7 +38,8 @@ def camelListToSnakeList(s: List[Char]): List[Char] = s match {
     case Nil => Nil
 }
 
-def camelToSnake(s: String): String = camelListToSnakeList(s.toList).mkString
+def camelToSnake(s: String): String = 
+    camelListToSnakeList(s.toList).mkString
 
 def exprToSqlExpr(expr: Expr[_]): SqlExpr = expr match {
     case NullExpr => 

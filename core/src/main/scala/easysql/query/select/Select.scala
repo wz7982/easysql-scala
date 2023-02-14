@@ -253,8 +253,8 @@ object Select {
     def apply(): Select[EmptyTuple, EmptyTuple] =
         new Select(SqlQuery.SqlSelect(false, Nil, None, None, Nil, Nil, false, None, None), Map(), None)
 
-    given selectToCountSql[T <: Tuple, A <: Tuple]: ToCountSql[Select[T, A]] with {
-        extension (s: Select[T, A]) def countSql(db: DB): String = {
+    given selectToCountSql: ToCountSql[Select[_, _]] with {
+        extension (s: Select[_, _]) def countSql(db: DB): String = {
             val astCopy = 
                 s.ast.copy(select = SqlSelectItem(exprToSqlExpr(count()), Some("count")) :: Nil, limit = None, orderBy = Nil)
 
@@ -262,8 +262,8 @@ object Select {
         }
     }
 
-    given selectToPageSql[T <: Tuple, A <: Tuple]: ToPageSql[Select[T, A]] with {
-        extension (s: Select[T, A]) def pageSql(pageSize: Int, pageNumber: Int)(db: DB): String = {
+    given selectToPageSql: ToPageSql[Select[_, _]] with {
+        extension (s: Select[_, _]) def pageSql(pageSize: Int, pageNumber: Int)(db: DB): String = {
             val offset = if pageNumber <= 1 then 0 else pageSize * (pageNumber - 1)
             val limit = SqlLimit(pageSize, offset)
             val astCopy = s.ast.copy(limit = Some(limit))

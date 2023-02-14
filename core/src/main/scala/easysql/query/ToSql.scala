@@ -6,7 +6,8 @@ trait ToSql[T] {
     extension (x: T) {
         def sql(db: DB): String
 
-        def toSql(using db: DB): String = sql(db)
+        def toSql(using db: DB): String = 
+            sql(db)
     }
 }
 
@@ -14,7 +15,8 @@ trait ToCountSql[T] {
     extension (x: T) {
         def countSql(db: DB): String
 
-        def countToSql(using db: DB): String = countSql(db)
+        def countToSql(using db: DB): String = 
+            countSql(db)
     }
 }
 

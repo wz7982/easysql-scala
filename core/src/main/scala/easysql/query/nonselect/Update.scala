@@ -74,5 +74,6 @@ class Update(
 }
 
 object Update {
-    def apply(): Update = new Update(SqlStatement.SqlUpdate(None, Nil, None))
+    def apply(): Update = 
+        new Update(SqlStatement.SqlUpdate(None, Nil, None))
 }

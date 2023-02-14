@@ -44,5 +44,6 @@ class Delete(
 }
 
 object Delete {
-    def apply(): Delete = new Delete(SqlStatement.SqlDelete(None, None))
+    def apply(): Delete = 
+        new Delete(SqlStatement.SqlDelete(None, None))
 }

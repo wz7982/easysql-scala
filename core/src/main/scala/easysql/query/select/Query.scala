@@ -84,11 +84,13 @@ trait Query[T <: Tuple, A <: Tuple](
 
 object Query {
     extension [T <: SqlDataType] (query: Query[Tuple1[T], _]) {
-        def toExpr: SubQueryExpr[T] = SubQueryExpr(query)
+        def toExpr: SubQueryExpr[T] = 
+            SubQueryExpr(query)
     }
 
-    given queryToSql[T <: Tuple, A <: Tuple]: ToSql[Query[T, A]] with {
-        extension (q: Query[T, A]) def sql(db: DB) = queryToString(q.ast, db)
+    given queryToSql: ToSql[Query[_, _]] with {
+        extension (q: Query[_, _]) def sql(db: DB) = 
+            queryToString(q.ast, db)
     }
 }
 

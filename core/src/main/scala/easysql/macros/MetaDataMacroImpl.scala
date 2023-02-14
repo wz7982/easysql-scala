@@ -1,6 +1,5 @@
 package easysql.macros
 
-import easysql.dsl.TableSchema
 import easysql.ast.SqlDataType
 import easysql.util.*
 

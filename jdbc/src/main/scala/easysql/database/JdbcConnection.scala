@@ -11,8 +11,6 @@ import javax.sql.DataSource
 import java.sql.Connection
 
 class JdbcConnection(override val db: DB, dataSource: DataSource) extends DBOperator[Id](db) {
-    def getDB: DB = db
-   
     private[database] override def runSql(sql: String): Id[Int] = 
         Id(exec(jdbcExec(_, sql)))
 
@@ -93,7 +91,8 @@ class JdbcConnection(override val db: DB, dataSource: DataSource) extends DBOper
         }
     }
 
-    def getConnection: Connection = dataSource.getConnection.nn
+    def getConnection: Connection = 
+        dataSource.getConnection.nn
 
     private def exec[T](handler: Connection => T): T = {
         val conn = getConnection
