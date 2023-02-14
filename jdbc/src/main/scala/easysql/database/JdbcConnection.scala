@@ -6,6 +6,7 @@ import easysql.jdbc.*
 import easysql.query.select.*
 import easysql.query.nonselect.*
 import easysql.macros.*
+import easysql.query.ToSql
 
 import javax.sql.DataSource
 import java.sql.Connection
@@ -26,7 +27,7 @@ class JdbcConnection(override val db: DB, dataSource: DataSource) extends DBOper
     private[database] override def querySqlCount(sql: String): Id[Long] = 
         Id(exec(jdbcQuery(_, sql).head.head._2.toString().toLong))
 
-    def run(query: NonSelect)(using logger: Logger): Int =
+    def run[T : NonSelect : ToSql](query: T)(using logger: Logger): Int =
         runMonad(query).get
 
     def runAndReturnKey(query: Insert[_, _])(using logger: Logger): List[Long] =

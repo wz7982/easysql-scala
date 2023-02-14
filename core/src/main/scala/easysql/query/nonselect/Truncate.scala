@@ -3,10 +3,11 @@ package easysql.query.nonselect
 import easysql.ast.statement.SqlStatement
 import easysql.ast.table.SqlTable.SqlIdentTable
 import easysql.dsl.TableSchema
+import easysql.query.ToSql
+import easysql.database.DB
+import easysql.util.statementToString
 
-class Truncate(
-    private[easysql] override val ast: SqlStatement.SqlTruncate
-) extends NonSelect(ast) {
+class Truncate(val ast: SqlStatement.SqlTruncate) {
     def truncate(table: TableSchema[_]): Truncate = {
         val truncateTable = Some(new SqlIdentTable(table.__tableName, None))
 
@@ -17,4 +18,18 @@ class Truncate(
 object Truncate {
     def apply(): Truncate = 
         new Truncate(SqlStatement.SqlTruncate(None))
+
+    given truncateNonSelect: NonSelect[Truncate] with {
+        extension (x: Truncate) {
+            def ast: SqlStatement =
+                x.ast
+        }
+    }
+
+    given saveToSql: ToSql[Truncate] with {
+        extension (x: Truncate) {
+            def sql(db: DB): String =
+                statementToString(x.ast, db)        
+        }
+    }
 }
