@@ -5,8 +5,4 @@ import easysql.ast.statement.SqlStatement
 import easysql.database.DB
 import easysql.util.statementToString
 
-trait NonSelect[T] {
-    extension (x: T) {
-        def ast: SqlStatement
-    } 
-}
+trait NonSelect[T]

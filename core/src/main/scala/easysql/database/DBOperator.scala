@@ -41,7 +41,7 @@ trait DBOperator[F[_]](val db: DB)(using m: DBMonad[F]) {
         querySqlToMap(sql)
     }
 
-    inline def queryMonad[T <: Tuple](query: Query[T, _])(using logger: Logger): F[List[ResultType[T]]] = {
+    inline def queryMonad[T <: Tuple](query: Select[T, _])(using logger: Logger): F[List[ResultType[T]]] = {
         val sql = query.sql(db)
         logger.apply(s"execute sql: \n$sql")
 
@@ -50,7 +50,7 @@ trait DBOperator[F[_]](val db: DB)(using m: DBMonad[F]) {
         } yield data.map(bind[ResultType[T]](0, _))
     }
 
-    inline def querySkipNoneRowsMonad[T](query: Query[Tuple1[T], _])(using logger: Logger): F[List[T]] = {
+    inline def querySkipNoneRowsMonad[T <: Tuple](query: Select[Tuple1[T], _])(using logger: Logger): F[List[T]] = {
         for {
             data <- queryMonad(query)
         } yield data.filter(_.nonEmpty).map(_.get)

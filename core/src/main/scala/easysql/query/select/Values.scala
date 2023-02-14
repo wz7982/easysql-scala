@@ -5,9 +5,7 @@ import easysql.ast.SqlDataType
 import easysql.dsl.*
 import easysql.util.exprToSqlExpr
 
-class Values[T <: Tuple](
-    private[easysql] override val ast: SqlQuery.SqlValues
-) extends Query[T, EmptyTuple](ast, Map()) {
+class Values[T <: Tuple](val ast: SqlQuery.SqlValues) {
     def addRow(row: T): Values[T] = {
         val add = row.toList.map {
             case d: SqlDataType => exprToSqlExpr(LiteralExpr(d))

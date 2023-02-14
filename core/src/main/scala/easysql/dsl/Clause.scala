@@ -21,19 +21,19 @@ def col[T <: SqlDataType](columnName: String): IdentExpr[T] =
 def caseWhen[T <: SqlDataType](branches: CaseBranch[T]*): CaseExpr[T] = 
     CaseExpr(branches.toList, NullExpr)
 
-def exists[T <: SqlDataType](query: Query[Tuple1[T], _]): FuncExpr[Boolean] = 
+def exists[T <: SqlDataType](query: Select[Tuple1[T], _]): FuncExpr[Boolean] = 
     FuncExpr("EXISTS", List(SubQueryExpr(query)))
 
-def notExists[T <: SqlDataType](query: Query[Tuple1[T], _]): FuncExpr[Boolean] = 
+def notExists[T <: SqlDataType](query: Select[Tuple1[T], _]): FuncExpr[Boolean] = 
     FuncExpr("NOT EXISTS", List(SubQueryExpr(query)))
 
-def all[T <: SqlDataType](query: Query[Tuple1[T], _]): FuncExpr[Boolean] = 
+def all[T <: SqlDataType](query: Select[Tuple1[T], _]): FuncExpr[Boolean] = 
     FuncExpr("ALL", List(SubQueryExpr(query)))
 
-def any[T <: SqlDataType](query: Query[Tuple1[T], _]): FuncExpr[Boolean] = 
+def any[T <: SqlDataType](query: Select[Tuple1[T], _]): FuncExpr[Boolean] = 
     FuncExpr("ANY", List(SubQueryExpr(query)))
 
-def some[T <: SqlDataType](query: Query[Tuple1[T], _]): FuncExpr[Boolean] = 
+def some[T <: SqlDataType](query: Select[Tuple1[T], _]): FuncExpr[Boolean] = 
     FuncExpr("SOME", List(SubQueryExpr(query)))
 
 def cast[T <: SqlDataType](expr: Expr[_], castType: String): CastExpr[T] = 

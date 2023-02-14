@@ -11,7 +11,7 @@ import easysql.macros.*
 import easysql.util.*
 import easysql.database.DB
 
-class Delete(val ast: SqlStatement.SqlDelete) {
+class Delete(private val ast: SqlStatement.SqlDelete) {
     infix def deleteFrom(table: TableSchema[_]): Delete =
         new Delete(ast.copy(table = Some(SqlIdentTable(table.__tableName, None))))
 
@@ -47,12 +47,7 @@ object Delete {
     def apply(): Delete = 
         new Delete(SqlStatement.SqlDelete(None, None))
 
-    given deleteNonSelect: NonSelect[Delete] with {
-        extension (x: Delete) {
-            def ast: SqlStatement =
-                x.ast
-        }
-    }
+    given deleteNonSelect: NonSelect[Delete] with {}
 
     given deleteToSql: ToSql[Delete] with {
         extension (x: Delete) {

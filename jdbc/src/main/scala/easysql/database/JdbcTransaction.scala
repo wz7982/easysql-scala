@@ -35,10 +35,10 @@ class JdbcTransaction(override val db: DB, conn: Connection) extends DBOperator[
     def query(sql: String)(using logger: Logger): List[Map[String, Any]] =
         queryMonad(sql).get
 
-    inline def query[T <: Tuple](query: Query[T, _])(using logger: Logger): List[ResultType[T]] =
+    inline def query[T <: Tuple](query: Select[T, _])(using logger: Logger): List[ResultType[T]] =
         queryMonad(query).get
 
-    inline def querySkipNoneRows[T](query: Query[Tuple1[T], _])(using logger: Logger): List[T] =
+    inline def querySkipNoneRows[T <: Tuple](query: Select[Tuple1[T], _])(using logger: Logger): List[T] =
         querySkipNoneRowsMonad(query).get
 
     inline def find[T <: Tuple](query: Select[T, _])(using logger: Logger): Option[ResultType[T]] =
@@ -60,10 +60,10 @@ def runAndReturnKey(query: Insert[_, _])(using logger: Logger, t: JdbcTransactio
 def query(sql: String)(using logger: Logger, t: JdbcTransaction): List[Map[String, Any]] = 
     t.query(sql)
 
-inline def query[T <: Tuple](query: Query[T, _])(using logger: Logger, t: JdbcTransaction): List[ResultType[T]] = 
+inline def query[T <: Tuple](query: Select[T, _])(using logger: Logger, t: JdbcTransaction): List[ResultType[T]] = 
     t.query(query)
 
-inline def querySkipNullRows[T](query: Query[Tuple1[T], _])(using logger: Logger, t: JdbcTransaction): List[T] = 
+inline def querySkipNoneRows[T <: Tuple](query: Select[Tuple1[T], _])(using logger: Logger, t: JdbcTransaction): List[T] = 
     t.querySkipNoneRows(query)
 
 inline def find[T <: Tuple](query: Select[T, _])(using logger: Logger, t: JdbcTransaction): Option[ResultType[T]] = 

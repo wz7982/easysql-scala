@@ -15,24 +15,25 @@ import easysql.database.DB
 
 import scala.Tuple.Concat
 import easysql.ast.table.SqlJoinType
+import easysql.query.ToSql
 
 class Select[T <: Tuple, A <: Tuple](
-    private[easysql] override val ast: SqlQuery.SqlSelect, 
-    private[select] override val selectItems: Map[String, String], 
+    private[easysql] val ast: SqlQuery.SqlSelect, 
+    private val selectItems: Map[String, String], 
     private val joinLeft: Option[SqlTable]
-) extends Query[T, A](ast, selectItems) {
+) {
     infix def from(table: TableSchema[_]): Select[T, A] = {
         val fromTable = SqlTable.SqlIdentTable(table.__tableName, table.__aliasName)
         new Select(ast.copy(from = Some(fromTable)), selectItems, Some(fromTable))
     }
 
     infix def from(table: AliasQuery[_, _]): Select[T, A] = {
-        val fromTable = SqlTable.SqlSubQueryTable(table.__query.ast, false, Some(table.__queryName))
+        val fromTable = SqlTable.SqlSubQueryTable(table.__ast, false, Some(table.__queryName))
         new Select(ast.copy(from = Some(fromTable)), selectItems, Some(fromTable))
     }
 
     infix def fromLateral(table: AliasQuery[_, _]): Select[T, A] = {
-        val fromTable = SqlTable.SqlSubQueryTable(table.__query.ast, true, Some(table.__queryName))
+        val fromTable = SqlTable.SqlSubQueryTable(table.__ast, true, Some(table.__queryName))
         new Select(ast.copy(from = Some(fromTable)), selectItems, Some(fromTable))
     }
 
@@ -145,7 +146,7 @@ class Select[T <: Tuple, A <: Tuple](
     }
 
     private def joinClause(table: AliasQuery[_, _], joinType: SqlJoinType, lateral: Boolean): Select[T, A] = {
-        val joinTable = SqlSubQueryTable(table.__query.ast, lateral, Some(table.__queryName))
+        val joinTable = SqlSubQueryTable(table.__ast, lateral, Some(table.__queryName))
 
         val fromTable = joinLeft match {
             case None => joinTable
@@ -243,30 +244,48 @@ class Select[T <: Tuple, A <: Tuple](
         new Select(ast.copy(forUpdate = true), selectItems, joinLeft)
 
     def unsafeAs(name: String): AliasQuery[T, A] =
-        AliasQuery(this, name)
+        AliasQuery(this.selectItems, this.ast, name)
 
     infix def as(name: String)(using NonEmpty[name.type] =:= true): AliasQuery[T, A] =
-        AliasQuery(this, name)
+        AliasQuery(this.selectItems, this.ast, name)
 }
 
 object Select {
     def apply(): Select[EmptyTuple, EmptyTuple] =
         new Select(SqlQuery.SqlSelect(false, Nil, None, None, Nil, Nil, false, None, None), Map(), None)
 
+    extension [T <: SqlDataType] (s: Select[Tuple1[T], _]) {
+        def toExpr: SubQueryExpr[T] =
+            SubQueryExpr(s)
+    }
+
+    given selectQuery[T <: Tuple, A <: Tuple]: Query[T, A, Select] with {
+        def ast(query: Select[T, A]): SqlQuery =
+            query.ast
+    
+        def selectItems(query: Select[T, A]): Map[String, String] = 
+            query.selectItems
+    }
+
+    given selectToSql: ToSql[Select[_, _]] with {
+        extension (x: Select[_, _]) def sql(db: DB): String =
+            queryToString(x.ast, db)
+    }
+
     given selectToCountSql: ToCountSql[Select[_, _]] with {
-        extension (s: Select[_, _]) def countSql(db: DB): String = {
+        extension (x: Select[_, _]) def countSql(db: DB): String = {
             val astCopy = 
-                s.ast.copy(select = SqlSelectItem(exprToSqlExpr(count()), Some("count")) :: Nil, limit = None, orderBy = Nil)
+                x.ast.copy(select = SqlSelectItem(exprToSqlExpr(count()), Some("count")) :: Nil, limit = None, orderBy = Nil)
 
             queryToString(astCopy, db)
         }
     }
 
     given selectToPageSql: ToPageSql[Select[_, _]] with {
-        extension (s: Select[_, _]) def pageSql(pageSize: Int, pageNumber: Int)(db: DB): String = {
+        extension (x: Select[_, _]) def pageSql(pageSize: Int, pageNumber: Int)(db: DB): String = {
             val offset = if pageNumber <= 1 then 0 else pageSize * (pageNumber - 1)
             val limit = SqlLimit(pageSize, offset)
-            val astCopy = s.ast.copy(limit = Some(limit))
+            val astCopy = x.ast.copy(limit = Some(limit))
 
             queryToString(astCopy, db)
         }
