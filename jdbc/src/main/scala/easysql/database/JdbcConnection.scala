@@ -6,6 +6,7 @@ import easysql.jdbc.*
 import easysql.query.select.*
 import easysql.query.nonselect.*
 import easysql.macros.*
+import easysql.query.ToSql
 
 import javax.sql.DataSource
 import java.sql.Connection
@@ -26,7 +27,7 @@ class JdbcConnection(override val db: DB, dataSource: DataSource) extends DBOper
     private[database] override def querySqlCount(sql: String): Id[Long] = 
         Id(exec(jdbcQuery(_, sql).head.head._2.toString().toLong))
 
-    def run(query: NonSelect)(using logger: Logger): Int =
+    def run[T : NonSelect : ToSql](query: T)(using logger: Logger): Int =
         runMonad(query).get
 
     def runAndReturnKey(query: Insert[_, _])(using logger: Logger): List[Long] =
@@ -35,10 +36,10 @@ class JdbcConnection(override val db: DB, dataSource: DataSource) extends DBOper
     def query(sql: String)(using logger: Logger): List[Map[String, Any]] =
         queryMonad(sql).get
 
-    inline def query[T <: Tuple](query: Query[T, _])(using logger: Logger): List[ResultType[T]] =
+    inline def query[T <: Tuple](query: Select[T, _])(using logger: Logger): List[ResultType[T]] =
         queryMonad(query).get
 
-    inline def querySkipNoneRows[T](query: Query[Tuple1[T], _])(using logger: Logger): List[T] =
+    inline def querySkipNoneRows[T <: Tuple](query: Select[Tuple1[T], _])(using logger: Logger): List[T] =
         querySkipNoneRowsMonad(query).get
 
     inline def find[T <: Tuple](query: Select[T, _])(using logger: Logger): Option[ResultType[T]] =

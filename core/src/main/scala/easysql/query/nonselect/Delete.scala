@@ -5,13 +5,13 @@ import easysql.ast.table.SqlTable.*
 import easysql.ast.SqlDataType
 import easysql.ast.expr.SqlBinaryOperator
 import easysql.ast.expr.SqlExpr.*
+import easysql.query.ToSql
 import easysql.dsl.*
 import easysql.macros.*
-import easysql.util.exprToSqlExpr
+import easysql.util.*
+import easysql.database.DB
 
-class Delete(
-    private[easysql] override val ast: SqlStatement.SqlDelete
-) extends NonSelect(ast) {
+class Delete(private val ast: SqlStatement.SqlDelete) {
     infix def deleteFrom(table: TableSchema[_]): Delete =
         new Delete(ast.copy(table = Some(SqlIdentTable(table.__tableName, None))))
 
@@ -46,4 +46,13 @@ class Delete(
 object Delete {
     def apply(): Delete = 
         new Delete(SqlStatement.SqlDelete(None, None))
+
+    given deleteNonSelect: NonSelect[Delete] with {}
+
+    given deleteToSql: ToSql[Delete] with {
+        extension (x: Delete) {
+            def sql(db: DB): String =
+                statementToString(x.ast, db)        
+        }
+    }
 }

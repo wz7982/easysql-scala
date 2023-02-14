@@ -20,7 +20,7 @@ sealed trait Expr[T <: SqlDataType] {
     def ===(expr: Expr[T]): BinaryExpr[Boolean] = 
         BinaryExpr(this, SqlBinaryOperator.EQ, expr)
 
-    def ===(q: Query[Tuple1[T], _]): BinaryExpr[Boolean] = 
+    def ===(q: Select[Tuple1[T], _]): BinaryExpr[Boolean] = 
         BinaryExpr(this, SqlBinaryOperator.EQ, SubQueryExpr(q))
 
     def <>(value: T): BinaryExpr[Boolean] = 
@@ -34,7 +34,7 @@ sealed trait Expr[T <: SqlDataType] {
     def <>(expr: Expr[T]): BinaryExpr[Boolean] = 
         BinaryExpr(this, SqlBinaryOperator.NE, expr)
 
-    def <>(q: Query[Tuple1[T], _]): BinaryExpr[Boolean] = 
+    def <>(q: Select[Tuple1[T], _]): BinaryExpr[Boolean] = 
         BinaryExpr(this, SqlBinaryOperator.NE, SubQueryExpr(q))
 
     def >(value: T): BinaryExpr[Boolean] = 
@@ -43,7 +43,7 @@ sealed trait Expr[T <: SqlDataType] {
     def >(expr: Expr[T]): BinaryExpr[Boolean] = 
         BinaryExpr(this, SqlBinaryOperator.GT, expr)
 
-    def >(q: Query[Tuple1[T], _]): BinaryExpr[Boolean] = 
+    def >(q: Select[Tuple1[T], _]): BinaryExpr[Boolean] = 
         BinaryExpr(this, SqlBinaryOperator.GT, SubQueryExpr(q))
 
     def >=(value: T): BinaryExpr[Boolean] = 
@@ -52,7 +52,7 @@ sealed trait Expr[T <: SqlDataType] {
     def >=(expr: Expr[T]): BinaryExpr[Boolean] = 
         BinaryExpr(this, SqlBinaryOperator.GE, expr)
 
-    def >=(q: Query[Tuple1[T], _]): BinaryExpr[Boolean] = 
+    def >=(q: Select[Tuple1[T], _]): BinaryExpr[Boolean] = 
         BinaryExpr(this, SqlBinaryOperator.GE, SubQueryExpr(q))
 
     def <(value: T): BinaryExpr[Boolean] = 
@@ -61,7 +61,7 @@ sealed trait Expr[T <: SqlDataType] {
     def <(expr: Expr[T]): BinaryExpr[Boolean] = 
         BinaryExpr(this, SqlBinaryOperator.LT, expr)
 
-    def <(q: Query[Tuple1[T], _]): BinaryExpr[Boolean] = 
+    def <(q: Select[Tuple1[T], _]): BinaryExpr[Boolean] = 
         BinaryExpr(this, SqlBinaryOperator.LT, SubQueryExpr(q))
 
     def <=(value: T): BinaryExpr[Boolean] = 
@@ -70,7 +70,7 @@ sealed trait Expr[T <: SqlDataType] {
     def <=(expr: Expr[T]): BinaryExpr[Boolean] = 
         BinaryExpr(this, SqlBinaryOperator.LE, expr)
 
-    def <=(q: Query[Tuple1[T], _]): BinaryExpr[Boolean] = 
+    def <=(q: Select[Tuple1[T], _]): BinaryExpr[Boolean] = 
         BinaryExpr(this, SqlBinaryOperator.LE, SubQueryExpr(q))
 
     def in(list: List[T | Expr[T]]): Expr[Boolean] =
@@ -97,10 +97,10 @@ sealed trait Expr[T <: SqlDataType] {
     def notIn(list: (T | Expr[T])*): Expr[Boolean] =
         notIn(list.toList)
 
-    def in(subQuery: Query[Tuple1[T], _]): Expr[Boolean] = 
+    def in(subQuery: Select[Tuple1[T], _]): Expr[Boolean] = 
         InExpr(this, SubQueryExpr(subQuery), false)
 
-    def notIn(subQuery: Query[Tuple1[T], _]): Expr[Boolean] = 
+    def notIn(subQuery: Select[Tuple1[T], _]): Expr[Boolean] = 
         InExpr(this, SubQueryExpr(subQuery), true)
 
     def between(start: T, end: T): Expr[Boolean] =
@@ -155,7 +155,7 @@ case class PrimaryKeyExpr[T <: SqlDataType, N <: String](
     inc: Boolean
 ) extends Expr[T]
 
-case class SubQueryExpr[T <: SqlDataType](query: Query[Tuple1[T], _]) extends Expr[T]
+case class SubQueryExpr[T <: SqlDataType](query: Select[Tuple1[T], _]) extends Expr[T]
 
 case class FuncExpr[T <: SqlDataType](name: String, args: List[Expr[_]]) extends Expr[T]
 
@@ -283,7 +283,7 @@ object Expr {
             def ===(expr: Expr[R]): BinaryExpr[Boolean] = 
                 BinaryExpr(e, SqlBinaryOperator.EQ, expr)
 
-            def ===(q: Query[Tuple1[R], _]): BinaryExpr[Boolean] = 
+            def ===(q: Select[Tuple1[R], _]): BinaryExpr[Boolean] = 
                 BinaryExpr(e, SqlBinaryOperator.EQ, SubQueryExpr(q))
 
             def <>(value: R): BinaryExpr[Boolean] = 
@@ -297,7 +297,7 @@ object Expr {
             def <>(expr: Expr[R]): BinaryExpr[Boolean] = 
                 BinaryExpr(e, SqlBinaryOperator.NE, expr)
 
-            def <>(q: Query[Tuple1[R], _]): BinaryExpr[Boolean] = 
+            def <>(q: Select[Tuple1[R], _]): BinaryExpr[Boolean] = 
                 BinaryExpr(e, SqlBinaryOperator.NE, SubQueryExpr(q))
 
             def >(value: R): BinaryExpr[Boolean] = 
@@ -306,7 +306,7 @@ object Expr {
             def >(expr: Expr[R]): BinaryExpr[Boolean] = 
                 BinaryExpr(e, SqlBinaryOperator.GT, expr)
 
-            def >(q: Query[Tuple1[R], _]): BinaryExpr[Boolean] = 
+            def >(q: Select[Tuple1[R], _]): BinaryExpr[Boolean] = 
                 BinaryExpr(e, SqlBinaryOperator.GT, SubQueryExpr(q))
 
             def >=(value: R): BinaryExpr[Boolean] = 
@@ -315,7 +315,7 @@ object Expr {
             def >=(expr: Expr[R]): BinaryExpr[Boolean] = 
                 BinaryExpr(e, SqlBinaryOperator.GE, expr)
 
-            def >=(q: Query[Tuple1[R], _]): BinaryExpr[Boolean] = 
+            def >=(q: Select[Tuple1[R], _]): BinaryExpr[Boolean] = 
                 BinaryExpr(e, SqlBinaryOperator.GE, SubQueryExpr(q))
 
             def <(value: R): BinaryExpr[Boolean] = 
@@ -324,7 +324,7 @@ object Expr {
             def <(expr: Expr[R]): BinaryExpr[Boolean] = 
                 BinaryExpr(e, SqlBinaryOperator.LT, expr)
 
-            def <(q: Query[Tuple1[R], _]): BinaryExpr[Boolean] = 
+            def <(q: Select[Tuple1[R], _]): BinaryExpr[Boolean] = 
                 BinaryExpr(e, SqlBinaryOperator.LT, SubQueryExpr(q))
 
             def <=(value: R): BinaryExpr[Boolean] = 
@@ -333,7 +333,7 @@ object Expr {
             def <=(expr: Expr[R]): BinaryExpr[Boolean] = 
                 BinaryExpr(e, SqlBinaryOperator.LE, expr)
 
-            def <=(q: Query[Tuple1[R], _]): BinaryExpr[Boolean] = 
+            def <=(q: Select[Tuple1[R], _]): BinaryExpr[Boolean] = 
                 BinaryExpr(e, SqlBinaryOperator.LE, SubQueryExpr(q))
 
             def in(list: List[R | Expr[R]]): Expr[Boolean] =
@@ -360,10 +360,10 @@ object Expr {
             def notIn(list: (R | Expr[R])*): Expr[Boolean] =
                 notIn(list.toList)
 
-            def in(subQuery: Query[Tuple1[R], _]): Expr[Boolean] = 
+            def in(subQuery: Select[Tuple1[R], _]): Expr[Boolean] = 
                 InExpr(e, SubQueryExpr(subQuery), false)
 
-            def notIn(subQuery: Query[Tuple1[R], _]): Expr[Boolean] = 
+            def notIn(subQuery: Select[Tuple1[R], _]): Expr[Boolean] = 
                 InExpr(e, SubQueryExpr(subQuery), true)
 
             def between(start: R, end: R): Expr[Boolean] =
