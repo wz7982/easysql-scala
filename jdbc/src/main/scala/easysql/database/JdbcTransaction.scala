@@ -10,67 +10,52 @@ import easysql.query.ToSql
 
 import java.sql.Connection
 
-class JdbcTransaction(override val db: DB, conn: Connection) extends DBOperator[Id](db) {
-    private[database] override def runSql(sql: String): Id[Int] =
-        Id(jdbcExec(conn, sql))
+class JdbcTransaction(val db: DB, val conn: Connection)
 
-    private[database] override def runSqlAndReturnKey(sql: String): Id[List[Long]] =
-        Id(jdbcExecReturnKey(conn, sql))
+object JdbcTransaction {
+    import easysql.database.DBOperator.dbMonadId
 
-    private[database] override def querySql(sql: String): Id[List[Array[Any]]] =
-        Id(jdbcQueryToArray(conn, sql))
+    given jdbcTransaction: DBOperator[JdbcTransaction, Id] with {
+        def db(x: JdbcTransaction): DB = 
+            x.db
 
-    private[database] override def querySqlToMap(sql: String): Id[List[Map[String, Any]]] =
-        Id(jdbcQuery(conn, sql))
+        def runSql(x: JdbcTransaction, sql: String): Id[Int] =
+            Id(jdbcExec(x.conn, sql))
 
-    private[database] override def querySqlCount(sql: String): Id[Long] =
-        Id(jdbcQueryToArray(conn, sql).head.head.toString().toLong)
+        def runSqlAndReturnKey(x: JdbcTransaction, sql: String): Id[List[Long]] =
+            Id(jdbcExecReturnKey(x.conn, sql))
 
-    def run[T : NonSelect : ToSql](query: T)(using logger: Logger): Int =
-        runMonad(query).get
+        def querySql(x: JdbcTransaction, sql: String): Id[List[Array[Any]]] =
+            Id(jdbcQueryToArray(x.conn, sql))
 
-    def runAndReturnKey(query: Insert[_, _])(using logger: Logger): List[Long] =
-        runAndReturnKeyMonad(query).get
+        def querySqlToMap(x: JdbcTransaction, sql: String): Id[List[Map[String, Any]]] =
+            Id(jdbcQuery(x.conn, sql))
 
-    def query(sql: String)(using logger: Logger): List[Map[String, Any]] =
-        queryMonad(sql).get
-
-    inline def query[T <: Tuple](query: Select[T, _])(using logger: Logger): List[ResultType[T]] =
-        queryMonad(query).get
-
-    inline def querySkipNoneRows[T <: Tuple](query: Select[Tuple1[T], _])(using logger: Logger): List[T] =
-        querySkipNoneRowsMonad(query).get
-
-    inline def find[T <: Tuple](query: Select[T, _])(using logger: Logger): Option[ResultType[T]] =
-        findMonad(query).get
-    
-    inline def page[T <: Tuple](query: Select[T, _])(pageSize: Int, pageNumber: Int, queryCount: Boolean)(using logger: Logger): Page[ResultType[T]] =
-        pageMonad(query)(pageSize, pageNumber, queryCount).get
-
-    def fetchCount(query: Select[_, _])(using logger: Logger): Long =
-        fetchCountMonad(query).get
+        def querySqlCount(x: JdbcTransaction, sql: String): Id[Long] =
+            Id(jdbcQuery(x.conn, sql).head.head._2.toString().toLong)
+    }
 }
 
 def run[T : NonSelect : ToSql](query: T)(using logger: Logger, t: JdbcTransaction): Int = 
-    t.run(query)
+    summon[DBOperator[JdbcTransaction, Id]].runMonad(t, query).get
 
 def runAndReturnKey(query: Insert[_, _])(using logger: Logger, t: JdbcTransaction): List[Long] = 
-    t.runAndReturnKey(query)
+    summon[DBOperator[JdbcTransaction, Id]].runAndReturnKeyMonad(t, query).get
 
 def query(sql: String)(using logger: Logger, t: JdbcTransaction): List[Map[String, Any]] = 
-    t.query(sql)
+    summon[DBOperator[JdbcTransaction, Id]].queryMonad(t, sql).get
 
 inline def query[T <: Tuple](query: Select[T, _])(using logger: Logger, t: JdbcTransaction): List[ResultType[T]] = 
-    t.query(query)
+    summon[DBOperator[JdbcTransaction, Id]].queryMonad(t, query).get
 
 inline def querySkipNoneRows[T <: Tuple](query: Select[Tuple1[T], _])(using logger: Logger, t: JdbcTransaction): List[T] = 
-    t.querySkipNoneRows(query)
+    summon[DBOperator[JdbcTransaction, Id]].querySkipNoneRowsMonad(t, query).get
 
 inline def find[T <: Tuple](query: Select[T, _])(using logger: Logger, t: JdbcTransaction): Option[ResultType[T]] = 
-    t.find(query)
+    summon[DBOperator[JdbcTransaction, Id]].findMonad(t, query).get
 
 inline def page[T <: Tuple](query: Select[T, _])(pageSize: Int, pageNum: Int, queryCount: Boolean)(using logger: Logger, t: JdbcTransaction): Page[ResultType[T]] = 
-    t.page(query)(pageSize, pageNum, queryCount)
+    summon[DBOperator[JdbcTransaction, Id]].pageMonad(t, query)(pageSize, pageNum, queryCount).get
 
 def fetchCount(query: Select[_, _])(using logger: Logger, t: JdbcTransaction): Long = 
-    t.fetchCount(query)
+    summon[DBOperator[JdbcTransaction, Id]].fetchCountMonad(t, query).get

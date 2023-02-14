@@ -10,68 +10,70 @@ import easysql.macros.*
 
 import scala.concurrent.Future
 
-trait DBOperator[F[_]](val db: DB)(using m: DBMonad[F]) {
-    private[database] def runSql(sql: String): F[Int]
+trait DBOperator[D, F[_] : DBMonad] {
+    def db(x: D): DB
 
-    private[database] def runSqlAndReturnKey(sql: String): F[List[Long]]
+    def runSql(x: D, sql: String): F[Int]
 
-    private[database] def querySql(sql: String): F[List[Array[Any]]]
+    def runSqlAndReturnKey(x: D, sql: String): F[List[Long]]
 
-    private[database] def querySqlToMap(sql: String): F[List[Map[String, Any]]]
+    def querySql(x: D, sql: String): F[List[Array[Any]]]
 
-    private[database] def querySqlCount(sql: String): F[Long]
+    def querySqlToMap(x: D, sql: String): F[List[Map[String, Any]]]
 
-    def runMonad[T : NonSelect : ToSql](query: T)(using logger: Logger): F[Int] = {
-        val sql = query.sql(db)
+    def querySqlCount(x: D, sql: String): F[Long]
+
+    def runMonad[T : NonSelect : ToSql](x: D, query: T)(using logger: Logger): F[Int] = {
+        val sql = query.sql(db(x))
         logger.apply(s"execute sql: \n$sql")
 
-        runSql(sql)
+        runSql(x, sql)
     }
 
-    def runAndReturnKeyMonad(query: Insert[_, _])(using logger: Logger): F[List[Long]] = {
-        val sql = query.sql(db)
+    def runAndReturnKeyMonad(x: D, query: Insert[_, _])(using logger: Logger): F[List[Long]] = {
+        val sql = query.sql(db(x))
         logger.apply(s"execute sql: \n$sql")
 
-        runSqlAndReturnKey(sql)
+        runSqlAndReturnKey(x, sql)
     }
 
-    def queryMonad(sql: String)(using logger: Logger): F[List[Map[String, Any]]] = {
+    def queryMonad(x: D, sql: String)(using logger: Logger): F[List[Map[String, Any]]] = {
         logger.apply(s"execute sql: \n$sql")
 
-        querySqlToMap(sql)
+        querySqlToMap(x, sql)
     }
 
-    inline def queryMonad[T <: Tuple](query: Select[T, _])(using logger: Logger): F[List[ResultType[T]]] = {
-        val sql = query.sql(db)
+    inline def queryMonad[T <: Tuple](x: D, query: Select[T, _])(using logger: Logger): F[List[ResultType[T]]] = {
+        val sql = query.sql(db(x))
         logger.apply(s"execute sql: \n$sql")
 
         for {
-            data <- querySql(sql)
+            data <- querySql(x, sql)
         } yield data.map(bind[ResultType[T]](0, _))
     }
 
-    inline def querySkipNoneRowsMonad[T <: Tuple](query: Select[Tuple1[T], _])(using logger: Logger): F[List[T]] = {
+    inline def querySkipNoneRowsMonad[T <: Tuple](x: D, query: Select[Tuple1[T], _])(using logger: Logger): F[List[T]] = {
         for {
-            data <- queryMonad(query)
+            data <- queryMonad(x, query)
         } yield data.filter(_.nonEmpty).map(_.get)
     }  
 
-    inline def findMonad[T <: Tuple](query: Select[T, _])(using logger: Logger): F[Option[ResultType[T]]] = {
+    inline def findMonad[T <: Tuple](x: D, query: Select[T, _])(using logger: Logger): F[Option[ResultType[T]]] = {
         for {
-            data <- queryMonad(query.limit(1))
+            data <- queryMonad(x, query.limit(1))
         } yield data.headOption
     }
     
-    inline def pageMonad[T <: Tuple](query: Select[T, _])(pageSize: Int, pageNumber: Int, queryCount: Boolean)(using logger: Logger): F[Page[ResultType[T]]] = {
+    inline def pageMonad[T <: Tuple](x: D, query: Select[T, _])(pageSize: Int, pageNumber: Int, queryCount: Boolean)(using logger: Logger): F[Page[ResultType[T]]] = {
         val data = if (pageSize == 0) {
-            m.pure(Nil)
+            summon[DBMonad[F]].pure(Nil)
         } else {
             val offset = if pageNumber <= 1 then 0 else pageSize * (pageNumber - 1)
             val pageQuery = query.limit(pageSize).offset(offset)
-            queryMonad(pageQuery)
+            queryMonad(x, pageQuery)
         }
 
-        val count = if queryCount then fetchCountMonad(query) else m.pure(0L)
+        val count = if queryCount then fetchCountMonad(x, query) else summon[DBMonad[F]].pure(0L)
 
         val totalPage = for {
             c <- count
@@ -94,11 +96,11 @@ trait DBOperator[F[_]](val db: DB)(using m: DBMonad[F]) {
         } yield Page(t, c, d)
     }
 
-    def fetchCountMonad(query: Select[_, _])(using logger: Logger): F[Long] = {
-        val sql = query.countSql(db)
+    def fetchCountMonad(x: D, query: Select[_, _])(using logger: Logger): F[Long] = {
+        val sql = query.countSql(db(x))
         logger.apply(s"execute sql: \n$sql")
 
-        querySqlCount(sql)
+        querySqlCount(x, sql)
     }
 }
 

@@ -1,6 +1,5 @@
 package easysql.database
 
-import easysql.database.DBOperator.dbMonadId
 import easysql.dsl.*
 import easysql.jdbc.*
 import easysql.query.select.*
@@ -11,46 +10,17 @@ import easysql.query.ToSql
 import javax.sql.DataSource
 import java.sql.Connection
 
-class JdbcConnection(override val db: DB, dataSource: DataSource) extends DBOperator[Id](db) {
-    private[database] override def runSql(sql: String): Id[Int] = 
-        Id(exec(jdbcExec(_, sql)))
+class JdbcConnection(val db: DB, val dataSource: DataSource) {
+    def getConnection: Connection = 
+        dataSource.getConnection.nn
 
-    private[database] override def runSqlAndReturnKey(sql: String): Id[List[Long]] = 
-        Id(exec(jdbcExecReturnKey(_, sql)))
+    def exec[T](handler: Connection => T): T = {
+        val conn = getConnection
+        val result = handler(conn)
+        conn.close()
+        result
+    }
 
-    private[database] override def querySql(sql: String): Id[List[Array[Any]]] = 
-        Id(exec(jdbcQueryToArray(_, sql)))
-
-    private[database] override def querySqlToMap(sql: String): Id[List[Map[String, Any]]] = 
-        Id(exec(jdbcQuery(_, sql)))
-
-    private[database] override def querySqlCount(sql: String): Id[Long] = 
-        Id(exec(jdbcQuery(_, sql).head.head._2.toString().toLong))
-
-    def run[T : NonSelect : ToSql](query: T)(using logger: Logger): Int =
-        runMonad(query).get
-
-    def runAndReturnKey(query: Insert[_, _])(using logger: Logger): List[Long] =
-        runAndReturnKeyMonad(query).get
-
-    def query(sql: String)(using logger: Logger): List[Map[String, Any]] =
-        queryMonad(sql).get
-
-    inline def query[T <: Tuple](query: Select[T, _])(using logger: Logger): List[ResultType[T]] =
-        queryMonad(query).get
-
-    inline def querySkipNoneRows[T <: Tuple](query: Select[Tuple1[T], _])(using logger: Logger): List[T] =
-        querySkipNoneRowsMonad(query).get
-
-    inline def find[T <: Tuple](query: Select[T, _])(using logger: Logger): Option[ResultType[T]] =
-        findMonad(query).get
-    
-    inline def page[T <: Tuple](query: Select[T, _])(pageSize: Int, pageNumber: Int, queryCount: Boolean)(using logger: Logger): Page[ResultType[T]] =
-        pageMonad(query)(pageSize, pageNumber, queryCount).get
-
-    def fetchCount(query: Select[_, _])(using logger: Logger): Long =
-        fetchCountMonad(query).get
-    
     def transactionIsolation[T](isolation: Int)(query: JdbcTransaction ?=> T): T = {
         val conn = getConnection
         conn.setAutoCommit(false)
@@ -91,14 +61,54 @@ class JdbcConnection(override val db: DB, dataSource: DataSource) extends DBOper
             conn.close()
         }
     }
+}
 
-    def getConnection: Connection = 
-        dataSource.getConnection.nn
+object JdbcConnection {
+    import easysql.database.DBOperator.dbMonadId
 
-    private def exec[T](handler: Connection => T): T = {
-        val conn = getConnection
-        val result = handler(conn)
-        conn.close()
-        result
+    given jdbcConnection: DBOperator[JdbcConnection, Id] with {
+        def db(x: JdbcConnection): DB = 
+            x.db
+
+        def runSql(x: JdbcConnection, sql: String): Id[Int] =
+            Id(x.exec(jdbcExec(_, sql)))
+
+        def runSqlAndReturnKey(x: JdbcConnection, sql: String): Id[List[Long]] =
+            Id(x.exec(jdbcExecReturnKey(_, sql)))
+
+        def querySql(x: JdbcConnection, sql: String): Id[List[Array[Any]]] =
+            Id(x.exec(jdbcQueryToArray(_, sql)))
+
+        def querySqlToMap(x: JdbcConnection, sql: String): Id[List[Map[String, Any]]] =
+            Id(x.exec(jdbcQuery(_, sql)))
+
+        def querySqlCount(x: JdbcConnection, sql: String): Id[Long] =
+            Id(x.exec(jdbcQuery(_, sql).head.head._2.toString().toLong))
+
+        extension (x: JdbcConnection) {
+            def run[T : NonSelect : ToSql](query: T)(using logger: Logger): Int =
+                runMonad(x, query).get
+
+            def runAndReturnKey(query: Insert[_, _])(using logger: Logger): List[Long] =
+                runAndReturnKeyMonad(x, query).get
+
+            def query(sql: String)(using logger: Logger): List[Map[String, Any]] =
+                queryMonad(x, sql).get
+
+            inline def query[T <: Tuple](query: Select[T, _])(using logger: Logger): List[ResultType[T]] =
+                queryMonad(x, query).get
+
+            inline def querySkipNoneRows[T <: Tuple](query: Select[Tuple1[T], _])(using logger: Logger): List[T] =
+                querySkipNoneRowsMonad(x, query).get
+
+            inline def find[T <: Tuple](query: Select[T, _])(using logger: Logger): Option[ResultType[T]] =
+                findMonad(x, query).get
+            
+            inline def page[T <: Tuple](query: Select[T, _])(pageSize: Int, pageNumber: Int, queryCount: Boolean)(using logger: Logger): Page[ResultType[T]] =
+                pageMonad(x, query)(pageSize, pageNumber, queryCount).get
+
+            def fetchCount(query: Select[_, _])(using logger: Logger): Long =
+                fetchCountMonad(x, query).get
+        }
     }
 }
