@@ -48,8 +48,11 @@ inline def asTable[T <: Product]: TableSchema[T] = {
 }
 
 extension [T <: SqlDataType] (expr: ColumnExpr[T, _] | IdentExpr[T]) {
-    def to[V <: UpdateType[T]](value: Expr[V]): (ColumnExpr[T, _] | IdentExpr[T], Expr[V]) = 
+    infix def to(value: Expr[T]): (ColumnExpr[T, _] | IdentExpr[T], Expr[T]) = 
         (expr, value)
+
+    infix def to(value: T): (ColumnExpr[T, _] | IdentExpr[T], Expr[T]) = 
+        (expr, LiteralExpr(value))
 }
 
 object AllColumn {
