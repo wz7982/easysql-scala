@@ -110,7 +110,7 @@ def updateMetaDataMacro[T <: Product](using q: Quotes, tpe: Type[T]): Expr[(Stri
     fields.foreach { field =>
         val annoInfo = field.annotations.map { a =>
             a match {
-                case Apply(Select(New(TypeIdent(name)), _), args) if name == "PrimaryKey" || name == "Column" || name == "IncrKey" =>
+                case Apply(Select(New(TypeIdent(name)), _), args) if name == "PrimaryKey" || name == "Column" || name == "IncrKey" || name == "PrimaryKeyGenerator" =>
                     args match {
                         case Literal(v) :: _ => name -> v.value.toString()
                         case _ => name -> ""
@@ -139,7 +139,7 @@ def updateMetaDataMacro[T <: Product](using q: Quotes, tpe: Type[T]): Expr[(Stri
         val lambdaUpdate = Lambda(field, mtpeUpdate, rhsFnUpdate).asExprOf[T => SqlDataType | Option[SqlDataType]]
 
         annoInfo.find {
-            case (name, _) if name == "PrimaryKey" || name == "IncrKey" => true
+            case (name, _) if name == "PrimaryKey" || name == "IncrKey" || name == "PrimaryKeyGenerator" => true
             case _ => false
         } match {
             case None => {
@@ -205,7 +205,7 @@ def fetchPkMacro[T <: Product, PK <: SqlDataType | Tuple](using q: Quotes, t: Ty
 
     fields.foreach { field =>
         field.annotations.find {
-            case Apply(Select(New(TypeIdent(name)), _), _) if name == "PrimaryKey" || name == "IncrKey" => true
+            case Apply(Select(New(TypeIdent(name)), _), _) if name == "PrimaryKey" || name == "IncrKey" || name == "PrimaryKeyGenerator" => true
             case _ => false
         } match {
             case Some(Apply(_, args)) => {
