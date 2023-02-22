@@ -44,7 +44,7 @@ class Update(private val ast: SqlStatement.SqlUpdate) {
             throw Exception("no fields need to be updated in the entity class")
         }
 
-        new Update(SqlStatement.SqlUpdate(table, updateInfo, Some(where)))
+        new Update(SqlStatement.SqlUpdate(table, updateList, Some(where)))
     }
 
     def update(table: TableSchema[_]): Update =
