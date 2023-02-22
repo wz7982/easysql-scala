@@ -36,12 +36,12 @@ def exprMetaMacro[T](name: Expr[String])(using q: Quotes, t: Type[T]): Expr[(Str
     var eleName = camelToSnake(name.value.get)
 
     ele.annotations.find {
-        case Apply(Select(New(TypeIdent(name)), _), _) if name == "PrimaryKey" || name == "IncrKey" || name == "Column" => true
+        case Apply(Select(New(TypeIdent(name)), _), _) if name == "PrimaryKey" || name == "IncrKey" || name == "Column" || name == "PrimaryKeyGenerator" => true
         case _ => false
     } match {
         case Some(Apply(Select(New(TypeIdent(name)), _), args)) => {
             name match {
-                case "PrimaryKey" => eleTag = "pk"
+                case "PrimaryKey" | "PrimaryKeyGenerator" => eleTag = "pk"
                 case "IncrKey" => eleTag = "incr"
                 case _ =>
             }
@@ -66,7 +66,7 @@ def fieldNamesMacro[T](using q: Quotes, t: Type[T]): Expr[List[String]] = {
         var fieldName = camelToSnake(f.name)
 
         f.annotations.find {
-            case Apply(Select(New(TypeIdent(name)), _), _) if name == "PrimaryKey" || name == "IncrKey" || name == "Column" => true
+            case Apply(Select(New(TypeIdent(name)), _), _) if name == "PrimaryKey" || name == "IncrKey" || name == "Column" || name == "PrimaryKeyGenerator" => true
             case _ => false
         } match {
             case Some(Apply(_, args)) => {
