@@ -55,7 +55,7 @@ def exprToSqlExpr(expr: Expr[_]): SqlExpr = expr match {
     case PrimaryKeyExpr(tableName, columnName, _, _) =>
         SqlPropertyExpr(tableName, columnName)
     case SubQueryExpr(query) => 
-        SqlQueryExpr(query.ast)
+        SqlQueryExpr(query.getAst)
     case FuncExpr(name, args) => 
         SqlExprFuncExpr(name, args.map(exprToSqlExpr))
     case agg: AggExpr[_] =>

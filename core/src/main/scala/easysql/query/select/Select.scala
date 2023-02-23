@@ -21,7 +21,13 @@ class Select[T <: Tuple, A <: Tuple](
     private[easysql] val ast: SqlQuery.SqlSelect, 
     private val selectItems: Map[String, String], 
     private val joinLeft: Option[SqlTable]
-) {
+) extends Query[T, A] {
+    override def getAst: SqlQuery = 
+        ast
+
+    override def getSelectItems: Map[String, String] = 
+        selectItems
+
     infix def from(table: TableSchema[_]): Select[T, A] = {
         val fromTable = SqlTable.SqlIdentTable(table.__tableName, table.__aliasName)
         new Select(ast.copy(from = Some(fromTable)), selectItems, Some(fromTable))
@@ -242,35 +248,11 @@ class Select[T <: Tuple, A <: Tuple](
 
     def forUpdate: Select[T, A] =
         new Select(ast.copy(forUpdate = true), selectItems, joinLeft)
-
-    def unsafeAs(name: String): AliasQuery[T, A] =
-        AliasQuery(this.selectItems, this.ast, name)
-
-    infix def as(name: String)(using NonEmpty[name.type] =:= true): AliasQuery[T, A] =
-        AliasQuery(this.selectItems, this.ast, name)
 }
 
 object Select {
     def apply(): Select[EmptyTuple, EmptyTuple] =
         new Select(SqlQuery.SqlSelect(false, Nil, None, None, Nil, Nil, false, None, None), Map(), None)
-
-    extension [T <: SqlDataType] (s: Select[Tuple1[T], _]) {
-        def toExpr: SubQueryExpr[T] =
-            SubQueryExpr(s)
-    }
-
-    given selectQuery[T <: Tuple, A <: Tuple]: Query[T, A, Select] with {
-        def ast(query: Select[T, A]): SqlQuery =
-            query.ast
-    
-        def selectItems(query: Select[T, A]): Map[String, String] = 
-            query.selectItems
-    }
-
-    given selectToSql: ToSql[Select[_, _]] with {
-        extension (x: Select[_, _]) def sql(db: DB): String =
-            queryToString(x.ast, db)
-    }
 
     given selectToCountSql: ToCountSql[Select[_, _]] with {
         extension (x: Select[_, _]) def countSql(db: DB): String = {

@@ -36,7 +36,7 @@ object JdbcTransaction {
     }
 }
 
-def run[T : NonSelect : ToSql](query: T)(using logger: Logger, t: JdbcTransaction): Int = 
+def run[T <: NonSelect : ToSql](query: T)(using logger: Logger, t: JdbcTransaction): Int = 
     summon[DBOperator[JdbcTransaction, Id]].runMonad(t, query).get
 
 def runAndReturnKey(query: Insert[_, _])(using logger: Logger, t: JdbcTransaction): List[Long] = 
@@ -45,10 +45,10 @@ def runAndReturnKey(query: Insert[_, _])(using logger: Logger, t: JdbcTransactio
 def query(sql: String)(using logger: Logger, t: JdbcTransaction): List[Map[String, Any]] = 
     summon[DBOperator[JdbcTransaction, Id]].queryMonad(t, sql).get
 
-inline def query[T <: Tuple](query: Select[T, _])(using logger: Logger, t: JdbcTransaction): List[ResultType[T]] = 
+inline def query[T <: Tuple](query: Query[T, _])(using logger: Logger, t: JdbcTransaction): List[ResultType[T]] = 
     summon[DBOperator[JdbcTransaction, Id]].queryMonad(t, query).get
 
-inline def querySkipNoneRows[T <: Tuple](query: Select[Tuple1[T], _])(using logger: Logger, t: JdbcTransaction): List[T] = 
+inline def querySkipNoneRows[T <: Tuple](query: Query[Tuple1[T], _])(using logger: Logger, t: JdbcTransaction): List[T] = 
     summon[DBOperator[JdbcTransaction, Id]].querySkipNoneRowsMonad(t, query).get
 
 inline def find[T <: Tuple](query: Select[T, _])(using logger: Logger, t: JdbcTransaction): Option[ResultType[T]] = 

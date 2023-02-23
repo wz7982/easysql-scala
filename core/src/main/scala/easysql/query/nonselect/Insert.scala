@@ -12,7 +12,10 @@ import easysql.util.*
 import easysql.query.select.*
 import easysql.database.DB
 
-class Insert[T <: Tuple, S <: InsertState](private val ast: SqlStatement.SqlInsert) {
+class Insert[T <: Tuple, S <: InsertState](private val ast: SqlStatement.SqlInsert) extends NonSelect {
+    override def getAst: SqlStatement =
+        ast
+
     inline def insert[T <: Product, SS >: S <: InsertEntity](entities: T*): Insert[EmptyTuple, InsertEntity] = {
         val metaData = insertMetaData[T]
         val table = Some(new SqlIdentTable(metaData._1, None))
@@ -57,22 +60,13 @@ class Insert[T <: Tuple, S <: InsertState](private val ast: SqlStatement.SqlInse
         new Insert(ast.copy(values = insertInfo))
     }
 
-    infix def select[SS >: S <: InsertSelect, A <: Tuple](query: Select[T, A])(using q: Query[T, A, Select]): Insert[T, InsertSelect] =
-        new Insert(ast.copy(query = Some(q.ast(query))))
+    infix def select[SS >: S <: InsertSelect, A <: Tuple](query: Query[T, A]): Insert[T, InsertSelect] =
+        new Insert(ast.copy(query = Some(query.getAst)))
 }
 
 object Insert {
     def apply(): Insert[EmptyTuple, Nothing] = 
         new Insert(SqlStatement.SqlInsert(None, Nil, Nil, None))
-
-    given insertNonSelect: NonSelect[Insert[_, _]] with {}
-
-    given insertToSql: ToSql[Insert[_, _]] with {
-        extension (x: Insert[_, _]) {
-            def sql(db: DB): String =
-                statementToString(x.ast, db)        
-        }
-    }
 }
 
 sealed trait InsertState

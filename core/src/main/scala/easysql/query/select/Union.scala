@@ -14,25 +14,10 @@ class Union[T <: Tuple, A <: Tuple](
     private[select] val left: SqlQuery, 
     private[select] val op: SqlUnionType, 
     private[select] val right: SqlQuery
-) {
-    def unsafeAs(name: String): AliasQuery[T, A] =
-        AliasQuery(this.selectItems, SqlQuery.SqlUnion(left, op, right), name)
+) extends Query[T, A] {
+    override def getAst: SqlQuery = 
+        SqlQuery.SqlUnion(left, op, right)
 
-    infix def as(name: String)(using NonEmpty[name.type] =:= true): AliasQuery[T, A] =
-        AliasQuery(this.selectItems, SqlQuery.SqlUnion(left, op, right), name)
-}
-
-object Union {
-    given unionQuery[T <: Tuple, A <: Tuple]: Query[T, A, Union] with {
-        def ast(query: Union[T, A]): SqlQuery =
-            SqlQuery.SqlUnion(query.left, query.op, query.right)
-    
-        def selectItems(query: Union[T, A]): Map[String, String] = 
-            query.selectItems
-    }
-
-    given unionToSql: ToSql[Union[_, _]] with {
-        extension (x: Union[_, _]) def sql(db: DB): String =
-            queryToString(SqlQuery.SqlUnion(x.left, x.op, x.right), db)
-    }
+    override def getSelectItems: Map[String, String] = 
+        selectItems
 }

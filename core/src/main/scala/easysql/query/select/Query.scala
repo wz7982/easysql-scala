@@ -14,74 +14,90 @@ import scala.compiletime.ops.int.*
 import scala.compiletime.*
 import scala.Tuple.{Zip, Size}
 
-trait Query[T <: Tuple, A <: Tuple, Q[_ <: Tuple, _ <: Tuple]] {
-    def ast(query: Q[T, A]): SqlQuery
-    
-    def selectItems(query: Q[T, A]): Map[String, String]
+trait Query[T <: Tuple, A <: Tuple] {
+    def getAst: SqlQuery
 
-    def unionClause[RT <: Tuple, RA <: Tuple, RQ[_ <: Tuple, _ <: Tuple]](left: Q[T, A], unionType: SqlUnionType, right: RQ[RT, RA])(using rq: Query[RT, RA, RQ]): Union[UnionType[T, RT], A] =
-        Union(selectItems(left), ast(left), SqlUnionType.UNION, rq.ast(right))
+    def getSelectItems: Map[String, String]
 
-    def unionClause[RT <: Tuple](left: Q[T, A], unionType: SqlUnionType, right: RT): Union[UnionType[T, RT], A] =
-        Union(selectItems(left), ast(left), unionType, Values(right).ast)
+    def unionClause[RT <: Tuple](unionType: SqlUnionType, right: Query[RT, _]): Union[UnionType[T, RT], A] =
+        Union(getSelectItems, getAst, unionType, right.getAst)
 
-    def unionClause[RT <: Tuple](left: Q[T, A], unionType: SqlUnionType, right: List[RT]): Union[UnionType[T, RT], A] =
-        Union(selectItems(left), ast(left), unionType, Values(right).ast)
+    def unionClause[RT <: Tuple](unionType: SqlUnionType, right: RT): Union[UnionType[T, RT], A] =
+        Union(getSelectItems, getAst, unionType, Values(right).ast)
 
-    extension (query: Q[T, A]) {
-        infix def union[RT <: Tuple, RA <: Tuple, RQ[_ <: Tuple, _ <: Tuple]](right: RQ[RT, RA])(using Query[RT, RA, RQ]): Union[UnionType[T, RT], A] =
-            unionClause(query, SqlUnionType.UNION, right)
+    def unionClause[RT <: Tuple](unionType: SqlUnionType, right: List[RT]): Union[UnionType[T, RT], A] =
+        Union(getSelectItems, getAst, unionType, Values(right).ast)
 
-        infix def union[RT <: Tuple](right: RT): Union[UnionType[T, RT], A] =
-            unionClause(query, SqlUnionType.UNION, right)
+    infix def union[RT <: Tuple](right: Query[RT, _]): Union[UnionType[T, RT], A] =
+        unionClause(SqlUnionType.UNION, right)
 
-        infix def union[RT <: Tuple](right: List[RT]): Union[UnionType[T, RT], A] =
-            unionClause(query, SqlUnionType.UNION, right)
+    infix def union[RT <: Tuple](right: RT): Union[UnionType[T, RT], A] =
+        unionClause(SqlUnionType.UNION, right)
 
-        infix def unionAll[RT <: Tuple, RA <: Tuple, RQ[_ <: Tuple, _ <: Tuple]](right: RQ[RT, RA])(using Query[RT, RA, RQ]): Union[UnionType[T, RT], A] =
-            unionClause(query, SqlUnionType.UNION_ALL, right)
+    infix def union[RT <: Tuple](right: List[RT]): Union[UnionType[T, RT], A] =
+        unionClause(SqlUnionType.UNION, right)
 
-        infix def unionAll[RT <: Tuple](right: RT): Union[UnionType[T, RT], A] =
-            unionClause(query, SqlUnionType.UNION_ALL, right)
+    infix def unionAll[RT <: Tuple](right: Query[RT, _]): Union[UnionType[T, RT], A] =
+        unionClause(SqlUnionType.UNION_ALL, right)
 
-        infix def unionAll[RT <: Tuple](right: List[RT]): Union[UnionType[T, RT], A] =
-            unionClause(query, SqlUnionType.UNION_ALL, right)
+    infix def unionAll[RT <: Tuple](right: RT): Union[UnionType[T, RT], A] =
+        unionClause(SqlUnionType.UNION_ALL, right)
 
-        infix def except[RT <: Tuple, RA <: Tuple, RQ[_ <: Tuple, _ <: Tuple]](right: RQ[RT, RA])(using Query[RT, RA, RQ]): Union[UnionType[T, RT], A] =
-            unionClause(query, SqlUnionType.EXCEPT, right)
+    infix def unionAll[RT <: Tuple](right: List[RT]): Union[UnionType[T, RT], A] =
+        unionClause(SqlUnionType.UNION_ALL, right)
 
-        infix def except[RT <: Tuple](right: RT): Union[UnionType[T, RT], A] =
-            unionClause(query, SqlUnionType.EXCEPT, right)
+    infix def except[RT <: Tuple](right: Query[RT, _]): Union[UnionType[T, RT], A] =
+        unionClause(SqlUnionType.EXCEPT, right)
 
-        infix def except[RT <: Tuple](right: List[RT]): Union[UnionType[T, RT], A] =
-            unionClause(query, SqlUnionType.EXCEPT, right)
+    infix def except[RT <: Tuple](right: RT): Union[UnionType[T, RT], A] =
+        unionClause(SqlUnionType.EXCEPT, right)
 
-        infix def exceptAll[RT <: Tuple, RA <: Tuple, RQ[_ <: Tuple, _ <: Tuple]](right: RQ[RT, RA])(using Query[RT, RA, RQ]): Union[UnionType[T, RT], A] =
-            unionClause(query, SqlUnionType.EXCEPT_ALL, right)
+    infix def except[RT <: Tuple](right: List[RT]): Union[UnionType[T, RT], A] =
+        unionClause(SqlUnionType.EXCEPT, right)
 
-        infix def exceptAll[RT <: Tuple](right: RT): Union[UnionType[T, RT], A] =
-            unionClause(query, SqlUnionType.EXCEPT_ALL, right)
+    infix def exceptAll[RT <: Tuple](right: Query[RT, _]): Union[UnionType[T, RT], A] =
+        unionClause(SqlUnionType.EXCEPT_ALL, right)
 
-        infix def exceptAll[RT <: Tuple](right: List[RT]): Union[UnionType[T, RT], A] =
-            unionClause(query, SqlUnionType.EXCEPT_ALL, right)
+    infix def exceptAll[RT <: Tuple](right: RT): Union[UnionType[T, RT], A] =
+        unionClause(SqlUnionType.EXCEPT_ALL, right)
 
-        infix def intersect[RT <: Tuple, RA <: Tuple, RQ[_ <: Tuple, _ <: Tuple]](right: RQ[RT, RA])(using Query[RT, RA, RQ]): Union[UnionType[T, RT], A] =
-            unionClause(query, SqlUnionType.INTERSECT, right)
+    infix def exceptAll[RT <: Tuple](right: List[RT]): Union[UnionType[T, RT], A] =
+        unionClause(SqlUnionType.EXCEPT_ALL, right)
 
-        infix def intersect[RT <: Tuple](right: RT): Union[UnionType[T, RT], A] =
-            unionClause(query, SqlUnionType.INTERSECT, right)
+    infix def intersect[RT <: Tuple](right: Query[RT, _]): Union[UnionType[T, RT], A] =
+        unionClause(SqlUnionType.INTERSECT, right)
 
-        infix def intersect[RT <: Tuple](right: List[RT]): Union[UnionType[T, RT], A] =
-            unionClause(query, SqlUnionType.INTERSECT, right)
+    infix def intersect[RT <: Tuple](right: RT): Union[UnionType[T, RT], A] =
+        unionClause(SqlUnionType.INTERSECT, right)
 
-        infix def intersectAll[RT <: Tuple, RA <: Tuple, RQ[_ <: Tuple, _ <: Tuple]](right: RQ[RT, RA])(using Query[RT, RA, RQ]): Union[UnionType[T, RT], A] =
-            unionClause(query, SqlUnionType.INTERSECT_ALL, right)
+    infix def intersect[RT <: Tuple](right: List[RT]): Union[UnionType[T, RT], A] =
+        unionClause(SqlUnionType.INTERSECT, right)
 
-        infix def intersectAll[RT <: Tuple](right: RT): Union[UnionType[T, RT], A] =
-            unionClause(query, SqlUnionType.INTERSECT_ALL, right)
+    infix def intersectAll[RT <: Tuple](right: Query[RT, _]): Union[UnionType[T, RT], A] =
+        unionClause(SqlUnionType.INTERSECT_ALL, right)
 
-        infix def intersectAll[RT <: Tuple](right: List[RT]): Union[UnionType[T, RT], A] =
-            unionClause(query, SqlUnionType.INTERSECT_ALL, right)
+    infix def intersectAll[RT <: Tuple](right: RT): Union[UnionType[T, RT], A] =
+        unionClause(SqlUnionType.INTERSECT_ALL, right)
+
+    infix def intersectAll[RT <: Tuple](right: List[RT]): Union[UnionType[T, RT], A] =
+        unionClause(SqlUnionType.INTERSECT_ALL, right)
+
+    def unsafeAs(name: String): AliasQuery[T, A] =
+        AliasQuery(getSelectItems, getAst, name)
+
+    infix def as(name: String)(using NonEmpty[name.type] =:= true): AliasQuery[T, A] =
+        AliasQuery(getSelectItems, getAst, name)
+}
+
+object Query {
+    extension [T <: SqlDataType] (s: Query[Tuple1[T], _]) {
+        def toExpr: SubQueryExpr[T] =
+            SubQueryExpr(s)
+    }
+
+    given queryToSql: ToSql[Query[_, _]] with {
+        extension (x: Query[_, _]) def sql(db: DB): String =
+            queryToString(x.getAst, db)
     }
 }
 
