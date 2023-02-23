@@ -86,7 +86,7 @@ object JdbcConnection {
             Id(x.exec(jdbcQuery(_, sql).head.head._2.toString().toLong))
 
         extension (x: JdbcConnection) {
-            def run[T : NonSelect : ToSql](query: T)(using logger: Logger): Int =
+            def run[T <: NonSelect : ToSql](query: T)(using logger: Logger): Int =
                 runMonad(x, query).get
 
             def runAndReturnKey(query: Insert[_, _])(using logger: Logger): List[Long] =
@@ -95,10 +95,10 @@ object JdbcConnection {
             def query(sql: String)(using logger: Logger): List[Map[String, Any]] =
                 queryMonad(x, sql).get
 
-            inline def query[T <: Tuple](query: Select[T, _])(using logger: Logger): List[ResultType[T]] =
+            inline def query[T <: Tuple](query: Query[T, _])(using logger: Logger): List[ResultType[T]] =
                 queryMonad(x, query).get
 
-            inline def querySkipNoneRows[T <: Tuple](query: Select[Tuple1[T], _])(using logger: Logger): List[T] =
+            inline def querySkipNoneRows[T <: Tuple](query: Query[Tuple1[T], _])(using logger: Logger): List[T] =
                 querySkipNoneRowsMonad(x, query).get
 
             inline def find[T <: Tuple](query: Select[T, _])(using logger: Logger): Option[ResultType[T]] =

@@ -10,7 +10,10 @@ import easysql.macros.*
 import easysql.util.*
 import easysql.database.DB
 
-class Save(private val ast: SqlStatement.SqlUpsert) {
+class Save(private val ast: SqlStatement.SqlUpsert) extends NonSelect {
+    override def getAst: SqlStatement =
+        ast
+
     inline def save[T <: Product](entity: T): Save = {
         val (tableName, pkList, colList) = updateMetaData[T]
 
@@ -41,13 +44,4 @@ class Save(private val ast: SqlStatement.SqlUpsert) {
 object Save {
     def apply(): Save = 
         new Save(SqlStatement.SqlUpsert(None, Nil, Nil, Nil, Nil))
-
-    given saveNonSelect: NonSelect[Save] with {}
-
-    given saveToSql: ToSql[Save] with {
-        extension (x: Save) {
-            def sql(db: DB): String =
-                statementToString(x.ast, db)        
-        }
-    }
 }
