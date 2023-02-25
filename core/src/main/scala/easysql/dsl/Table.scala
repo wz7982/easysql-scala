@@ -8,17 +8,23 @@ import scala.language.dynamics
 import scala.deriving.*
 
 sealed trait AnyTable {
-    infix def join(table: AnyTable): JoinTable = JoinTable(this, SqlJoinType.JOIN, table, None)
+    infix def join(table: AnyTable): JoinTable = 
+        JoinTable(this, SqlJoinType.JOIN, table, None)
 
-    infix def leftJoin(table: AnyTable): JoinTable = JoinTable(this, SqlJoinType.LEFT_JOIN, table, None)
+    infix def leftJoin(table: AnyTable): JoinTable = 
+        JoinTable(this, SqlJoinType.LEFT_JOIN, table, None)
 
-    infix def rightJoin(table: AnyTable): JoinTable = JoinTable(this, SqlJoinType.RIGHT_JOIN, table, None)
+    infix def rightJoin(table: AnyTable): JoinTable = 
+        JoinTable(this, SqlJoinType.RIGHT_JOIN, table, None)
 
-    infix def innerJoin(table: AnyTable): JoinTable = JoinTable(this, SqlJoinType.INNER_JOIN, table, None)
+    infix def innerJoin(table: AnyTable): JoinTable = 
+        JoinTable(this, SqlJoinType.INNER_JOIN, table, None)
 
-    infix def crossJoin(table: AnyTable): JoinTable = JoinTable(this, SqlJoinType.CROSS_JOIN, table, None)
+    infix def crossJoin(table: AnyTable): JoinTable = 
+        JoinTable(this, SqlJoinType.CROSS_JOIN, table, None)
 
-    infix def fullJoin(table: AnyTable): JoinTable = JoinTable(this, SqlJoinType.FULL_JOIN, table, None)
+    infix def fullJoin(table: AnyTable): JoinTable = 
+        JoinTable(this, SqlJoinType.FULL_JOIN, table, None)
 }
 
 class TableSchema[E <: Product](
@@ -29,7 +35,7 @@ class TableSchema[E <: Product](
     transparent inline def selectDynamic[N <: String & Singleton](inline name: N)(using m: Mirror.ProductOf[E]) = {
         val tableName = __aliasName.getOrElse(__tableName)
         inline exprMeta[E](name) match {
-            case ("pk", n) => 
+            case ("pk", n) =>
                 PrimaryKeyExpr[ElementType[m.MirroredElemTypes, m.MirroredElemLabels, N] & SqlDataType, N](tableName, n, name, false)
             case ("incr", n) => 
                 PrimaryKeyExpr[ElementType[m.MirroredElemTypes, m.MirroredElemLabels, N] & SqlDataType, N](tableName, n, name, true)
