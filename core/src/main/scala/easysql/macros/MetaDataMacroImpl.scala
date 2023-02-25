@@ -2,6 +2,7 @@ package easysql.macros
 
 import easysql.ast.SqlDataType
 import easysql.util.*
+import easysql.dsl.CustomSerializer
 
 import scala.quoted.{Expr, Quotes, Type}
 import scala.collection.mutable.*
@@ -23,14 +24,24 @@ def insertMetaDataMacro[T <: Product](using q: Quotes, tpe: Type[T]): Expr[(Stri
     }
 
     val fields = sym.declaredFields
+
+    val annoNames = List("PrimaryKey", "IncrKey", "Column", "PrimaryKeyGenerator", "CustomColumn")
+
     fields.foreach { field =>
         val annoInfo = field.annotations.map { a =>
             a match {
-                case Apply(Select(New(TypeIdent(name)), _), args) if name == "PrimaryKey" || name == "Column" || name == "IncrKey" || name == "PrimaryKeyGenerator" =>
+                case Apply(Select(New(TypeIdent(name)), _), args) if annoNames.contains(name) => {
                     args match {
                         case Literal(v) :: arg => (name, v.value.toString(), args)
                         case _ => (name, "", args)
                     }
+                }
+                case Apply(TypeApply(Select(New(TypeIdent(name)), _), _), args) if name == "CustomColumn" => {
+                    args match {
+                        case Literal(v) :: arg => (name, v.value.toString(), args)
+                        case _ => (name, "", args)
+                    }
+                }
                 case _ => ("", "", Nil)
             }
         }
@@ -57,12 +68,34 @@ def insertMetaDataMacro[T <: Product](using q: Quotes, tpe: Type[T]): Expr[(Stri
             Lambda(field, mtpe, rhsFn).asExprOf[T => SqlDataType | Option[SqlDataType]]
         }
 
+        def createCustomLambda(s: Statement) = {
+            val mtpe = MethodType(List("x"))(_ => List(TypeRepr.of[T]), _ => TypeRepr.of[SqlDataType | Option[SqlDataType]])
+            def rhsFn(sym: Symbol, paramRefs: List[Tree]): Tree = {
+                val x = paramRefs.head.asExprOf[T].asTerm
+                val fieldTerm = Select.unique(x, field.name)
+                field.tree match {
+                    case vd: ValDef => {
+                        val vdt = vd.tpt.tpe.asType
+                        vdt match {
+                            case '[t] => {
+                                val expr = s.asExprOf[CustomSerializer[t, _]]
+                                val fieldExpr = fieldTerm.asExprOf[t]
+                                '{ $expr.toValue($fieldExpr) }.asTerm
+                            }
+                        }
+                    }
+                }
+            }
+            Lambda(field, mtpe, rhsFn).asExprOf[T => SqlDataType | Option[SqlDataType]]
+        }
+
         val lambda = annoInfo.find(_._1 != "") match {
             case Some("PrimaryKeyGenerator", _, args) => args match {
                 case _ :: NamedArg(_, Block(l, _)) :: _ => createGeneratorLambda(l.head)
                 case _ :: Block(l, _) :: _ => createGeneratorLambda(l.head)
                 case _ => createLambda
             }
+            case Some("CustomColumn", _, args) => createCustomLambda(args(1))
             case _ => createLambda
         }
 
