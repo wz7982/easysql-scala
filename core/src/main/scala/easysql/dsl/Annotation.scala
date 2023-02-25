@@ -19,7 +19,7 @@ case class PrimaryKeyGenerator(columnName: String, gernerator: () => SqlDataType
 @scala.annotation.meta.field
 case class Column(columnName: String = "") extends StaticAnnotation
 
-trait CustomSerializer[T, D <: SqlDataType] {
+trait CustomSerializer[T, D] {
     def toValue(x: T): D
 
     def fromValue(x: Any): T

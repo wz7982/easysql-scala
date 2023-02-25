@@ -1,5 +1,8 @@
 package easysql.macros
 
+import easysql.dsl.CustomSerializer
+import easysql.ast.SqlDataType
+
 import java.util.Date
 import java.sql.ResultSet
 import scala.quoted.*
@@ -41,13 +44,38 @@ def bindEntityMacro[T](nextIndex: Expr[Int], data: Expr[Array[Any]])(using q: Qu
                     }
 
                     case '[t] => {
-                        val mtpe = MethodType(List("x"))(_ => List(TypeRepr.of[Array[Any]]), _ => TypeRepr.of[t])
-                        def rhsFn(sym: Symbol, paramRefs: List[Tree]) = {
-                            val x = paramRefs.head.asExprOf[Array[Any]]
-                            val offset = Expr(i)
-                            '{ $x($nextIndex + $offset).asInstanceOf[t] }.asTerm
+                        val args = f.annotations.map {
+                            case Apply(TypeApply(Select(New(TypeIdent(name)), _), _), args) if name == "CustomColumn" => args
+                            case _ => Nil
+                        }.find {
+                            case Nil => false 
+                            case _ => true
                         }
-                        val lambda = Lambda(f, mtpe, rhsFn).asExprOf[Array[Any] => t]
+
+                        val lambda = args match {
+                            case None => {
+                                val mtpe = MethodType(List("x"))(_ => List(TypeRepr.of[Array[Any]]), _ => TypeRepr.of[t])
+                                def rhsFn(sym: Symbol, paramRefs: List[Tree]) = {
+                                    val x = paramRefs.head.asExprOf[Array[Any]]
+                                    val offset = Expr(i)
+                                    '{ $x($nextIndex + $offset).asInstanceOf[t] }.asTerm
+                                }
+                                Lambda(f, mtpe, rhsFn).asExprOf[Array[Any] => t]
+                            }
+
+                            case Some(args) => {
+                                val mtpe = MethodType(List("x"))(_ => List(TypeRepr.of[Array[Any]]), _ => TypeRepr.of[t])
+                                def rhsFn(sym: Symbol, paramRefs: List[Tree]) = {
+                                    val x = paramRefs.head.asExprOf[Array[Any]]
+                                    val offset = Expr(i)
+                                    val expr = args(1).asExprOf[CustomSerializer[t, _]]
+                                    
+                                    '{ $expr.fromValue($x($nextIndex + $offset)) }.asTerm
+                                }
+                                Lambda(f, mtpe, rhsFn).asExprOf[Array[Any] => t]
+                            }
+                        }
+
                         i = i + 1
                         lambda
                     }
