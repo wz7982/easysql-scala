@@ -35,8 +35,11 @@ def exprMetaMacro[T](name: Expr[String])(using q: Quotes, t: Type[T]): Expr[(Str
     var eleTag = "column"
     var eleName = camelToSnake(name.value.get)
 
+    val annoNames = List("PrimaryKey", "IncrKey", "Column", "PrimaryKeyGenerator", "CustomColumn")
+
     ele.annotations.find {
-        case Apply(Select(New(TypeIdent(name)), _), _) if name == "PrimaryKey" || name == "IncrKey" || name == "Column" || name == "PrimaryKeyGenerator" => true
+        case Apply(Select(New(TypeIdent(name)), _), _) if annoNames.contains(name) => true
+        case Apply(TypeApply(Select(New(TypeIdent(name)), _), _), _) if name == "CustomColumn" => true
         case _ => false
     } match {
         case Some(Apply(Select(New(TypeIdent(name)), _), args)) => {
@@ -46,6 +49,13 @@ def exprMetaMacro[T](name: Expr[String])(using q: Quotes, t: Type[T]): Expr[(Str
                 case _ =>
             }
 
+            args match {
+                case Literal(v) :: _ => eleName = v.value.toString
+                case _ =>
+            }
+        }
+
+        case Some(Apply(TypeApply(_, _), args)) => {
             args match {
                 case Literal(v) :: _ => eleName = v.value.toString
                 case _ =>

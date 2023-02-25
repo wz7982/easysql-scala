@@ -20,4 +20,4 @@ case class PrimaryKeyGenerator(columnName: String, gernerator: () => SqlDataType
 case class Column(columnName: String = "") extends StaticAnnotation
 
 @scala.annotation.meta.field
-case class CustomColumn[T](columnName: String, toValue: T => SqlDataType, fromValue: Any => T) extends StaticAnnotation
+case class CustomColumn[T, D <: SqlDataType](columnName: String, toValue: T => D, fromValue: Any => T) extends StaticAnnotation
