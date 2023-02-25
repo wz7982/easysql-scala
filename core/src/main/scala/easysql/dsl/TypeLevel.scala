@@ -68,6 +68,7 @@ type ElementType[T <: Tuple, N <: Tuple, Name <: String] = (T, N) match {
             case Option[o] => o match {
                 case SqlDataType => o
             }
+            case _ => Nothing
         }
         case false => ElementType[tt, nt, Name]
     }
