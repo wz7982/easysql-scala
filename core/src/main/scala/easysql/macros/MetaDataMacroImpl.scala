@@ -140,21 +140,31 @@ def updateMetaDataMacro[T <: Product](using q: Quotes, tpe: Type[T]): Expr[(Stri
     }
 
     val fields = sym.declaredFields
+
+    val annoNames = List("PrimaryKey", "IncrKey", "Column", "PrimaryKeyGenerator", "CustomColumn")
+
     fields.foreach { field =>
         val annoInfo = field.annotations.map { a =>
             a match {
-                case Apply(Select(New(TypeIdent(name)), _), args) if name == "PrimaryKey" || name == "Column" || name == "IncrKey" || name == "PrimaryKeyGenerator" =>
+                case Apply(Select(New(TypeIdent(name)), _), args) if annoNames.contains(name) =>
                     args match {
-                        case Literal(v) :: _ => name -> v.value.toString()
-                        case _ => name -> ""
+                        case Literal(v) :: _ => (name, v.value.toString(), Nil)
+                        case _ => (name, "", Nil)
                     }
-                case _ => "" -> ""
+
+                case Apply(TypeApply(Select(New(TypeIdent(name)), _), _), args) if name == "CustomColumn" => {
+                    args match {
+                        case Literal(v) :: _ => (name, v.value.toString(), args)
+                        case _ => (name, "", Nil)
+                    }
+                }
+                case _ => ("", "", Nil)
             }
         }
 
         val fieldName = annoInfo.find(_._2 != "") match {
             case None => camelToSnake(field.name)
-            case Some(_, value) => value
+            case Some(_, value, _) => value
         }
 
         val mtpePk = MethodType(List("x"))(_ => List(TypeRepr.of[T]), _ => TypeRepr.of[SqlDataType])
@@ -171,17 +181,46 @@ def updateMetaDataMacro[T <: Product](using q: Quotes, tpe: Type[T]): Expr[(Stri
         }
         val lambdaUpdate = Lambda(field, mtpeUpdate, rhsFnUpdate).asExprOf[T => SqlDataType | Option[SqlDataType]]
 
+        def lambdaCustomUpdate(s: Statement) = {
+            val mtpe = MethodType(List("x"))(_ => List(TypeRepr.of[T]), _ => TypeRepr.of[SqlDataType | Option[SqlDataType]])
+            def rhsFn(sym: Symbol, paramRefs: List[Tree]): Tree = {
+                val x = paramRefs.head.asExprOf[T].asTerm
+                val fieldTerm = Select.unique(x, field.name)
+                field.tree match {
+                    case vd: ValDef => {
+                        val vdt = vd.tpt.tpe.asType
+                        vdt match {
+                            case '[t] => {
+                                val expr = s.asExprOf[CustomSerializer[t, _]]
+                                val fieldExpr = fieldTerm.asExprOf[t]
+                                '{ $expr.toValue($fieldExpr) }.asTerm
+                            }
+                        }
+                    }
+                }
+            }
+            Lambda(field, mtpe, rhsFn).asExprOf[T => SqlDataType | Option[SqlDataType]]
+        }
+
         annoInfo.find {
-            case (name, _) if name == "PrimaryKey" || name == "IncrKey" || name == "PrimaryKeyGenerator" => true
+            case (name, _, _) if name == "PrimaryKey" || name == "IncrKey" || name == "PrimaryKeyGenerator" || name == "CustomColumn" => true
             case _ => false
         } match {
             case None => {
-                updateFieldExprs.addOne(Expr.apply(fieldName))
+                updateFieldExprs.addOne(Expr(fieldName))
                 updateFunctionExprs.addOne(lambdaUpdate)
             }
-            case _ => {
-                pkFieldExprs.addOne(Expr.apply(fieldName))
-                pkFunctionExprs.addOne(lambdaPk)
+            case Some(name, _, args) => {
+                name match {
+                    case "CustomColumn" => {
+                        updateFieldExprs.addOne(Expr(fieldName))
+                        updateFunctionExprs.addOne(lambdaCustomUpdate(args(1)))
+                    }
+                    case _ => {
+                        pkFieldExprs.addOne(Expr(fieldName))
+                        pkFunctionExprs.addOne(lambdaPk)
+                    }
+                }
             }
         }
     }
