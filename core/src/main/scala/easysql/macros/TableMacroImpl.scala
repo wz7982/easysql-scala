@@ -31,8 +31,14 @@ def exprMetaMacro[T](name: Expr[String])(using q: Quotes, t: Type[T]): Expr[(Str
     }
 
     val ele = sym.declaredField(name.value.get)
-
-    var eleTag = "column"
+    val typeName = ele.annotations.find {
+        case Apply(TypeApply(Select(New(TypeIdent(name)), _), _), _) if name == "CustomColumn" => true
+        case _ => false
+    } match {
+        case Some(Apply(TypeApply(Select(New(TypeIdent(_)), _), t), _)) => t(1).tpe.typeSymbol.name
+        case _ => ""
+    }
+    var eleTag = typeName
     var eleName = camelToSnake(name.value.get)
 
     val annoNames = List("PrimaryKey", "IncrKey", "Column", "PrimaryKeyGenerator", "CustomColumn")

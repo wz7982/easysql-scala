@@ -4,8 +4,10 @@ import easysql.ast.table.*
 import easysql.macros.*
 import easysql.ast.SqlDataType
 
+import java.util.Date
 import scala.language.dynamics
 import scala.deriving.*
+import scala.compiletime.error
 
 sealed trait AnyTable {
     infix def join(table: AnyTable): JoinTable = 
@@ -35,11 +37,27 @@ class TableSchema[E <: Product](
     transparent inline def selectDynamic[N <: String & Singleton](inline name: N)(using m: Mirror.ProductOf[E]) = {
         val tableName = __aliasName.getOrElse(__tableName)
         inline exprMeta[E](name) match {
-            case ("pk", n) =>
+            case ("pk", n) => 
                 PrimaryKeyExpr[ElementType[m.MirroredElemTypes, m.MirroredElemLabels, N] & SqlDataType, N](tableName, n, name, false)
             case ("incr", n) => 
                 PrimaryKeyExpr[ElementType[m.MirroredElemTypes, m.MirroredElemLabels, N] & SqlDataType, N](tableName, n, name, true)
-            case (_, n) => 
+            case ("Int", n) =>
+                ColumnExpr[Int, N](tableName, n, name)
+            case ("Long", n) =>
+                ColumnExpr[Long, N](tableName, n, name)
+            case ("Float", n) =>
+                ColumnExpr[Float, N](tableName, n, name)
+            case ("Double", n) =>
+                ColumnExpr[Double, N](tableName, n, name)
+            case ("BigDecimal", n) =>
+                ColumnExpr[BigDecimal, N](tableName, n, name)
+            case ("Boolean", n) =>
+                ColumnExpr[Boolean, N](tableName, n, name)
+            case ("String", n) =>
+                ColumnExpr[String, N](tableName, n, name)
+            case ("Date", n) =>
+                ColumnExpr[Date, N](tableName, n, name)
+            case (_, n) =>
                 ColumnExpr[ElementType[m.MirroredElemTypes, m.MirroredElemLabels, N] & SqlDataType, N](tableName, n, name)
         }
     }
