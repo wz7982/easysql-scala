@@ -939,16 +939,16 @@ object Expr {
             infix def notLike(expr: Expr[_]): BinaryExpr[Boolean] =
                 BinaryExpr(e, SqlBinaryOperator.NOT_LIKE, expr)
 
-            def ->(json: Int): BinaryExpr[String] = 
+            def ->(json: Int): BinaryExpr[Nothing] = 
                 BinaryExpr(e, SqlBinaryOperator.JSON, LiteralExpr(json))
 
-            def ->(json: String): BinaryExpr[String] = 
+            def ->(json: String): BinaryExpr[Nothing] = 
                 BinaryExpr(e, SqlBinaryOperator.JSON, LiteralExpr(json))
 
-            def ->>(json: Int): BinaryExpr[String] = 
+            def ->>(json: Int): BinaryExpr[Nothing] = 
                 BinaryExpr(e, SqlBinaryOperator.JSON_TEXT, LiteralExpr(json))
 
-            def ->>(json: String): BinaryExpr[String] = 
+            def ->>(json: String): BinaryExpr[Nothing] = 
                 BinaryExpr(e, SqlBinaryOperator.JSON_TEXT, LiteralExpr(json))
         }
     }
