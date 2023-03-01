@@ -96,8 +96,13 @@ object Query {
     }
 
     given queryToSql: ToSql[Query[_, _]] with {
-        extension (x: Query[_, _]) def sql(db: DB): String =
-            queryToString(x.getAst, db)
+        extension (x: Query[_, _]) {
+            def sql(db: DB): String =
+                queryToString(x.getAst, db, false)._1
+
+            def preparedSql(db: DB): (String, Array[Any]) =
+                queryToString(x.getAst, db, true)
+        }
     }
 }
 

@@ -13,28 +13,30 @@ import scala.concurrent.Future
 trait DBOperator[D, F[_] : DBMonad] {
     def db(x: D): DB
 
-    def runSql(x: D, sql: String): F[Int]
+    def runSql(x: D, sql: String, args: Array[Any]): F[Int]
 
-    def runSqlAndReturnKey(x: D, sql: String): F[List[Long]]
+    def runSqlAndReturnKey(x: D, sql: String, args: Array[Any]): F[List[Long]]
 
-    def querySql(x: D, sql: String): F[List[Array[Any]]]
+    def querySql(x: D, sql: String, args: Array[Any]): F[List[Array[Any]]]
 
     def querySqlToMap(x: D, sql: String): F[List[Map[String, Any]]]
 
-    def querySqlCount(x: D, sql: String): F[Long]
+    def querySqlCount(x: D, sql: String, args: Array[Any]): F[Long]
 
     def runMonad[T <: NonSelect : ToSql](x: D, query: T)(using logger: Logger): F[Int] = {
-        val sql = query.sql(db(x))
+        val queryInfo = query.preparedSql(db(x))
+        val sql = queryInfo._1
         logger.apply(s"execute sql: \n$sql")
 
-        runSql(x, sql)
+        runSql(x, sql, queryInfo._2)
     }
 
     def runAndReturnKeyMonad(x: D, query: Insert[_, _])(using logger: Logger): F[List[Long]] = {
-        val sql = query.sql(db(x))
+        val queryInfo = query.preparedSql(db(x))
+        val sql = queryInfo._1
         logger.apply(s"execute sql: \n$sql")
 
-        runSqlAndReturnKey(x, sql)
+        runSqlAndReturnKey(x, sql, queryInfo._2)
     }
 
     def queryMonad(x: D, sql: String)(using logger: Logger): F[List[Map[String, Any]]] = {
@@ -44,11 +46,12 @@ trait DBOperator[D, F[_] : DBMonad] {
     }
 
     inline def queryMonad[T <: Tuple](x: D, query: Query[T, _])(using logger: Logger): F[List[ResultType[T]]] = {
-        val sql = query.sql(db(x))
+        val queryInfo = query.preparedSql(db(x))
+        val sql = queryInfo._1
         logger.apply(s"execute sql: \n$sql")
 
         for {
-            data <- querySql(x, sql)
+            data <- querySql(x, sql, queryInfo._2)
         } yield data.map(bind[ResultType[T]](0, _))
     }
 
@@ -97,10 +100,11 @@ trait DBOperator[D, F[_] : DBMonad] {
     }
 
     def fetchCountMonad(x: D, query: Select[_, _])(using logger: Logger): F[Long] = {
-        val sql = query.countSql(db(x))
+        val queryInfo = query.preparedCountSql(db(x))
+        val sql = queryInfo._1
         logger.apply(s"execute sql: \n$sql")
 
-        querySqlCount(x, sql)
+        querySqlCount(x, sql, queryInfo._2)
     }
 }
 

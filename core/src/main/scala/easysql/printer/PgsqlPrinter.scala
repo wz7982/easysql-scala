@@ -2,7 +2,7 @@ package easysql.printer
 
 import easysql.ast.statement.SqlStatement.SqlUpsert
 
-class PgsqlPrinter extends SqlPrinter {
+class PgsqlPrinter(override val prepare: Boolean) extends SqlPrinter(prepare) {
     override def printUpsert(upsert: SqlUpsert): Unit = {
         sqlBuilder.append("INSERT INTO ")
         printTable(upsert.table.get)

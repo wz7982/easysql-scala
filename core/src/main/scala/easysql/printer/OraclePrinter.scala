@@ -3,7 +3,7 @@ package easysql.printer
 import easysql.ast.limit.SqlLimit
 import easysql.ast.statement.SqlStatement.SqlUpsert
 
-class OraclePrinter extends SqlPrinter {
+class OraclePrinter(override val prepare: Boolean) extends SqlPrinter(prepare) {
     override def printLimit(limit: SqlLimit): Unit = {
         sqlBuilder.append(s"OFFSET ${limit.offset} ROWS FETCH FIRST ${limit.limit} ROWS ONLY")
     }
