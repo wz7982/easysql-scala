@@ -21,7 +21,7 @@ class Select[T <: Tuple, A <: Tuple](
     private[easysql] val ast: SqlQuery.SqlSelect, 
     private val selectItems: Map[String, String], 
     private val joinLeft: Option[SqlTable],
-    private val inWithQuery: Boolean
+    private val inWithQuery: InWithQuery
 ) extends Query[T, A] {
     override def getAst: SqlQuery = 
         ast
@@ -36,7 +36,7 @@ class Select[T <: Tuple, A <: Tuple](
 
     infix def from(table: AliasQuery[_, _]): Select[T, A] = {
         val fromTable = 
-            if inWithQuery 
+            if inWithQuery == In
             then SqlTable.SqlIdentTable(table.__queryName, None)
             else SqlTable.SqlSubQueryTable(table.__ast, false, Some(table.__queryName))
         new Select(ast.copy(from = Some(fromTable)), selectItems, Some(fromTable), inWithQuery)
@@ -44,7 +44,7 @@ class Select[T <: Tuple, A <: Tuple](
 
     infix def fromLateral(table: AliasQuery[_, _]): Select[T, A] = {
         val fromTable = 
-                    if inWithQuery 
+                    if inWithQuery == In 
                     then SqlTable.SqlIdentTable(table.__queryName, None)
                     else SqlTable.SqlSubQueryTable(table.__ast, true, Some(table.__queryName))
         new Select(ast.copy(from = Some(fromTable)), selectItems, Some(fromTable), inWithQuery)
@@ -160,7 +160,7 @@ class Select[T <: Tuple, A <: Tuple](
 
     private def joinClause(table: AliasQuery[_, _], joinType: SqlJoinType, lateral: Boolean): Select[T, A] = {
         val joinTable = 
-            if inWithQuery 
+            if inWithQuery == In 
             then SqlIdentTable(table.__queryName, None)
             else SqlSubQueryTable(table.__ast, lateral, Some(table.__queryName))
 
@@ -261,7 +261,7 @@ class Select[T <: Tuple, A <: Tuple](
 }
 
 object Select {
-    def apply(inWithQuery: Boolean): Select[EmptyTuple, EmptyTuple] =
+    def apply(inWithQuery: InWithQuery): Select[EmptyTuple, EmptyTuple] =
         new Select(SqlQuery.SqlSelect(false, Nil, None, None, Nil, Nil, false, None, None), Map(), None, inWithQuery)
 
     given selectToCountSql: ToCountSql[Select[_, _]] with {
@@ -283,3 +283,7 @@ object Select {
         }
     }
 }
+
+sealed trait InWithQuery
+case object In extends InWithQuery
+case object NotIn extends InWithQuery
