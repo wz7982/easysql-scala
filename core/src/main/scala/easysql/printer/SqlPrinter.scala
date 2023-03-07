@@ -207,6 +207,7 @@ trait SqlPrinter {
             sqlBuilder.append("\n")
             printSpace(spaceNum)
             spaceNum -= 4
+            sqlBuilder.append(")")
         }
 
         printList(cte.withList)(printWithItem)

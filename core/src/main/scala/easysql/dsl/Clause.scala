@@ -60,28 +60,28 @@ object AllColumn {
         AllColumnExpr(None)
 }
 
-def select[U <: Tuple](items: U): Select[InverseMap[U], AliasNames[U]] =
-    Select().select(items)
+def select[U <: Tuple](items: U)(using inWithQuery: Boolean = false): Select[InverseMap[U], AliasNames[U]] =
+    Select(inWithQuery).select(items)
 
 def select[I <: SqlDataType, E <: Expr[I]](item: E): Select[Tuple1[I], AliasNames[Tuple1[E]]] =
-    Select().select(item)
+    Select(false).select(item)
 
 def select[I <: SqlDataType, N <: String](item: AliasExpr[I, N]): Select[Tuple1[I], Tuple1[N]] = 
-    Select().select(item)
+    Select(false).select(item)
 
 def select[P <: Product](table: TableSchema[P]): Select[Tuple1[P], EmptyTuple] = 
-    Select().select(table)
+    Select(false).select(table)
 
 def dynamicSelect(columns: Expr[_]*): Select[EmptyTuple, EmptyTuple] =
-    Select().dynamicsSelect(columns*)
+    Select(false).dynamicsSelect(columns*)
 
 def from[P <: Product](table: TableSchema[P]): Select[Tuple1[P], EmptyTuple] =
-    Select().select(table).from(table)
+    Select(false).select(table).from(table)
 
 inline def find[T <: Product](pk: SqlDataType | Tuple): Select[Tuple1[T], EmptyTuple] = {
     val (tableName, cols) = fetchPk[T, pk.type]
     val table = asTable[T]
-    val select = Select().select(table).from(table)
+    val select = Select(false).select(table).from(table)
 
     val conditions: List[Expr[Boolean]] = inline pk match {
         case t: Tuple => t.toArray.toList.zip(cols).map { (p, c) =>
