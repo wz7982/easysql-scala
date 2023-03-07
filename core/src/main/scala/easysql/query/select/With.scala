@@ -19,8 +19,8 @@ class With[T <: Tuple](
     def recursive: With[T] =
         new With(ast.copy(recursive = true))
 
-    def query[QT <: Tuple, A <: Tuple](query: Boolean ?=> Query[QT, A]): With[QT] = {
-        given Boolean = true
+    def query[QT <: Tuple, A <: Tuple](query: InWithQuery ?=> Query[QT, A]): With[QT] = {
+        given InWithQuery = In
         new With(ast.copy(query = Some(query.getAst)))
     }       
 }
