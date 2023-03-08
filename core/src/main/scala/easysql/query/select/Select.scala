@@ -20,8 +20,7 @@ import easysql.query.ToSql
 class Select[T <: Tuple, A <: Tuple](
     private[easysql] val ast: SqlQuery.SqlSelect, 
     private val selectItems: Map[String, String], 
-    private val joinLeft: Option[SqlTable],
-    private val inWithQuery: InWithQuery
+    private val joinLeft: Option[SqlTable]
 ) extends Query[T, A] {
     override def getAst: SqlQuery = 
         ast
@@ -31,23 +30,23 @@ class Select[T <: Tuple, A <: Tuple](
 
     infix def from(table: TableSchema[_]): Select[T, A] = {
         val fromTable = SqlTable.SqlIdentTable(table.__tableName, table.__aliasName)
-        new Select(ast.copy(from = Some(fromTable)), selectItems, Some(fromTable), inWithQuery)
+        new Select(ast.copy(from = Some(fromTable)), selectItems, Some(fromTable))
     }
 
-    infix def from(table: AliasQuery[_, _]): Select[T, A] = {
+    infix def from(table: AliasQuery[_, _])(using inWithQuery: InWithQuery = NotIn): Select[T, A] = {
         val fromTable = 
             if inWithQuery == In
             then SqlTable.SqlIdentTable(table.__queryName, None)
             else SqlTable.SqlSubQueryTable(table.__ast, false, Some(table.__queryName))
-        new Select(ast.copy(from = Some(fromTable)), selectItems, Some(fromTable), inWithQuery)
+        new Select(ast.copy(from = Some(fromTable)), selectItems, Some(fromTable))
     }
 
-    infix def fromLateral(table: AliasQuery[_, _]): Select[T, A] = {
+    infix def fromLateral(table: AliasQuery[_, _])(using inWithQuery: InWithQuery = NotIn): Select[T, A] = {
         val fromTable = 
-                    if inWithQuery == In 
-                    then SqlTable.SqlIdentTable(table.__queryName, None)
-                    else SqlTable.SqlSubQueryTable(table.__ast, true, Some(table.__queryName))
-        new Select(ast.copy(from = Some(fromTable)), selectItems, Some(fromTable), inWithQuery)
+            if inWithQuery == In 
+            then SqlTable.SqlIdentTable(table.__queryName, None)
+            else SqlTable.SqlSubQueryTable(table.__ast, true, Some(table.__queryName))
+        new Select(ast.copy(from = Some(fromTable)), selectItems, Some(fromTable))
     }
 
     infix def select[U <: Tuple](items: U): Select[Concat[T, InverseMap[U]], Concat[A, AliasNames[U]]] = {
@@ -71,7 +70,7 @@ class Select[T <: Tuple, A <: Tuple](
             item <- info._2
         } yield item
 
-        new Select(ast.copy(select = ast.select ++ sqlSelectItems), this.selectItems ++ selectItems, joinLeft, inWithQuery)
+        new Select(ast.copy(select = ast.select ++ sqlSelectItems), this.selectItems ++ selectItems, joinLeft)
     }
 
     infix def select[I <: SqlDataType, E <: Expr[I]](item: E): Select[Concat[T, Tuple1[I]], Concat[A, AliasNames[Tuple1[E]]]] = {
@@ -81,14 +80,14 @@ class Select[T <: Tuple, A <: Tuple](
             case _ => SqlSelectItem(exprToSqlExpr(item), None) -> Map()
         }
         
-        new Select(ast.copy(select = ast.select ++ List(selectInfo._1)), this.selectItems ++ selectInfo._2, joinLeft, inWithQuery)
+        new Select(ast.copy(select = ast.select ++ List(selectInfo._1)), this.selectItems ++ selectInfo._2, joinLeft)
     }
 
     infix def select[I <: SqlDataType, N <: String](item: AliasExpr[I, N]): Select[Concat[T, Tuple1[I]], Concat[A, Tuple1[N]]] = {
         val sqlSelectItem = List(SqlSelectItem(exprToSqlExpr(item.expr), Some(item.name)))
         val selectItem = Map(item.name -> item.name)
 
-        new Select(ast.copy(select = ast.select ++ sqlSelectItem), this.selectItems ++ selectItem, joinLeft, inWithQuery)
+        new Select(ast.copy(select = ast.select ++ sqlSelectItem), this.selectItems ++ selectItem, joinLeft)
     }
 
     infix def select[P <: Product](table: TableSchema[P]): Select[Concat[T, Tuple1[P]], A] = {
@@ -96,7 +95,7 @@ class Select[T <: Tuple, A <: Tuple](
             SqlSelectItem(exprToSqlExpr(c), None)
         }
 
-        new Select(ast.copy(select = ast.select ++ sqlSelectItems), selectItems, joinLeft, inWithQuery)
+        new Select(ast.copy(select = ast.select ++ sqlSelectItems), selectItems, joinLeft)
     }
 
     infix def dynamicsSelect(columns: Expr[_] | AliasExpr[_, _]*): Select[EmptyTuple, EmptyTuple] = {
@@ -105,14 +104,14 @@ class Select[T <: Tuple, A <: Tuple](
             case a: AliasExpr[_, _] => SqlSelectItem(exprToSqlExpr(a.expr), Some(a.name))
         }
 
-        new Select(ast.copy(select = ast.select ++ sqlSelectItems), selectItems, joinLeft, inWithQuery)
+        new Select(ast.copy(select = ast.select ++ sqlSelectItems), selectItems, joinLeft)
     }
 
     def distinct: Select[T, A] =
-        new Select(ast.copy(distinct = true), selectItems, joinLeft, inWithQuery)
+        new Select(ast.copy(distinct = true), selectItems, joinLeft)
 
     infix def where(expr: Expr[Boolean]): Select[T, A] =
-        new Select(ast.addCondition(exprToSqlExpr(expr)), selectItems, joinLeft, inWithQuery)
+        new Select(ast.addCondition(exprToSqlExpr(expr)), selectItems, joinLeft)
 
     def where(test: () => Boolean, expr: Expr[Boolean]): Select[T, A] = 
         if test() then where(expr) else this
@@ -121,30 +120,30 @@ class Select[T <: Tuple, A <: Tuple](
         if test then where(expr) else this
 
     infix def having(expr: Expr[Boolean]): Select[T, A] =
-        new Select(ast.addHaving(exprToSqlExpr(expr)), selectItems, joinLeft, inWithQuery)
+        new Select(ast.addHaving(exprToSqlExpr(expr)), selectItems, joinLeft)
 
     infix def orderBy(order: OrderBy*): Select[T, A] = {
         val sqlOrderBy = order.map(o => SqlOrderBy(exprToSqlExpr(o.expr), o.order))
         
-        new Select(ast.copy(orderBy = ast.orderBy ++ sqlOrderBy), selectItems, joinLeft, inWithQuery)
+        new Select(ast.copy(orderBy = ast.orderBy ++ sqlOrderBy), selectItems, joinLeft)
     }
 
     infix def limit(count: Int): Select[T, A] = {
         val sqlLimit = ast.limit.map(l => SqlLimit(count, l.offset)).orElse(Some(SqlLimit(count, 0)))
 
-        new Select(ast.copy(limit = sqlLimit), selectItems, joinLeft, inWithQuery)
+        new Select(ast.copy(limit = sqlLimit), selectItems, joinLeft)
     }
 
     infix def offset(count: Int): Select[T, A] = {
         val sqlLimit = ast.limit.map(l => SqlLimit(l.limit, count)).orElse(Some(SqlLimit(1, count)))
 
-        new Select(ast.copy(limit = sqlLimit), selectItems, joinLeft, inWithQuery)
+        new Select(ast.copy(limit = sqlLimit), selectItems, joinLeft)
     }
 
     infix def groupBy(group: Expr[_]*): Select[T, A] = {
         val sqlGroupBy = group.map(exprToSqlExpr)
 
-        new Select(ast.copy(groupBy = ast.groupBy ++ sqlGroupBy), selectItems, joinLeft, inWithQuery)
+        new Select(ast.copy(groupBy = ast.groupBy ++ sqlGroupBy), selectItems, joinLeft)
     }
 
     private def joinClause(table: TableSchema[_], joinType: SqlJoinType): Select[T, A] = {
@@ -155,10 +154,10 @@ class Select[T <: Tuple, A <: Tuple](
             case Some(value) => SqlJoinTable(value, joinType, joinTable, None)
         }
 
-        new Select(ast.copy(from = Some(fromTable)), selectItems, Some(fromTable), inWithQuery)
+        new Select(ast.copy(from = Some(fromTable)), selectItems, Some(fromTable))
     }
 
-    private def joinClause(table: AliasQuery[_, _], joinType: SqlJoinType, lateral: Boolean): Select[T, A] = {
+    private def joinClause(table: AliasQuery[_, _], joinType: SqlJoinType, lateral: Boolean)(using inWithQuery: InWithQuery = NotIn): Select[T, A] = {
         val joinTable = 
             if inWithQuery == In 
             then SqlIdentTable(table.__queryName, None)
@@ -169,7 +168,7 @@ class Select[T <: Tuple, A <: Tuple](
             case Some(value) => SqlJoinTable(value, joinType, joinTable, None)
         }
 
-        new Select(ast.copy(from = Some(fromTable)), selectItems, Some(fromTable), inWithQuery)
+        new Select(ast.copy(from = Some(fromTable)), selectItems, Some(fromTable))
     }
 
     private def joinClause(table: JoinTable, joinType: SqlJoinType): Select[T, A] = {
@@ -188,7 +187,7 @@ class Select[T <: Tuple, A <: Tuple](
             case Some(value) => SqlJoinTable(value, joinType, joinTable, None)
         }
 
-        new Select(ast.copy(from = Some(fromTable)), selectItems, Some(fromTable), inWithQuery)
+        new Select(ast.copy(from = Some(fromTable)), selectItems, Some(fromTable))
     }
 
     infix def on(expr: Expr[Boolean]): Select[T, A] = {
@@ -199,70 +198,70 @@ class Select[T <: Tuple, A <: Tuple](
             }
         }
 
-        new Select(ast.copy(from = from), selectItems, from, inWithQuery)
+        new Select(ast.copy(from = from), selectItems, from)
     }
 
-    infix def join(table: TableSchema[_] | AliasQuery[_, _] | JoinTable): Select[T, A] = table match {
+    infix def join(table: TableSchema[_] | AliasQuery[_, _] | JoinTable)(using inWithQuery: InWithQuery = NotIn): Select[T, A] = table match {
         case t: TableSchema[_] => joinClause(t, SqlJoinType.JOIN)
         case t: AliasQuery[_, _] => joinClause(t, SqlJoinType.JOIN, false)
         case t: JoinTable => joinClause(t, SqlJoinType.JOIN)
     }
 
-    infix def joinLateral(table: AliasQuery[_, _]): Select[T, A] =
+    infix def joinLateral(table: AliasQuery[_, _])(using inWithQuery: InWithQuery = NotIn): Select[T, A] =
         joinClause(table, SqlJoinType.JOIN, true)
 
-    infix def leftJoin(table: TableSchema[_] | AliasQuery[_, _] | JoinTable): Select[T, A] = table match {
+    infix def leftJoin(table: TableSchema[_] | AliasQuery[_, _] | JoinTable)(using inWithQuery: InWithQuery = NotIn): Select[T, A] = table match {
         case t: TableSchema[_] => joinClause(t, SqlJoinType.LEFT_JOIN)
         case t: AliasQuery[_, _] => joinClause(t, SqlJoinType.LEFT_JOIN, false)
         case t: JoinTable => joinClause(t, SqlJoinType.LEFT_JOIN)
     }
 
-    infix def leftJoinLateral(table: AliasQuery[_, _]): Select[T, A] =
+    infix def leftJoinLateral(table: AliasQuery[_, _])(using inWithQuery: InWithQuery = NotIn): Select[T, A] =
         joinClause(table, SqlJoinType.LEFT_JOIN, true)
 
-    infix def rightJoin(table: TableSchema[_] | AliasQuery[_, _] | JoinTable): Select[T, A] = table match {
+    infix def rightJoin(table: TableSchema[_] | AliasQuery[_, _] | JoinTable)(using inWithQuery: InWithQuery = NotIn): Select[T, A] = table match {
         case t: TableSchema[_] => joinClause(t, SqlJoinType.RIGHT_JOIN)
         case t: AliasQuery[_, _] => joinClause(t, SqlJoinType.RIGHT_JOIN, false)
         case t: JoinTable => joinClause(t, SqlJoinType.RIGHT_JOIN)
     }
 
-    infix def rightJoinLateral(table: AliasQuery[_, _]): Select[T, A] =
+    infix def rightJoinLateral(table: AliasQuery[_, _])(using inWithQuery: InWithQuery = NotIn): Select[T, A] =
         joinClause(table, SqlJoinType.RIGHT_JOIN, true)
 
-    infix def innerJoin(table: TableSchema[_] | AliasQuery[_, _] | JoinTable): Select[T, A] = table match {
+    infix def innerJoin(table: TableSchema[_] | AliasQuery[_, _] | JoinTable)(using inWithQuery: InWithQuery = NotIn): Select[T, A] = table match {
         case t: TableSchema[_] => joinClause(t, SqlJoinType.INNER_JOIN)
         case t: AliasQuery[_, _] => joinClause(t, SqlJoinType.INNER_JOIN, false)
         case t: JoinTable => joinClause(t, SqlJoinType.INNER_JOIN)
     }
 
-    infix def innerJoinLateral(table: AliasQuery[_, _]): Select[T, A] =
+    infix def innerJoinLateral(table: AliasQuery[_, _])(using inWithQuery: InWithQuery = NotIn): Select[T, A] =
         joinClause(table, SqlJoinType.INNER_JOIN, true)
 
-    infix def crossJoin(table: TableSchema[_] | AliasQuery[_, _] | JoinTable): Select[T, A] = table match {
+    infix def crossJoin(table: TableSchema[_] | AliasQuery[_, _] | JoinTable)(using inWithQuery: InWithQuery = NotIn): Select[T, A] = table match {
         case t: TableSchema[_] => joinClause(t, SqlJoinType.CROSS_JOIN)
         case t: AliasQuery[_, _] => joinClause(t, SqlJoinType.CROSS_JOIN, false)
         case t: JoinTable => joinClause(t, SqlJoinType.CROSS_JOIN)
     }
 
-    infix def crossJoinLateral(table: AliasQuery[_, _]): Select[T, A] =
+    infix def crossJoinLateral(table: AliasQuery[_, _])(using inWithQuery: InWithQuery = NotIn): Select[T, A] =
         joinClause(table, SqlJoinType.CROSS_JOIN, true)
 
-    infix def fullJoin(table: TableSchema[_] | AliasQuery[_, _] | JoinTable): Select[T, A] = table match {
+    infix def fullJoin(table: TableSchema[_] | AliasQuery[_, _] | JoinTable)(using inWithQuery: InWithQuery = NotIn): Select[T, A] = table match {
         case t: TableSchema[_] => joinClause(t, SqlJoinType.FULL_JOIN)
         case t: AliasQuery[_, _] => joinClause(t, SqlJoinType.FULL_JOIN, false)
         case t: JoinTable => joinClause(t, SqlJoinType.FULL_JOIN)
     }
 
-    infix def fullJoinLateral(table: AliasQuery[_, _]): Select[T, A] =
+    infix def fullJoinLateral(table: AliasQuery[_, _])(using inWithQuery: InWithQuery = NotIn): Select[T, A] =
         joinClause(table, SqlJoinType.FULL_JOIN, true)
 
     def forUpdate: Select[T, A] =
-        new Select(ast.copy(forUpdate = true), selectItems, joinLeft, inWithQuery)
+        new Select(ast.copy(forUpdate = true), selectItems, joinLeft)
 }
 
 object Select {
-    def apply(inWithQuery: InWithQuery): Select[EmptyTuple, EmptyTuple] =
-        new Select(SqlQuery.SqlSelect(false, Nil, None, None, Nil, Nil, false, None, None), Map(), None, inWithQuery)
+    def apply(): Select[EmptyTuple, EmptyTuple] =
+        new Select(SqlQuery.SqlSelect(false, Nil, None, None, Nil, Nil, false, None, None), Map(), None)
 
     given selectToCountSql: ToCountSql[Select[_, _]] with {
         extension (x: Select[_, _]) def countSql(db: DB): String = {
