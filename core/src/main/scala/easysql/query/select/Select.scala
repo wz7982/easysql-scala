@@ -33,13 +33,19 @@ class Select[T <: Tuple, A <: Tuple](
         new Select(ast.copy(from = Some(fromTable)), selectItems, Some(fromTable))
     }
 
-    infix def from(table: AliasQuery[_, _]): Select[T, A] = {
-        val fromTable = SqlTable.SqlSubQueryTable(table.__ast, false, Some(table.__queryName))
+    infix def from(table: AliasQuery[_, _])(using inWithQuery: InWithQuery = NotIn): Select[T, A] = {
+        val fromTable = 
+            if inWithQuery == In
+            then SqlTable.SqlIdentTable(table.__queryName, None)
+            else SqlTable.SqlSubQueryTable(table.__ast, false, Some(table.__queryName))
         new Select(ast.copy(from = Some(fromTable)), selectItems, Some(fromTable))
     }
 
-    infix def fromLateral(table: AliasQuery[_, _]): Select[T, A] = {
-        val fromTable = SqlTable.SqlSubQueryTable(table.__ast, true, Some(table.__queryName))
+    infix def fromLateral(table: AliasQuery[_, _])(using inWithQuery: InWithQuery = NotIn): Select[T, A] = {
+        val fromTable = 
+            if inWithQuery == In 
+            then SqlTable.SqlIdentTable(table.__queryName, None)
+            else SqlTable.SqlSubQueryTable(table.__ast, true, Some(table.__queryName))
         new Select(ast.copy(from = Some(fromTable)), selectItems, Some(fromTable))
     }
 
@@ -151,8 +157,11 @@ class Select[T <: Tuple, A <: Tuple](
         new Select(ast.copy(from = Some(fromTable)), selectItems, Some(fromTable))
     }
 
-    private def joinClause(table: AliasQuery[_, _], joinType: SqlJoinType, lateral: Boolean): Select[T, A] = {
-        val joinTable = SqlSubQueryTable(table.__ast, lateral, Some(table.__queryName))
+    private def joinClause(table: AliasQuery[_, _], joinType: SqlJoinType, lateral: Boolean)(using inWithQuery: InWithQuery = NotIn): Select[T, A] = {
+        val joinTable = 
+            if inWithQuery == In 
+            then SqlIdentTable(table.__queryName, None)
+            else SqlSubQueryTable(table.__ast, lateral, Some(table.__queryName))
 
         val fromTable = joinLeft match {
             case None => joinTable
@@ -192,58 +201,58 @@ class Select[T <: Tuple, A <: Tuple](
         new Select(ast.copy(from = from), selectItems, from)
     }
 
-    infix def join(table: TableSchema[_] | AliasQuery[_, _] | JoinTable): Select[T, A] = table match {
+    infix def join(table: TableSchema[_] | AliasQuery[_, _] | JoinTable)(using inWithQuery: InWithQuery = NotIn): Select[T, A] = table match {
         case t: TableSchema[_] => joinClause(t, SqlJoinType.JOIN)
         case t: AliasQuery[_, _] => joinClause(t, SqlJoinType.JOIN, false)
         case t: JoinTable => joinClause(t, SqlJoinType.JOIN)
     }
 
-    infix def joinLateral(table: AliasQuery[_, _]): Select[T, A] =
+    infix def joinLateral(table: AliasQuery[_, _])(using inWithQuery: InWithQuery = NotIn): Select[T, A] =
         joinClause(table, SqlJoinType.JOIN, true)
 
-    infix def leftJoin(table: TableSchema[_] | AliasQuery[_, _] | JoinTable): Select[T, A] = table match {
+    infix def leftJoin(table: TableSchema[_] | AliasQuery[_, _] | JoinTable)(using inWithQuery: InWithQuery = NotIn): Select[T, A] = table match {
         case t: TableSchema[_] => joinClause(t, SqlJoinType.LEFT_JOIN)
         case t: AliasQuery[_, _] => joinClause(t, SqlJoinType.LEFT_JOIN, false)
         case t: JoinTable => joinClause(t, SqlJoinType.LEFT_JOIN)
     }
 
-    infix def leftJoinLateral(table: AliasQuery[_, _]): Select[T, A] =
+    infix def leftJoinLateral(table: AliasQuery[_, _])(using inWithQuery: InWithQuery = NotIn): Select[T, A] =
         joinClause(table, SqlJoinType.LEFT_JOIN, true)
 
-    infix def rightJoin(table: TableSchema[_] | AliasQuery[_, _] | JoinTable): Select[T, A] = table match {
+    infix def rightJoin(table: TableSchema[_] | AliasQuery[_, _] | JoinTable)(using inWithQuery: InWithQuery = NotIn): Select[T, A] = table match {
         case t: TableSchema[_] => joinClause(t, SqlJoinType.RIGHT_JOIN)
         case t: AliasQuery[_, _] => joinClause(t, SqlJoinType.RIGHT_JOIN, false)
         case t: JoinTable => joinClause(t, SqlJoinType.RIGHT_JOIN)
     }
 
-    infix def rightJoinLateral(table: AliasQuery[_, _]): Select[T, A] =
+    infix def rightJoinLateral(table: AliasQuery[_, _])(using inWithQuery: InWithQuery = NotIn): Select[T, A] =
         joinClause(table, SqlJoinType.RIGHT_JOIN, true)
 
-    infix def innerJoin(table: TableSchema[_] | AliasQuery[_, _] | JoinTable): Select[T, A] = table match {
+    infix def innerJoin(table: TableSchema[_] | AliasQuery[_, _] | JoinTable)(using inWithQuery: InWithQuery = NotIn): Select[T, A] = table match {
         case t: TableSchema[_] => joinClause(t, SqlJoinType.INNER_JOIN)
         case t: AliasQuery[_, _] => joinClause(t, SqlJoinType.INNER_JOIN, false)
         case t: JoinTable => joinClause(t, SqlJoinType.INNER_JOIN)
     }
 
-    infix def innerJoinLateral(table: AliasQuery[_, _]): Select[T, A] =
+    infix def innerJoinLateral(table: AliasQuery[_, _])(using inWithQuery: InWithQuery = NotIn): Select[T, A] =
         joinClause(table, SqlJoinType.INNER_JOIN, true)
 
-    infix def crossJoin(table: TableSchema[_] | AliasQuery[_, _] | JoinTable): Select[T, A] = table match {
+    infix def crossJoin(table: TableSchema[_] | AliasQuery[_, _] | JoinTable)(using inWithQuery: InWithQuery = NotIn): Select[T, A] = table match {
         case t: TableSchema[_] => joinClause(t, SqlJoinType.CROSS_JOIN)
         case t: AliasQuery[_, _] => joinClause(t, SqlJoinType.CROSS_JOIN, false)
         case t: JoinTable => joinClause(t, SqlJoinType.CROSS_JOIN)
     }
 
-    infix def crossJoinLateral(table: AliasQuery[_, _]): Select[T, A] =
+    infix def crossJoinLateral(table: AliasQuery[_, _])(using inWithQuery: InWithQuery = NotIn): Select[T, A] =
         joinClause(table, SqlJoinType.CROSS_JOIN, true)
 
-    infix def fullJoin(table: TableSchema[_] | AliasQuery[_, _] | JoinTable): Select[T, A] = table match {
+    infix def fullJoin(table: TableSchema[_] | AliasQuery[_, _] | JoinTable)(using inWithQuery: InWithQuery = NotIn): Select[T, A] = table match {
         case t: TableSchema[_] => joinClause(t, SqlJoinType.FULL_JOIN)
         case t: AliasQuery[_, _] => joinClause(t, SqlJoinType.FULL_JOIN, false)
         case t: JoinTable => joinClause(t, SqlJoinType.FULL_JOIN)
     }
 
-    infix def fullJoinLateral(table: AliasQuery[_, _]): Select[T, A] =
+    infix def fullJoinLateral(table: AliasQuery[_, _])(using inWithQuery: InWithQuery = NotIn): Select[T, A] =
         joinClause(table, SqlJoinType.FULL_JOIN, true)
 
     def forUpdate: Select[T, A] =
@@ -292,3 +301,7 @@ object Select {
         }
     }
 }
+
+sealed trait InWithQuery
+case object In extends InWithQuery
+case object NotIn extends InWithQuery
