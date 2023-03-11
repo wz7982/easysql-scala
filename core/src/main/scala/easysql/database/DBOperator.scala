@@ -56,11 +56,12 @@ trait DBOperator[D, F[_] : DBMonad] {
     }
 
     inline def queryMonad[T <: Tuple](x: D, query: With[T])(using logger: Logger): F[List[ResultType[T]]] = {
-        val sql = query.sql(db(x))
+        val queryInfo = query.preparedSql(db(x))
+        val sql = queryInfo._1
         logger.apply(s"execute sql: \n$sql")
 
         for {
-            data <- querySql(x, sql)
+            data <- querySql(x, sql, queryInfo._2)
         } yield data.map(bind[ResultType[T]](0, _))
     }
 
