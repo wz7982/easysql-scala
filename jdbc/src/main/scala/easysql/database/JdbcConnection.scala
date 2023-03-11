@@ -70,20 +70,20 @@ object JdbcConnection {
         def db(x: JdbcConnection): DB = 
             x.db
 
-        def runSql(x: JdbcConnection, sql: String, args: Array[Any]): Id[Int] =
-            Id(x.exec(jdbcExec(_, sql, args)))
+        def runSql(x: JdbcConnection, sql: String): Id[Int] =
+            Id(x.exec(jdbcExec(_, sql)))
 
-        def runSqlAndReturnKey(x: JdbcConnection, sql: String, args: Array[Any]): Id[List[Long]] =
-            Id(x.exec(jdbcExecReturnKey(_, sql, args)))
+        def runSqlAndReturnKey(x: JdbcConnection, sql: String): Id[List[Long]] =
+            Id(x.exec(jdbcExecReturnKey(_, sql)))
 
-        def querySql(x: JdbcConnection, sql: String, args: Array[Any]): Id[List[Array[Any]]] =
-            Id(x.exec(jdbcQueryToArray(_, sql, args)))
+        def querySql(x: JdbcConnection, sql: String): Id[List[Array[Any]]] =
+            Id(x.exec(jdbcQueryToArray(_, sql)))
 
         def querySqlToMap(x: JdbcConnection, sql: String): Id[List[Map[String, Any]]] =
             Id(x.exec(jdbcQuery(_, sql)))
 
-        def querySqlCount(x: JdbcConnection, sql: String, args: Array[Any]): Id[Long] =
-            Id(x.exec(jdbcQueryToArray(_, sql, args).head.head.toString.toLong))
+        def querySqlCount(x: JdbcConnection, sql: String): Id[Long] =
+            Id(x.exec(jdbcQuery(_, sql).head.head._2.toString().toLong))
 
         extension (x: JdbcConnection) {
             def run[T <: NonSelect : ToSql](query: T)(using logger: Logger): Int =

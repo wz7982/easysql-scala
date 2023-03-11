@@ -19,20 +19,20 @@ object JdbcTransaction {
         def db(x: JdbcTransaction): DB = 
             x.db
 
-        def runSql(x: JdbcTransaction, sql: String, args: Array[Any]): Id[Int] =
-            Id(jdbcExec(x.conn, sql, args))
+        def runSql(x: JdbcTransaction, sql: String): Id[Int] =
+            Id(jdbcExec(x.conn, sql))
 
-        def runSqlAndReturnKey(x: JdbcTransaction, sql: String, args: Array[Any]): Id[List[Long]] =
-            Id(jdbcExecReturnKey(x.conn, sql, args))
+        def runSqlAndReturnKey(x: JdbcTransaction, sql: String): Id[List[Long]] =
+            Id(jdbcExecReturnKey(x.conn, sql))
 
-        def querySql(x: JdbcTransaction, sql: String, args: Array[Any]): Id[List[Array[Any]]] =
-            Id(jdbcQueryToArray(x.conn, sql, args))
+        def querySql(x: JdbcTransaction, sql: String): Id[List[Array[Any]]] =
+            Id(jdbcQueryToArray(x.conn, sql))
 
         def querySqlToMap(x: JdbcTransaction, sql: String): Id[List[Map[String, Any]]] =
             Id(jdbcQuery(x.conn, sql))
 
-        def querySqlCount(x: JdbcTransaction, sql: String, args: Array[Any]): Id[Long] =
-            Id(jdbcQueryToArray(x.conn, sql, args).head.head.toString.toLong)
+        def querySqlCount(x: JdbcTransaction, sql: String): Id[Long] =
+            Id(jdbcQuery(x.conn, sql).head.head._2.toString().toLong)
     }
 }
 

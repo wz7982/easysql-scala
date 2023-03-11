@@ -3,7 +3,7 @@ package easysql.printer
 import easysql.ast.limit.SqlLimit
 import easysql.ast.statement.SqlStatement.SqlUpsert
 
-class SqlitePrinter(override val prepare: Boolean) extends SqlPrinter(prepare) {
+class SqlitePrinter extends SqlPrinter {
     override def printLimit(limit: SqlLimit): Unit = {
         sqlBuilder.append(s"LIMIT ${limit.offset}, ${limit.limit}")
     }

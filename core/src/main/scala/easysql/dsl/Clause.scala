@@ -147,7 +147,7 @@ extension (s: StringContext) {
         val pit = s.parts.iterator
         val builder = mutable.StringBuilder(pit.next())
         args.foreach { arg =>
-            val printer = fetchPrinter(DB.MYSQL, false)
+            val printer = fetchPrinter(DB.MYSQL)
             val expr = arg match {
                 case s: SqlDataType => LiteralExpr(s)
                 case l: List[SqlDataType] => ListExpr(l.map(LiteralExpr(_)))
