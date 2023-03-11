@@ -4,7 +4,7 @@ import easysql.ast.limit.SqlLimit
 import easysql.ast.statement.SqlQuery.*
 import easysql.ast.statement.SqlStatement.*
 
-class SqlserverPrinter extends SqlPrinter {
+class SqlserverPrinter(override val prepare: Boolean) extends SqlPrinter(prepare) {
     override def printLimit(limit: SqlLimit): Unit = {
         sqlBuilder.append(s"OFFSET ${limit.offset} ROWS FETCH NEXT ${limit.limit} ROWS ONLY")
     }

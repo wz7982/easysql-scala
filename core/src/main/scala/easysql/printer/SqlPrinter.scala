@@ -16,12 +16,14 @@ import easysql.ast.table.SqlTable.*
 import scala.collection.mutable
 import java.text.SimpleDateFormat
 
-trait SqlPrinter {
+trait SqlPrinter(val prepare: Boolean) {
     val sqlBuilder: StringBuilder = StringBuilder()
 
     val quote = "\""
 
     var spaceNum = 0
+
+    val args: mutable.ArrayBuffer[Any] = mutable.ArrayBuffer()
 
     def sql: String = sqlBuilder.toString()
 
@@ -228,15 +230,41 @@ trait SqlPrinter {
         expr match {
             case binary: SqlBinaryExpr => printBinaryExpr(binary)
 
-            case SqlCharExpr(text) => sqlBuilder.append(s"'${text.replace("'", "''")}'")
+            case SqlCharExpr(text) => {
+                if prepare then {
+                    sqlBuilder.append("?")
+                    args.append(text)
+                } else {
+                    sqlBuilder.append(s"'${text.replace("'", "''")}'")
+                }
+            }
 
-            case SqlNumberExpr(number) => sqlBuilder.append(number.toString)
+            case SqlNumberExpr(number) => {
+                if prepare then {
+                    sqlBuilder.append("?")
+                    args.append(number)
+                } else {
+                    sqlBuilder.append(number.toString)
+                }                
+            }
 
-            case SqlBooleanExpr(bool) => sqlBuilder.append(bool.toString)
+            case SqlBooleanExpr(bool) => {
+                if prepare then {
+                    sqlBuilder.append("?")
+                    args.append(bool)
+                } else {
+                    sqlBuilder.append(bool.toString)
+                }
+            }
 
             case SqlDateExpr(date) => {
-                val format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
-                sqlBuilder.append(s"'${format.format(date)}'")
+                if prepare then {
+                    sqlBuilder.append("?")
+                    args.append(date)
+                } else {
+                    val format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
+                    sqlBuilder.append(s"'${format.format(date)}'")
+                }
             }
 
             case SqlIdentExpr(name) => sqlBuilder.append(s"$quote${name}$quote")

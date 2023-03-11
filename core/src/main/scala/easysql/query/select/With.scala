@@ -30,7 +30,12 @@ object With {
         new With[EmptyTuple](SqlStatement.SqlWith(Nil, false, None))
 
     given withToSql[T <: Tuple]: ToSql[With[T]] with {
-        extension (q: With[T]) def sql(db: DB) =
-            statementToString(q.ast, db)
+        extension (q: With[T]) {
+            def sql(db: DB): String =
+                statementToString(q.ast, db, false)._1
+
+            def preparedSql(db: DB): (String, Array[Any]) =
+                statementToString(q.ast, db, true)
+        }
     }
 }
