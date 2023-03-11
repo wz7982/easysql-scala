@@ -8,11 +8,6 @@ trait ToSql[T] {
 
         def toSql(using db: DB): String = 
             sql(db)
-
-        def preparedSql(db: DB): (String, Array[Any])
-
-        def toPreparedSql(using db: DB): (String, Array[Any]) =
-            preparedSql(db)
     }
 }
 
@@ -22,11 +17,6 @@ trait ToCountSql[T] {
 
         def countToSql(using db: DB): String = 
             countSql(db)
-
-        def preparedCountSql(db: DB): (String, Array[Any])
-
-        def toPreparedCountSql(using db: DB): (String, Array[Any]) =
-            preparedCountSql(db)
     }
 }
 
@@ -36,10 +26,5 @@ trait ToPageSql[T] {
 
         def toPageSql(pageSize: Int, pageNumber: Int)(using db: DB): String =
             pageSql(pageSize, pageNumber)(db)
-
-        def preparedPageSql(pageSize: Int, pageNumber: Int)(db: DB): (String, Array[Any])
-
-        def toPreparedPageSql(pageSize: Int, pageNumber: Int)(using db: DB): (String, Array[Any]) =
-            preparedPageSql(pageSize, pageNumber)(db)
     }
 }

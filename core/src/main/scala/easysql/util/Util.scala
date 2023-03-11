@@ -12,24 +12,24 @@ import easysql.dsl.*
 
 import java.util.Date
 
-def fetchPrinter(db: DB, prepare: Boolean): SqlPrinter = db match {
-    case DB.MYSQL => MysqlPrinter(prepare)
-    case DB.PGSQL => PgsqlPrinter(prepare)
-    case DB.SQLSERVER => SqlserverPrinter(prepare)
-    case DB.SQLITE => SqlitePrinter(prepare)
-    case DB.ORACLE => OraclePrinter(prepare)
+def fetchPrinter(db: DB): SqlPrinter = db match {
+    case DB.MYSQL => MysqlPrinter()
+    case DB.PGSQL => PgsqlPrinter()
+    case DB.SQLSERVER => SqlserverPrinter()
+    case DB.SQLITE => SqlitePrinter()
+    case DB.ORACLE => OraclePrinter()
 }
 
-def queryToString(query: SqlQuery, db: DB, prepare: Boolean): (String, Array[Any]) = {
-    val printer = fetchPrinter(db, prepare)
+def queryToString(query: SqlQuery, db: DB): String = {
+    val printer = fetchPrinter(db)
     printer.printQuery(query)
-    printer.sql -> printer.args.toArray
+    printer.sql
 }
 
-def statementToString(statement: SqlStatement, db: DB, prepare: Boolean): (String, Array[Any]) = {
-    val printer = fetchPrinter(db, prepare)
+def statementToString(statement: SqlStatement, db: DB): String = {
+    val printer = fetchPrinter(db)
     printer.printStatement(statement)
-    printer.sql -> printer.args.toArray
+    printer.sql
 }
 
 def camelListToSnakeList(s: List[Char]): List[Char] = s match {

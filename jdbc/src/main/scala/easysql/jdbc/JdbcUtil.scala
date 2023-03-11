@@ -5,7 +5,6 @@ import java.util.Date
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 import scala.language.unsafeNulls
-import java.sql.PreparedStatement
 
 def jdbcQuery(conn: Connection, sql: String): List[Map[String, Any]] = {
     var stmt: Statement = null
@@ -33,18 +32,16 @@ def jdbcQuery(conn: Connection, sql: String): List[Map[String, Any]] = {
     result.toList
 }
 
-def jdbcQueryToArray(conn: Connection, sql: String, args: Array[Any]): List[Array[Any]] = {
-    var stmt: PreparedStatement = null
+def jdbcQueryToArray(conn: Connection, sql: String): List[Array[Any]] = {
+    var stmt: Statement = null
     var rs: ResultSet = null
     val result = ListBuffer[Array[Any]]()
 
     try {
-        stmt = conn.prepareStatement(sql)
-        for (i <- 1 to args.size) {
-            stmt.setObject(i, args(i - 1))
-        }
-        rs = stmt.executeQuery()
+        stmt = conn.createStatement()
+        rs = stmt.executeQuery(sql)
         val metadata = rs.getMetaData
+
         while (rs.next()) {
             val rowList = (1 to metadata.getColumnCount()).toArray.map { it =>
                 val data: Any = rs.getObject(it) match {
@@ -75,16 +72,13 @@ def jdbcQueryToArray(conn: Connection, sql: String, args: Array[Any]): List[Arra
     result.toList
 }
 
-def jdbcExec(conn: Connection, sql: String, args: Array[Any]): Int = {
-    var stmt: PreparedStatement = null
+def jdbcExec(conn: Connection, sql: String): Int = {
+    var stmt: Statement = null
     var result = 0
 
     try {
-        stmt = conn.prepareStatement(sql)
-        for (i <- 1 to args.size) {
-            stmt.setObject(i, args(i - 1))
-        }
-        result = stmt.executeUpdate()
+        stmt = conn.createStatement()
+        result = stmt.executeUpdate(sql)
     } catch {
         case e: Exception => throw e
     } finally {
@@ -94,15 +88,12 @@ def jdbcExec(conn: Connection, sql: String, args: Array[Any]): Int = {
     result
 }
 
-def jdbcExecReturnKey(conn: Connection, sql: String, args: Array[Any]): List[Long] = {
-    var stmt: PreparedStatement = null
+def jdbcExecReturnKey(conn: Connection, sql: String): List[Long] = {
+    var stmt: Statement = null
     val result = ListBuffer[Long]()
 
     try {
-        stmt = conn.prepareStatement(sql)
-        for (i <- 1 to args.size) {
-            stmt.setObject(i, args(i - 1))
-        }
+        stmt = conn.createStatement()
         stmt.executeUpdate(sql, Statement.RETURN_GENERATED_KEYS)
         val resultSet = stmt.getGeneratedKeys
         while (resultSet.next()) {
