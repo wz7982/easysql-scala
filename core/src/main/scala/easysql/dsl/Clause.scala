@@ -146,7 +146,7 @@ extension (s: StringContext) {
     def sql(args: (SqlDataType | List[SqlDataType])*): NativeSql = {
         val pit = s.parts.iterator
         val builder = mutable.StringBuilder(pit.next())
-        val sqlArgs = mutable.ArrayBuffer[Any]()
+        val sqlArgs = mutable.ArrayBuffer[SqlDataType]()
         args.foreach { arg =>
             arg match {
                 case s: SqlDataType => {
@@ -164,6 +164,6 @@ extension (s: StringContext) {
             builder.append(pit.next)
         }
 
-        NativeSql(builder.toString, sqlArgs.toArray)
+        new NativeSql(builder.toString, sqlArgs.toArray)
     }
 }
