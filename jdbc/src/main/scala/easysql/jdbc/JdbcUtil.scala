@@ -25,8 +25,12 @@ def jdbcQuery(conn: Connection, sql: String): List[Map[String, Any]] = {
     } catch {
         case e: Exception => throw e
     } finally {
-        stmt.close()
-        rs.close()
+        if (stmt != null) {
+            stmt.close()
+        }
+        if (rs != null) {
+            rs.close()
+        }
     }
 
     result.toList
@@ -40,9 +44,20 @@ def jdbcQueryToArray(conn: Connection, sql: String, args: Array[Any]): List[Arra
     try {
         stmt = conn.prepareStatement(sql)
         for (i <- 1 to args.size) {
-            stmt.setObject(i, args(i - 1))
+            val arg = args(i - 1)
+            arg match {
+                case n: BigDecimal => stmt.setBigDecimal(i, n.bigDecimal)
+                case n: Int => stmt.setInt(i, n)
+                case n: Long => stmt.setLong(i, n)
+                case n: Float => stmt.setFloat(i, n)
+                case n: Double => stmt.setDouble(i, n)
+                case b: Boolean => stmt.setBoolean(i, b)
+                case s: String => stmt.setString(i, s)
+                case d: Date => stmt.setDate(i, java.sql.Date(d.getTime()))
+                case _ => stmt.setObject(i, arg)
+            }
         }
-        rs = stmt.executeQuery(sql)
+        rs = stmt.executeQuery()
         val metadata = rs.getMetaData
 
         while (rs.next()) {
@@ -68,8 +83,12 @@ def jdbcQueryToArray(conn: Connection, sql: String, args: Array[Any]): List[Arra
     } catch {
         case e: Exception => throw e
     } finally {
-        stmt.close()
-        rs.close()
+        if (stmt != null) {
+            stmt.close()
+        }
+        if (rs != null) {
+            rs.close()
+        }
     }
 
     result.toList
@@ -84,11 +103,13 @@ def jdbcExec(conn: Connection, sql: String, args: Array[Any]): Int = {
         for (i <- 1 to args.size) {
             stmt.setObject(i, args(i - 1))
         }
-        result = stmt.executeUpdate(sql)
+        result = stmt.executeUpdate()
     } catch {
         case e: Exception => throw e
     } finally {
-        stmt.close()
+        if (stmt != null) {
+            stmt.close()
+        }
     }
 
     result
@@ -111,7 +132,9 @@ def jdbcExecReturnKey(conn: Connection, sql: String, args: Array[Any]): List[Lon
     } catch {
         case e: Exception => throw e
     } finally {
-        stmt.close()
+        if (stmt != null) {
+            stmt.close()
+        }
     }
 
     result.toList
