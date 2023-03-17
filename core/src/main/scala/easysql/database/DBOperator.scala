@@ -21,7 +21,7 @@ trait DBOperator[D, F[_] : DBMonad] {
 
     def querySqlCount(x: D, sql: String, args: Array[Any]): F[Long]
 
-    def runMonad[T <: NonSelect : ToSql](x: D, query: T)(using logger: Logger): F[Int] = {
+    def runMonad[T <: NonSelect](x: D, query: T)(using logger: Logger): F[Int] = {
         val info = query.preparedSql(db(x))
         logger.apply(s"execute sql: \n${info._1}")
 

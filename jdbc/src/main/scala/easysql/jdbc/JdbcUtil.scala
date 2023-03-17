@@ -101,7 +101,18 @@ def jdbcExec(conn: Connection, sql: String, args: Array[Any]): Int = {
     try {
         stmt = conn.prepareStatement(sql)
         for (i <- 1 to args.size) {
-            stmt.setObject(i, args(i - 1))
+            val arg = args(i - 1)
+            arg match {
+                case n: BigDecimal => stmt.setBigDecimal(i, n.bigDecimal)
+                case n: Int => stmt.setInt(i, n)
+                case n: Long => stmt.setLong(i, n)
+                case n: Float => stmt.setFloat(i, n)
+                case n: Double => stmt.setDouble(i, n)
+                case b: Boolean => stmt.setBoolean(i, b)
+                case s: String => stmt.setString(i, s)
+                case d: Date => stmt.setDate(i, java.sql.Date(d.getTime()))
+                case _ => stmt.setObject(i, arg)
+            }
         }
         result = stmt.executeUpdate()
     } catch {
@@ -120,11 +131,22 @@ def jdbcExecReturnKey(conn: Connection, sql: String, args: Array[Any]): List[Lon
     val result = ListBuffer[Long]()
 
     try {
-        stmt = conn.prepareStatement(sql)
+        stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)
         for (i <- 1 to args.size) {
-            stmt.setObject(i, args(i - 1))
+            val arg = args(i - 1)
+            arg match {
+                case n: BigDecimal => stmt.setBigDecimal(i, n.bigDecimal)
+                case n: Int => stmt.setInt(i, n)
+                case n: Long => stmt.setLong(i, n)
+                case n: Float => stmt.setFloat(i, n)
+                case n: Double => stmt.setDouble(i, n)
+                case b: Boolean => stmt.setBoolean(i, b)
+                case s: String => stmt.setString(i, s)
+                case d: Date => stmt.setDate(i, java.sql.Date(d.getTime()))
+                case _ => stmt.setObject(i, arg)
+            }
         }
-        stmt.executeUpdate(sql, Statement.RETURN_GENERATED_KEYS)
+        stmt.executeUpdate()
         val resultSet = stmt.getGeneratedKeys
         while (resultSet.next()) {
             result += resultSet.getLong(1)

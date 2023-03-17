@@ -33,7 +33,7 @@ object JdbcTransaction {
     }
 }
 
-def run[T <: NonSelect : ToSql](query: T)(using logger: Logger, t: JdbcTransaction): Int = 
+def run[T <: NonSelect](query: T)(using logger: Logger, t: JdbcTransaction): Int = 
     summon[DBOperator[JdbcTransaction, Id]].runMonad(t, query).get
 
 def runAndReturnKey(query: Insert[_, _])(using logger: Logger, t: JdbcTransaction): List[Long] = 

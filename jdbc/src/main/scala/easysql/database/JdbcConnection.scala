@@ -83,7 +83,7 @@ object JdbcConnection {
             Id(x.exec(jdbcQueryToArray(_, sql, args).head.head.toString.toLong))
 
         extension (x: JdbcConnection) {
-            def run[T <: NonSelect : ToSql](query: T)(using logger: Logger): Int =
+            def run[T <: NonSelect](query: T)(using logger: Logger): Int =
                 runMonad(x, query).get
 
             def runAndReturnKey(query: Insert[_, _])(using logger: Logger): List[Long] =
