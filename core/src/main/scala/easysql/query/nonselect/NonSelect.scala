@@ -13,7 +13,10 @@ object NonSelect {
     given nonSelectToSql: ToSql[NonSelect] with {
         extension (x: NonSelect) {
             def sql(db: DB): String =
-                statementToString(x.getAst, db)        
+                statementToString(x.getAst, db, false)._1
+            
+            def preparedSql(db: DB): (String, Array[Any]) =
+                statementToString(x.getAst, db, true)   
         }
     }
 }

@@ -143,20 +143,27 @@ extension (s: Select[_, _]) {
 }
 
 extension (s: StringContext) {
-    def sql(args: (SqlDataType | List[SqlDataType])*): String = {
+    def sql(args: (SqlDataType | List[SqlDataType])*): NativeSql = {
         val pit = s.parts.iterator
         val builder = mutable.StringBuilder(pit.next())
+        val sqlArgs = mutable.ArrayBuffer[SqlDataType]()
         args.foreach { arg =>
-            val printer = fetchPrinter(DB.MYSQL)
-            val expr = arg match {
-                case s: SqlDataType => LiteralExpr(s)
-                case l: List[SqlDataType] => ListExpr(l.map(LiteralExpr(_)))
+            arg match {
+                case s: SqlDataType => {
+                    builder.append("?")
+                    sqlArgs.append(s)
+                }
+                case l: List[SqlDataType] => {
+                    builder.append("(")
+                    val list = l.map(_ => "?").mkString("", ", ", "")
+                    builder.append(list)
+                    builder.append(")")
+                    sqlArgs.addAll(l)
+                }
             }
-            val sqlExpr = exprToSqlExpr(expr)
-            printer.printExpr(sqlExpr)
-            builder.append(printer.sql)
-            builder.append(pit.next())
+            builder.append(pit.next)
         }
-        builder.toString
+
+        new NativeSql(builder.toString, sqlArgs.toArray)
     }
 }

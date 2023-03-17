@@ -13,51 +13,52 @@ import scala.concurrent.Future
 trait DBOperator[D, F[_] : DBMonad] {
     def db(x: D): DB
 
-    def runSql(x: D, sql: String): F[Int]
+    def runSql(x: D, sql: String, args: Array[Any]): F[Int]
 
-    def runSqlAndReturnKey(x: D, sql: String): F[List[Long]]
+    def runSqlAndReturnKey(x: D, sql: String, args: Array[Any]): F[List[Long]]
 
-    def querySql(x: D, sql: String): F[List[Array[Any]]]
+    def querySql(x: D, sql: String, args: Array[Any]): F[List[Array[Any]]]
 
-    def querySqlToMap(x: D, sql: String): F[List[Map[String, Any]]]
+    def querySqlCount(x: D, sql: String, args: Array[Any]): F[Long]
 
-    def querySqlCount(x: D, sql: String): F[Long]
+    def runMonad[T <: NonSelect](x: D, query: T)(using logger: Logger): F[Int] = {
+        val info = query.preparedSql(db(x))
+        logger.apply(s"execute sql: \n${info._1}")
 
-    def runMonad[T <: NonSelect : ToSql](x: D, query: T)(using logger: Logger): F[Int] = {
-        val sql = query.sql(db(x))
-        logger.apply(s"execute sql: \n$sql")
-
-        runSql(x, sql)
+        runSql(x, info._1, info._2)
     }
 
     def runAndReturnKeyMonad(x: D, query: Insert[_, _])(using logger: Logger): F[List[Long]] = {
-        val sql = query.sql(db(x))
-        logger.apply(s"execute sql: \n$sql")
+        val info = query.preparedSql(db(x))
+        logger.apply(s"execute sql: \n${info._1}")
 
-        runSqlAndReturnKey(x, sql)
-    }
-
-    def queryMonad(x: D, sql: String)(using logger: Logger): F[List[Map[String, Any]]] = {
-        logger.apply(s"execute sql: \n$sql")
-
-        querySqlToMap(x, sql)
+        runSqlAndReturnKey(x, info._1, info._2)
     }
 
     inline def queryMonad[T <: Tuple](x: D, query: Query[T, _])(using logger: Logger): F[List[ResultType[T]]] = {
-        val sql = query.sql(db(x))
-        logger.apply(s"execute sql: \n$sql")
+        val info = query.preparedSql(db(x))
+        logger.apply(s"execute sql: \n${info._1}")
 
         for {
-            data <- querySql(x, sql)
+            data <- querySql(x, info._1, info._2)
         } yield data.map(bind[ResultType[T]](0, _))
     }
 
     inline def queryMonad[T <: Tuple](x: D, query: With[T])(using logger: Logger): F[List[ResultType[T]]] = {
-        val sql = query.sql(db(x))
-        logger.apply(s"execute sql: \n$sql")
+        val info = query.preparedSql(db(x))
+        logger.apply(s"execute sql: \n${info._1}")
 
         for {
-            data <- querySql(x, sql)
+            data <- querySql(x, info._1, info._2)
+        } yield data.map(bind[ResultType[T]](0, _))
+    }
+
+    inline def queryMonad[T <: Tuple](x: D, query: NativeSql)(using logger: Logger): F[List[ResultType[T]]] = {
+        val info = query.preparedSql(db(x))
+        logger.apply(s"execute sql: \n${info._1}")
+
+        for {
+            data <- querySql(x, info._1, info._2)
         } yield data.map(bind[ResultType[T]](0, _))
     }
 
@@ -70,6 +71,12 @@ trait DBOperator[D, F[_] : DBMonad] {
     inline def querySkipNoneRowsMonad[T](x: D, query: With[Tuple1[T]])(using logger: Logger): F[List[T]] = {
         for {
             data <- queryMonad(x, query)
+        } yield data.filter(_.nonEmpty).map(_.get)
+    }
+
+    inline def querySkipNoneRowsMonad[T](x: D, query: NativeSql)(using logger: Logger): F[List[T]] = {
+        for {
+            data <- queryMonad[Tuple1[T]](x, query)
         } yield data.filter(_.nonEmpty).map(_.get)
     }
 
@@ -112,10 +119,10 @@ trait DBOperator[D, F[_] : DBMonad] {
     }
 
     def fetchCountMonad(x: D, query: Select[_, _])(using logger: Logger): F[Long] = {
-        val sql = query.countSql(db(x))
-        logger.apply(s"execute sql: \n$sql")
+        val info = query.preparedSql(db(x))
+        logger.apply(s"execute sql: \n${info._1}")
 
-        querySqlCount(x, sql)
+        querySqlCount(x, info._1, info._2)
     }
 }
 
