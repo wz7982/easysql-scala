@@ -1,6 +1,6 @@
 package easysql.jdbc
 
-import java.sql.{Connection, Statement, ResultSet}
+import java.sql.{Connection, Statement, PreparedStatement, ResultSet}
 import java.util.Date
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
@@ -32,13 +32,16 @@ def jdbcQuery(conn: Connection, sql: String): List[Map[String, Any]] = {
     result.toList
 }
 
-def jdbcQueryToArray(conn: Connection, sql: String): List[Array[Any]] = {
-    var stmt: Statement = null
+def jdbcQueryToArray(conn: Connection, sql: String, args: Array[Any]): List[Array[Any]] = {
+    var stmt: PreparedStatement = null
     var rs: ResultSet = null
     val result = ListBuffer[Array[Any]]()
 
     try {
-        stmt = conn.createStatement()
+        stmt = conn.prepareStatement(sql)
+        for (i <- 1 to args.size) {
+            stmt.setObject(i, args(i - 1))
+        }
         rs = stmt.executeQuery(sql)
         val metadata = rs.getMetaData
 
@@ -72,12 +75,15 @@ def jdbcQueryToArray(conn: Connection, sql: String): List[Array[Any]] = {
     result.toList
 }
 
-def jdbcExec(conn: Connection, sql: String): Int = {
-    var stmt: Statement = null
+def jdbcExec(conn: Connection, sql: String, args: Array[Any]): Int = {
+    var stmt: PreparedStatement = null
     var result = 0
 
     try {
-        stmt = conn.createStatement()
+        stmt = conn.prepareStatement(sql)
+        for (i <- 1 to args.size) {
+            stmt.setObject(i, args(i - 1))
+        }
         result = stmt.executeUpdate(sql)
     } catch {
         case e: Exception => throw e
@@ -88,12 +94,15 @@ def jdbcExec(conn: Connection, sql: String): Int = {
     result
 }
 
-def jdbcExecReturnKey(conn: Connection, sql: String): List[Long] = {
-    var stmt: Statement = null
+def jdbcExecReturnKey(conn: Connection, sql: String, args: Array[Any]): List[Long] = {
+    var stmt: PreparedStatement = null
     val result = ListBuffer[Long]()
 
     try {
-        stmt = conn.createStatement()
+        stmt = conn.prepareStatement(sql)
+        for (i <- 1 to args.size) {
+            stmt.setObject(i, args(i - 1))
+        }
         stmt.executeUpdate(sql, Statement.RETURN_GENERATED_KEYS)
         val resultSet = stmt.getGeneratedKeys
         while (resultSet.next()) {

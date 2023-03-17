@@ -70,20 +70,17 @@ object JdbcConnection {
         def db(x: JdbcConnection): DB = 
             x.db
 
-        def runSql(x: JdbcConnection, sql: String): Id[Int] =
-            Id(x.exec(jdbcExec(_, sql)))
+        def runSql(x: JdbcConnection, sql: String, args: Array[Any]): Id[Int] =
+            Id(x.exec(jdbcExec(_, sql, args)))
 
-        def runSqlAndReturnKey(x: JdbcConnection, sql: String): Id[List[Long]] =
-            Id(x.exec(jdbcExecReturnKey(_, sql)))
+        def runSqlAndReturnKey(x: JdbcConnection, sql: String, args: Array[Any]): Id[List[Long]] =
+            Id(x.exec(jdbcExecReturnKey(_, sql, args)))
 
-        def querySql(x: JdbcConnection, sql: String): Id[List[Array[Any]]] =
-            Id(x.exec(jdbcQueryToArray(_, sql)))
+        def querySql(x: JdbcConnection, sql: String, args: Array[Any]): Id[List[Array[Any]]] =
+            Id(x.exec(jdbcQueryToArray(_, sql, args)))
 
-        def querySqlToMap(x: JdbcConnection, sql: String): Id[List[Map[String, Any]]] =
-            Id(x.exec(jdbcQuery(_, sql)))
-
-        def querySqlCount(x: JdbcConnection, sql: String): Id[Long] =
-            Id(x.exec(jdbcQuery(_, sql).head.head._2.toString().toLong))
+        def querySqlCount(x: JdbcConnection, sql: String, args: Array[Any]): Id[Long] =
+            Id(x.exec(jdbcQueryToArray(_, sql, args).head.head.toString.toLong))
 
         extension (x: JdbcConnection) {
             def run[T <: NonSelect : ToSql](query: T)(using logger: Logger): Int =
@@ -92,19 +89,22 @@ object JdbcConnection {
             def runAndReturnKey(query: Insert[_, _])(using logger: Logger): List[Long] =
                 runAndReturnKeyMonad(x, query).get
 
-            def query(sql: String)(using logger: Logger): List[Map[String, Any]] =
-                queryMonad(x, sql).get
-
             inline def query[T <: Tuple](query: Query[T, _])(using logger: Logger): List[ResultType[T]] =
                 queryMonad(x, query).get
 
             inline def query[T <: Tuple](query: With[T])(using logger: Logger): List[ResultType[T]] =
                 queryMonad(x, query).get
 
+            inline def query[T <: Tuple](query: NativeSql)(using logger: Logger): List[ResultType[T]] =
+                queryMonad[T](x, query).get
+
             inline def querySkipNoneRows[T](query: Query[Tuple1[T], _])(using logger: Logger): List[T] =
                 querySkipNoneRowsMonad(x, query).get
 
             inline def querySkipNoneRows[T](query: With[Tuple1[T]])(using logger: Logger): List[T] =
+                querySkipNoneRowsMonad(x, query).get
+
+            inline def querySkipNoneRows[T](query: NativeSql)(using logger: Logger): List[T] =
                 querySkipNoneRowsMonad(x, query).get
 
             inline def find[T <: Tuple](query: Select[T, _])(using logger: Logger): Option[ResultType[T]] =
