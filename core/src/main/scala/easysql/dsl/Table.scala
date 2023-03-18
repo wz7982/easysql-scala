@@ -8,6 +8,7 @@ import java.util.Date
 import scala.language.dynamics
 import scala.deriving.*
 import scala.compiletime.error
+import easysql.query.select.MonadicQuery
 
 sealed trait AnyTable {
     infix def join(table: AnyTable): JoinTable = 

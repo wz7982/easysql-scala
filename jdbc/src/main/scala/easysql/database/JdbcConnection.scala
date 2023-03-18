@@ -92,6 +92,9 @@ object JdbcConnection {
             inline def query[T <: Tuple](query: Query[T, _])(using logger: Logger): List[ResultType[T]] =
                 queryMonad(x, query).get
 
+            inline def query[T <: Tuple](query: MonadicQuery[T, _])(using logger: Logger): List[ResultType[T]] =
+                queryMonad(x, query).get
+
             inline def query[T <: Tuple](query: With[T])(using logger: Logger): List[ResultType[T]] =
                 queryMonad(x, query).get
 
@@ -99,6 +102,9 @@ object JdbcConnection {
                 queryMonad[T](x, query).get
 
             inline def querySkipNoneRows[T](query: Query[Tuple1[T], _])(using logger: Logger): List[T] =
+                querySkipNoneRowsMonad(x, query).get
+
+            inline def querySkipNoneRows[T](query: MonadicQuery[Tuple1[T], _])(using logger: Logger): List[T] =
                 querySkipNoneRowsMonad(x, query).get
 
             inline def querySkipNoneRows[T](query: With[Tuple1[T]])(using logger: Logger): List[T] =
