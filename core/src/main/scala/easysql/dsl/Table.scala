@@ -3,6 +3,7 @@ package easysql.dsl
 import easysql.ast.table.*
 import easysql.macros.*
 import easysql.ast.SqlDataType
+import easysql.query.select.MonadicQuery
 
 import java.util.Date
 import scala.language.dynamics

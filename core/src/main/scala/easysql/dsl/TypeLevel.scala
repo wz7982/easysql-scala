@@ -96,3 +96,8 @@ type UpdateType[T <: SqlDataType] <: SqlDataType = T match {
     case Boolean => Boolean
     case Date => Date | String
 }
+
+type MonadicJoin[T, JT] = T match {
+    case TableSchema[t] => (T, JT)
+    case h *: t => Tuple.Concat[(h *: t), Tuple1[JT]]
+}
