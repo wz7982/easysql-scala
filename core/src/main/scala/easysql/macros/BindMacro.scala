@@ -20,6 +20,12 @@ inline def bindSingleton[T](nextIndex: Int, data: Array[Any]): Option[T] = {
     val bindValue = inline erasedValue[T] match {
         case _: BigDecimal =>
             if data(nextIndex) == null then None else Some(BigDecimal(data(nextIndex).toString()))
+        case _: Boolean => {
+            val datum = data(nextIndex)
+            if datum == null then None else {
+                if datum == 0 || datum == false then Some(false) else Some(true)
+            }
+        }
         case _: Product =>
             bindEntity[T](nextIndex, data)
         case _ => 

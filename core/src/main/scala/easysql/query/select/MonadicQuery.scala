@@ -216,4 +216,14 @@ object MonadicQuery {
                 queryToString(x.query, db, true)
         }
     }
+
+    extension [T <: SqlDataType] (q: MonadicQuery[Tuple1[T], _]) {
+        def exists: MonadicQuery[Tuple1[Boolean], None.type] = {
+            val expr = SqlExpr.SqlExprFuncExpr("EXISTS", SqlExpr.SqlQueryExpr(q.query) :: Nil)
+            val selectItem = SqlSelectItem(expr, None)
+            val newQuery: SqlQuery.SqlSelect = SqlQuery.SqlSelect(false, selectItem :: Nil, None, None, Nil, Nil, false, None, None)
+
+            new MonadicQuery(newQuery, None)
+        }
+    }
 }
