@@ -6,6 +6,7 @@ import easysql.query.select.*
 import scala.compiletime.ops.any.*
 import scala.compiletime.ops.int.*
 import scala.compiletime.ops.boolean.*
+import scala.compiletime.ops.string.{Length, CharAt, Substring}
 import scala.Tuple.Concat
 import java.util.Date
 
@@ -100,4 +101,22 @@ type UpdateType[T <: SqlDataType] <: SqlDataType = T match {
 type MonadicJoin[T, JT] = T match {
     case TableSchema[t] => (T, JT)
     case h *: t => Tuple.Concat[(h *: t), Tuple1[JT]]
+}
+
+type SplitUnderline[S <: String, Begin <: Int, I <: Int] <: Tuple = I < Length[S] match {
+    case false => EmptyTuple
+    case true => CharAt[S, I] match {
+        case '_' => Substring[S, Begin, I] *: SplitUnderline[S, I + 1, I + 1]
+        case _ => SplitUnderline[S, Begin, I + 1]
+    }
+}
+
+type Split[S <: String] = SplitUnderline[scala.compiletime.ops.string.+[S, "_"], 0, 0]
+
+type JPAArgsType[ElementTypes <: Tuple, ElementLabels <: Tuple, NS <: Tuple] <: Tuple = NS match {
+    case h *: t => h match {
+        case "find" | "by" | "and" | "or" => JPAArgsType[ElementTypes, ElementLabels, t]
+        case _ => ElementType[ElementTypes, ElementLabels, h] *: JPAArgsType[ElementTypes, ElementLabels, t]
+    }
+    case EmptyTuple => EmptyTuple
 }
