@@ -6,6 +6,9 @@ inline def fetchTableName[T <: Product]: String =
 inline def exprMeta[T](inline name: String): (String, String) = 
     ${ exprMetaMacro[T]('name) }
 
+inline def columnsMeta[T]: List[(String, String)] =
+    ${ columnsMetaMacro[T] }
+
 inline def fieldNames[T]: List[String] = 
     ${ fieldNamesMacro[T] }
 

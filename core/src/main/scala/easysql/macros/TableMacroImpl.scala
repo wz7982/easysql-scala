@@ -74,6 +74,38 @@ def exprMetaMacro[T](name: Expr[String])(using q: Quotes, t: Type[T]): Expr[(Str
     Expr(eleTag *: eleName *: EmptyTuple)
 }
 
+def columnsMetaMacro[T](using q: Quotes, t: Type[T]): Expr[List[(String, String)]] = {
+    import q.reflect.*
+
+    val sym = TypeTree.of[T].symbol
+    val eles = sym.declaredFields
+
+    val info = eles.map { e =>
+        var eleName = camelToSnake(e.name)
+
+        val annoNames = List("PrimaryKey", "IncrKey", "Column", "PrimaryKeyGenerator", "CustomColumn")
+
+        e.annotations.find {
+            case Apply(Select(New(TypeIdent(name)), _), _) if annoNames.contains(name) => true
+            case Apply(TypeApply(Select(New(TypeIdent(name)), _), _), _) if name == "CustomColumn" => true
+            case _ => false
+        } match {
+            case Some(Apply(_, args)) => {
+                args match {
+                    case Literal(v) :: _ => eleName = v.value.toString
+                    case _ =>
+                }
+            }
+
+            case _ =>
+        }
+
+        e.name -> eleName
+    }
+
+    Expr(info)
+}
+
 def fieldNamesMacro[T](using q: Quotes, t: Type[T]): Expr[List[String]] = {
     import q.reflect.*
 
