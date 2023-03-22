@@ -6,6 +6,7 @@ import easysql.query.select.*
 import scala.compiletime.ops.any.*
 import scala.compiletime.ops.int.*
 import scala.compiletime.ops.boolean.*
+import scala.compiletime.ops.string.{Length, CharAt, Substring}
 import scala.Tuple.Concat
 import java.util.Date
 
@@ -100,4 +101,38 @@ type UpdateType[T <: SqlDataType] <: SqlDataType = T match {
 type MonadicJoin[T, JT] = T match {
     case TableSchema[t] => (T, JT)
     case h *: t => Tuple.Concat[(h *: t), Tuple1[JT]]
+}
+
+type Split[S <: String, Begin <: Int, I <: Int] <: Tuple = I < Length[S] match {
+    case false => EmptyTuple
+    case true => CharAt[S, I] match {
+        case '_' => Substring[S, Begin, I] *: Split[S, I + 1, I + 1]
+        case _ => Split[S, Begin, I + 1]
+    }
+}
+
+type SplitUnderline[S <: String] = Split[scala.compiletime.ops.string.+[S, "_"], 0, 0]
+
+type JPAArgsType[ElementTypes <: Tuple, ElementLabels <: Tuple, NS <: Tuple] <: Tuple = NS match {
+    case h *: t => h match {
+        case ("by" | "and" | "or") => t match {
+            case name *: tt => tt match {
+                case ("in" | "notIn") *: ttt => 
+                    List[ElementType[ElementTypes, ElementLabels, name]] *: JPAArgsType[ElementTypes, ElementLabels, ttt]
+                case ("like" | "notLike" | "startingWith" | "endingWith") *: ttt =>
+                    String *: JPAArgsType[ElementTypes, ElementLabels, ttt]
+                case ("gt" | "ge" | "lt" | "le" | "not") *: ttt =>
+                    ElementType[ElementTypes, ElementLabels, name] *: JPAArgsType[ElementTypes, ElementLabels, ttt]
+                case ("between" | "notBetween") *: ttt =>
+                    ElementType[ElementTypes, ElementLabels, name] *: ElementType[ElementTypes, ElementLabels, name] *: JPAArgsType[ElementTypes, ElementLabels, ttt]
+                case ("isNull" | "isNotNull") *: ttt =>
+                    JPAArgsType[ElementTypes, ElementLabels, ttt]
+                case _ => 
+                    ElementType[ElementTypes, ElementLabels, name] *: JPAArgsType[ElementTypes, ElementLabels, tt]
+            }      
+        }
+        case _ => JPAArgsType[ElementTypes, ElementLabels, t]
+    }
+    case EmptyTuple => 
+        EmptyTuple
 }
