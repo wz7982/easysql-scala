@@ -21,9 +21,9 @@ class Update(private val ast: SqlStatement.SqlUpdate) extends NonSelect {
         val table = Some(new SqlIdentTable(tableName, None))
 
         val where = pkList map { (pkName, fun) =>
-            SqlBinaryExpr(SqlIdentExpr(pkName), SqlBinaryOperator.EQ, exprToSqlExpr(LiteralExpr(fun.apply(entity))))
+            SqlBinaryExpr(SqlIdentExpr(pkName), SqlBinaryOperator.Eq, exprToSqlExpr(LiteralExpr(fun.apply(entity))))
         } reduce { (x, y) =>
-            SqlBinaryExpr(x, SqlBinaryOperator.AND, y)
+            SqlBinaryExpr(x, SqlBinaryOperator.And, y)
         }
 
         val updateInfo = colList.map { (colName, fun) =>

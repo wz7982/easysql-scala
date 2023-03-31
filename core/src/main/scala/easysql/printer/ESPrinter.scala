@@ -113,7 +113,7 @@ class ESPrinter {
         import easysql.ast.expr.SqlBinaryOperator.*
 
         e.op match {
-            case EQ => {
+            case Eq => {
                 printSpace
                 dslBuilder.append("\"term\": {")
                 dslBuilder.append("\n")
@@ -127,7 +127,7 @@ class ESPrinter {
                 printSpace
                 dslBuilder.append("},")
             }
-            case LIKE => {
+            case Like => {
                 printSpace
                 dslBuilder.append("\"match\": {")
                 dslBuilder.append("\n")
@@ -141,7 +141,7 @@ class ESPrinter {
                 printSpace
                 dslBuilder.append("},")
             }
-            case GT | GE | LT | LE => {
+            case Gt | Ge | Lt | Le => {
                 printSpace
                 dslBuilder.append("\"range\": {")
                 dslBuilder.append("\n")
@@ -153,10 +153,10 @@ class ESPrinter {
                 spaceNum += 4
                 printSpace
                 e.op match {
-                    case GT => dslBuilder.append("\"gt\"")
-                    case GE => dslBuilder.append("\"gte\"")
-                    case LT => dslBuilder.append("\"lt\"")
-                    case LE => dslBuilder.append("\"lte\"")
+                    case Gt => dslBuilder.append("\"gt\"")
+                    case Ge => dslBuilder.append("\"gte\"")
+                    case Lt => dslBuilder.append("\"lt\"")
+                    case Le => dslBuilder.append("\"lte\"")
                     case _ =>
                 }
                 dslBuilder.append(": ")
@@ -170,9 +170,9 @@ class ESPrinter {
                 printSpace
                 dslBuilder.append("},")
             }
-            case AND => printMustOrShould("must", e)
-            case OR => printMustOrShould("should", e)
-            case NE => {
+            case And => printMustOrShould("must", e)
+            case Or => printMustOrShould("should", e)
+            case Ne => {
                 printSpace
                 dslBuilder.append("\"bool\": {")
                 dslBuilder.append("\n")
@@ -180,7 +180,7 @@ class ESPrinter {
                 printSpace
                 dslBuilder.append(s"\"must_not\" [\n")
                 spaceNum += 4
-                printQuery(SqlBinaryExpr(e.left, EQ, e.right))
+                printQuery(SqlBinaryExpr(e.left, Eq, e.right))
                 spaceNum -= 4
                 dslBuilder.append("\n")
                 printSpace
@@ -189,7 +189,7 @@ class ESPrinter {
                 printSpace
                 dslBuilder.append("},")
             }
-            case NOT_LIKE => {
+            case NotLike => {
                 printSpace
                 dslBuilder.append("\"bool\": {")
                 dslBuilder.append("\n")
@@ -197,7 +197,7 @@ class ESPrinter {
                 printSpace
                 dslBuilder.append(s"\"must_not\" [\n")
                 spaceNum += 4
-                printQuery(SqlBinaryExpr(e.left, LIKE, e.right))
+                printQuery(SqlBinaryExpr(e.left, Like, e.right))
                 spaceNum -= 4
                 dslBuilder.append("\n")
                 printSpace
