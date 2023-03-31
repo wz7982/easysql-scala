@@ -50,10 +50,14 @@ class Insert[T <: Tuple, S <: InsertState](private val ast: SqlStatement.SqlInse
         new Insert(ast.copy(table = insertTable, columns = insertColumns))
     }
 
-    infix def values[SS >: S <: InsertValues](values: T*): Insert[T, InsertValues] = {
+    infix def values[SS >: S <: InsertValues](values: InsertType[T]*): Insert[T, InsertValues] = {
         val insertInfo = values.toList.map { v =>
             v.toList.map {
                 case d: SqlDataType => exprToSqlExpr(LiteralExpr(d))
+                case o: Option[_] => o match {
+                    case Some(value) => exprToSqlExpr(LiteralExpr(value.asInstanceOf[SqlDataType]))
+                    case _ => exprToSqlExpr(NullExpr)
+                }
             }
         }
 
