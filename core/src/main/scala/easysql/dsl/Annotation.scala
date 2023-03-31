@@ -14,7 +14,7 @@ case class PrimaryKey(columnName: String = "") extends StaticAnnotation
 case class IncrKey(columnName: String = "") extends StaticAnnotation
 
 @scala.annotation.meta.field
-case class PrimaryKeyGenerator(columnName: String, gernerator: () => SqlDataType) extends StaticAnnotation
+case class PrimaryKeyGenerator(columnName: String, generator: () => SqlDataType) extends StaticAnnotation
 
 @scala.annotation.meta.field
 case class Column(columnName: String = "") extends StaticAnnotation
