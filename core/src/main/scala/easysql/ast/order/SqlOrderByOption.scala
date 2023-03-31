@@ -1,8 +1,8 @@
 package easysql.ast.order
 
 enum SqlOrderByOption(val order: String) {
-    case ASC extends SqlOrderByOption("ASC")
-    case DESC extends SqlOrderByOption("DESC")
+    case Asc extends SqlOrderByOption("ASC")
+    case Desc extends SqlOrderByOption("DESC")
 
-    def turn: SqlOrderByOption = if this == ASC then DESC else ASC
+    def turn: SqlOrderByOption = if this == Asc then Desc else Asc
 }

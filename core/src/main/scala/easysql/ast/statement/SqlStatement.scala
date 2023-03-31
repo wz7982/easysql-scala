@@ -23,10 +23,10 @@ enum SqlStatement {
 
 object SqlStatement {
     extension (d: SqlDelete) def addCondition(condition: SqlExpr): SqlDelete =
-        d.copy(where = d.where.map(SqlExpr.SqlBinaryExpr(_, SqlBinaryOperator.AND, condition)).orElse(Some(condition)))
+        d.copy(where = d.where.map(SqlExpr.SqlBinaryExpr(_, SqlBinaryOperator.And, condition)).orElse(Some(condition)))
 
     extension (u: SqlUpdate) def addCondition(condition: SqlExpr): SqlUpdate =
-        u.copy(where = u.where.map(SqlExpr.SqlBinaryExpr(_, SqlBinaryOperator.AND, condition)).orElse(Some(condition)))
+        u.copy(where = u.where.map(SqlExpr.SqlBinaryExpr(_, SqlBinaryOperator.And, condition)).orElse(Some(condition)))
 }
 
 enum SqlQuery {
@@ -51,10 +51,10 @@ object SqlQuery {
             s.copy(select = s.select.appended(item))
 
         def addCondition(condition: SqlExpr): SqlSelect =
-            s.copy(where = s.where.map(SqlExpr.SqlBinaryExpr(_, SqlBinaryOperator.AND, condition)).orElse(Some(condition)))
+            s.copy(where = s.where.map(SqlExpr.SqlBinaryExpr(_, SqlBinaryOperator.And, condition)).orElse(Some(condition)))
 
         def addHaving(condition: SqlExpr): SqlSelect =
-            s.copy(having = s.having.map(SqlExpr.SqlBinaryExpr(_, SqlBinaryOperator.AND, condition)).orElse(Some(condition)))
+            s.copy(having = s.having.map(SqlExpr.SqlBinaryExpr(_, SqlBinaryOperator.And, condition)).orElse(Some(condition)))
 
         def combine(that: SqlSelect): SqlSelect = {
             s.copy(
@@ -63,10 +63,10 @@ object SqlQuery {
                 from = for {
                     f <- s.from
                     tf <- that.from
-                } yield SqlTable.SqlJoinTable(f, SqlJoinType.INNER_JOIN, tf, None),
+                } yield SqlTable.SqlJoinTable(f, SqlJoinType.InnerJoin, tf, None),
 
                 where = (s.where, that.where) match {
-                    case (Some(w), Some(tw)) => Some(SqlExpr.SqlBinaryExpr(w, SqlBinaryOperator.AND, tw))
+                    case (Some(w), Some(tw)) => Some(SqlExpr.SqlBinaryExpr(w, SqlBinaryOperator.And, tw))
                     case (None, tw) => tw
                     case (w, None) => w
                 },
@@ -76,7 +76,7 @@ object SqlQuery {
                 orderBy = s.orderBy ++ that.orderBy,
 
                 having = (s.having, that.having) match {
-                    case (Some(h), Some(th)) => Some(SqlExpr.SqlBinaryExpr(h, SqlBinaryOperator.AND, th))
+                    case (Some(h), Some(th)) => Some(SqlExpr.SqlBinaryExpr(h, SqlBinaryOperator.And, th))
                     case (None, th) => th
                     case (h, None) => h
                 }

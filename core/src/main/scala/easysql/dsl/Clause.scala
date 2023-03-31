@@ -86,10 +86,10 @@ inline def find[T <: Product](pk: SqlDataType | Tuple): Select[Tuple1[T], EmptyT
     val conditions: List[Expr[Boolean]] = inline pk match {
         case t: Tuple => t.toArray.toList.zip(cols).map { (p, c) =>
             p match {
-                case d: SqlDataType => BinaryExpr[Boolean](IdentExpr(c), SqlBinaryOperator.EQ, LiteralExpr(d))
+                case d: SqlDataType => BinaryExpr[Boolean](IdentExpr(c), SqlBinaryOperator.Eq, LiteralExpr(d))
             }
         }
-        case d: SqlDataType => List(BinaryExpr[Boolean](IdentExpr(cols.head), SqlBinaryOperator.EQ, LiteralExpr(d)))
+        case d: SqlDataType => List(BinaryExpr[Boolean](IdentExpr(cols.head), SqlBinaryOperator.Eq, LiteralExpr(d)))
     }
     val where = conditions.reduce((x, y) => x && y)
     

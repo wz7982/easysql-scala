@@ -56,7 +56,7 @@ class MongoPrinter {
             for (i <- 0 until s.orderBy.size) {
                 printExpr(s.orderBy(i).expr)
                 dslBuilder.append(": ")
-                if (s.orderBy(i).order == SqlOrderByOption.ASC) {
+                if (s.orderBy(i).order == SqlOrderByOption.Asc) {
                     dslBuilder.append("1")
                 } else {
                     dslBuilder.append("-1")
@@ -112,34 +112,34 @@ class MongoPrinter {
         import easysql.ast.expr.SqlBinaryOperator.*
 
         e.op match {
-            case AND => {
+            case And => {
                 dslBuilder.append("{$and: [")
                 printExpr(e.left)
                 dslBuilder.append(", ")
                 printExpr(e.right)
                 dslBuilder.append("]}")
             }
-            case OR => {
+            case Or => {
                 dslBuilder.append("{$or: [")
                 printExpr(e.left)
                 dslBuilder.append(", ")
                 printExpr(e.right)
                 dslBuilder.append("]}")
             }
-            case EQ => {
+            case Eq => {
                 dslBuilder.append("{")
                 printExpr(e.left)
                 dslBuilder.append(": ")
                 printExpr(e.right)
                 dslBuilder.append("}")
             }
-            case NE | GT | GE | LT | LE => {
+            case Ne | Gt | Ge | Lt | Le => {
                 val operator = e.op match {
-                    case NE => "$ne"
-                    case GT => "$gt"
-                    case GE => "$gte"
-                    case LT => "$lt"
-                    case LE => "$lte"
+                    case Ne => "$ne"
+                    case Gt => "$gt"
+                    case Ge => "$gte"
+                    case Lt => "$lt"
+                    case Le => "$lte"
                     case _ => ""
                 }
                 dslBuilder.append("{")

@@ -129,28 +129,28 @@ class MonadicQuery[T <: Tuple, From](
     )(
         on: MonadicJoin[From, TableSchema[E]] => Expr[Boolean]
     ): MonadicQuery[Tuple.Concat[T, Tuple1[E]], MonadicJoin[From, TableSchema[E]]] =
-        join(table, SqlJoinType.INNER_JOIN, on)
+        join(table, SqlJoinType.InnerJoin, on)
 
     def leftJoin[E <: Product](
         table: TableSchema[E]
     )(
         on: MonadicJoin[From, TableSchema[E]] => Expr[Boolean]
     ): MonadicQuery[Tuple.Concat[T, Tuple1[E]], MonadicJoin[From, TableSchema[E]]] =
-        join(table, SqlJoinType.LEFT_JOIN, on)
+        join(table, SqlJoinType.LeftJoin, on)
 
     def rightJoin[E <: Product](
         table: TableSchema[E]
     )(
         on: MonadicJoin[From, TableSchema[E]] => Expr[Boolean]
     ): MonadicQuery[Tuple.Concat[T, Tuple1[E]], MonadicJoin[From, TableSchema[E]]] =
-        join(table, SqlJoinType.RIGHT_JOIN, on)
+        join(table, SqlJoinType.RightJoin, on)
 
     def fullJoin[E <: Product](
         table: TableSchema[E]
     )(
         on: MonadicJoin[From, TableSchema[E]] => Expr[Boolean]
     ): MonadicQuery[Tuple.Concat[T, Tuple1[E]], MonadicJoin[From, TableSchema[E]]] =
-        join(table, SqlJoinType.FULL_JOIN, on)
+        join(table, SqlJoinType.FullJoin, on)
 
     def having(f: From => Expr[Boolean]): MonadicQuery[T, From] = {
         val expr = f(from)

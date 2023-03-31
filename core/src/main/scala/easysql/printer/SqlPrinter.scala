@@ -373,28 +373,28 @@ trait SqlPrinter(val prepare: Boolean) {
     def printBinaryExpr(expr: SqlBinaryExpr): Unit = {
         def hasBrackets(parent: SqlBinaryExpr, child: SqlExpr): Boolean = {
             parent.op match {
-                case AND => {
+                case And => {
                     child match {
                         case SqlBinaryExpr(_, op, _) => op match {
-                            case OR | XOR => true
+                            case Or | Xor => true
                             case _ => false
                         }
                         case _ => false
                     }
                 }
-                case XOR => {
+                case Xor => {
                     child match {
                         case SqlBinaryExpr(_, op, _) => op match {
-                            case OR => true
+                            case Or => true
                             case _ => false
                         }
                         case _ => false
                     }
                 }
-                case MUL | DIV | MOD => {
+                case Mul | Div | Mod => {
                     child match {
                         case SqlBinaryExpr(_, op, _) => op match {
-                            case ADD | SUB => true
+                            case Add | Sub => true
                             case _ => false
                         }
                         case _ => false
