@@ -53,6 +53,15 @@ extension [T <: SqlDataType] (expr: ColumnExpr[T, _] | IdentExpr[T]) {
 
     infix def to[R <: UpdateType[T]](value: R): (ColumnExpr[T, _] | IdentExpr[T], Expr[R]) = 
         (expr, LiteralExpr(value))
+
+    infix def toOption[R <: UpdateType[T]](value: Option[R]): (ColumnExpr[T, _] | IdentExpr[T], Expr[_]) = {
+        val updateExpr = value match {
+            case None => NullExpr
+            case Some(value) => LiteralExpr(value)
+        }
+
+        (expr, updateExpr)
+    }
 }
 
 object AllColumn {
@@ -102,7 +111,7 @@ def withQuery(query: AliasQuery[_, _]*): With[EmptyTuple] =
 def query[T <: Product](table: TableSchema[T]): MonadicQuery[Tuple1[T], TableSchema[T]] =
     MonadicQuery(table)
 
-def insertInto(table: TableSchema[_])(columns: Tuple): Insert[InverseMap[Tuple], Nothing] = 
+def insertInto[T <: Tuple](table: TableSchema[_])(columns: T): Insert[InverseMap[T], Nothing] = 
     Insert().insertInto(table)(columns)
 
 inline def insert[T <: Product](entities: T*): Insert[EmptyTuple, InsertEntity] = 
