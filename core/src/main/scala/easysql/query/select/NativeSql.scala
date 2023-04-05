@@ -1,12 +1,12 @@
 package easysql.query.select
 
-import easysql.query.ToSql
-import easysql.database.DB
-import easysql.util.*
 import easysql.ast.SqlDataType
+import easysql.database.DB
+import easysql.query.ToSql
+import easysql.util.*
 
 class NativeSql(val sql: String, val args: Array[SqlDataType]) {
-    override def toString(): String = sql
+    override def toString: String = sql
 }
 
 object NativeSql {

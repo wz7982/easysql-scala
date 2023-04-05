@@ -1,14 +1,13 @@
 package easysql.dsl
 
 import easysql.ast.{SqlDataType, SqlNumberType}
-import easysql.query.select.*
 
-import scala.compiletime.ops.any.*
-import scala.compiletime.ops.int.*
-import scala.compiletime.ops.boolean.*
-import scala.compiletime.ops.string.{Length, CharAt, Substring}
-import scala.Tuple.Concat
 import java.util.Date
+import scala.Tuple.Concat
+import scala.compiletime.ops.any.*
+import scala.compiletime.ops.boolean.*
+import scala.compiletime.ops.int.*
+import scala.compiletime.ops.string.{CharAt, Length, Substring}
 
 type InverseMap[X <: Tuple] <: Tuple = X match {
     case Expr[x] *: t => x *: InverseMap[t]

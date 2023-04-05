@@ -1,12 +1,12 @@
 package easysql.macros
 
 import easysql.ast.SqlDataType
-import easysql.util.*
 import easysql.dsl.CustomSerializer
+import easysql.util.*
 
-import scala.quoted.{Expr, Quotes, Type}
-import scala.collection.mutable.*
 import scala.annotation.experimental
+import scala.collection.mutable.*
+import scala.quoted.{Expr, Quotes, Type}
 
 def insertMetaDataMacro[T <: Product](using q: Quotes, tpe: Type[T]): Expr[(String, List[(String, T => SqlDataType | Option[SqlDataType])])] = {
     import q.reflect.*
@@ -28,22 +28,20 @@ def insertMetaDataMacro[T <: Product](using q: Quotes, tpe: Type[T]): Expr[(Stri
     val annoNames = List("PrimaryKey", "IncrKey", "Column", "PrimaryKeyGenerator", "CustomColumn")
 
     fields.foreach { field =>
-        val annoInfo = field.annotations.map { a =>
-            a match {
-                case Apply(Select(New(TypeIdent(name)), _), args) if annoNames.contains(name) => {
-                    args match {
-                        case Literal(v) :: arg => (name, v.value.toString(), args)
-                        case _ => (name, "", args)
-                    }
+        val annoInfo = field.annotations.map {
+            case Apply(Select(New(TypeIdent(name)), _), args) if annoNames.contains(name) => {
+                args match {
+                    case Literal(v) :: arg => (name, v.value.toString(), args)
+                    case _ => (name, "", args)
                 }
-                case Apply(TypeApply(Select(New(TypeIdent(name)), _), _), args) if name == "CustomColumn" => {
-                    args match {
-                        case Literal(v) :: arg => (name, v.value.toString(), args)
-                        case _ => (name, "", args)
-                    }
-                }
-                case _ => ("", "", Nil)
             }
+            case Apply(TypeApply(Select(New(TypeIdent(name)), _), _), args) if name == "CustomColumn" => {
+                args match {
+                    case Literal(v) :: arg => (name, v.value.toString(), args)
+                    case _ => (name, "", args)
+                }
+            }
+            case _ => ("", "", Nil)
         }
         
         val insertName = annoInfo.find(_._2 != "") match {
@@ -108,7 +106,7 @@ def insertMetaDataMacro[T <: Product](using q: Quotes, tpe: Type[T]): Expr[(Stri
         }
     }
 
-    if (insertFieldExprs.size == 0) {
+    if (insertFieldExprs.isEmpty) {
         report.error(s"entity ${sym.name} has no field for inserting data")
     }
 
@@ -118,7 +116,7 @@ def insertMetaDataMacro[T <: Product](using q: Quotes, tpe: Type[T]): Expr[(Stri
 
     '{ 
         val insertList = $insertFields.zip($insertFunctions)
-        $tableNameExpr -> insertList
+        ($tableNameExpr, insertList)
     }
 }
 
@@ -144,22 +142,20 @@ def updateMetaDataMacro[T <: Product](using q: Quotes, tpe: Type[T]): Expr[(Stri
     val annoNames = List("PrimaryKey", "IncrKey", "Column", "PrimaryKeyGenerator", "CustomColumn")
 
     fields.foreach { field =>
-        val annoInfo = field.annotations.map { a =>
-            a match {
-                case Apply(Select(New(TypeIdent(name)), _), args) if annoNames.contains(name) =>
-                    args match {
-                        case Literal(v) :: _ => (name, v.value.toString(), Nil)
-                        case _ => (name, "", Nil)
-                    }
-
-                case Apply(TypeApply(Select(New(TypeIdent(name)), _), _), args) if name == "CustomColumn" => {
-                    args match {
-                        case Literal(v) :: _ => (name, v.value.toString(), args)
-                        case _ => (name, "", Nil)
-                    }
+        val annoInfo = field.annotations.map {
+            case Apply(Select(New(TypeIdent(name)), _), args) if annoNames.contains(name) =>
+                args match {
+                    case Literal(v) :: _ => (name, v.value.toString(), Nil)
+                    case _ => (name, "", Nil)
                 }
-                case _ => ("", "", Nil)
+
+            case Apply(TypeApply(Select(New(TypeIdent(name)), _), _), args) if name == "CustomColumn" => {
+                args match {
+                    case Literal(v) :: _ => (name, v.value.toString(), args)
+                    case _ => (name, "", Nil)
+                }
             }
+            case _ => ("", "", Nil)
         }
 
         val fieldName = annoInfo.find(_._2 != "") match {
@@ -225,11 +221,11 @@ def updateMetaDataMacro[T <: Product](using q: Quotes, tpe: Type[T]): Expr[(Stri
         }
     }
 
-    if (pkFieldExprs.size == 0) {
+    if (pkFieldExprs.isEmpty) {
         report.error(s"primary key field is not defined in entity ${sym.name}")
     }
 
-    if (updateFieldExprs.size == 0) {
+    if (updateFieldExprs.isEmpty) {
         report.error(s"entity ${sym.name} has no fields to update")
     }
 
@@ -261,7 +257,7 @@ def fetchPkMacro[T <: Product, PK <: SqlDataType | Tuple](using q: Quotes, t: Ty
     }
 
     val fields = sym.declaredFields
-    var argTypeNames = ListBuffer[String]()
+    val argTypeNames = ListBuffer[String]()
     if (TypeRepr.of[PK].typeSymbol.name.startsWith("Tuple")) {
         val symTree = TypeRepr.of[PK].termSymbol.tree
         symTree match {
@@ -294,7 +290,7 @@ def fetchPkMacro[T <: Product, PK <: SqlDataType | Tuple](using q: Quotes, t: Ty
         }
     }
 
-    if (pkFieldExprs.size == 0) {
+    if (pkFieldExprs.isEmpty) {
         report.error(s"primary key field is not defined in entity ${sym.name}")
     }
 

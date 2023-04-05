@@ -5,23 +5,45 @@ import easysql.ast.statement.SqlQuery
 
 import java.util.Date
 
-enum SqlExpr {
-    case SqlBinaryExpr(left: SqlExpr, op: SqlBinaryOperator, right: SqlExpr)
-    case SqlIdentExpr(name: String)
-    case SqlPropertyExpr(owner: String, name: String)
-    case SqlNullExpr
-    case SqlAllColumnExpr(owner: Option[String])
-    case SqlNumberExpr(number: Number)
-    case SqlDateExpr(date: Date)
-    case SqlCharExpr(text: String)
-    case SqlBooleanExpr(boolean: Boolean)
-    case SqlListExpr(items: List[SqlExpr])
-    case SqlAggFuncExpr(name: String, args: List[SqlExpr], distinct: Boolean, attrs: Map[String, SqlExpr], orderBy: List[SqlOrderBy])
-    case SqlExprFuncExpr(name: String, args: List[SqlExpr])
-    case SqlCastExpr(expr: SqlExpr, castType: String)
-    case SqlQueryExpr(query: SqlQuery)
-    case SqlInExpr(expr: SqlExpr, inExpr: SqlExpr, not: Boolean)
-    case SqlBetweenExpr(expr: SqlExpr, start: SqlExpr, end: SqlExpr, not: Boolean)
-    case SqlOverExpr(agg: SqlAggFuncExpr, partitionBy: List[SqlExpr], orderBy: List[SqlOrderBy])
-    case SqlCaseExpr(caseList: List[SqlCase], default: SqlExpr)
-}
+sealed trait SqlExpr
+
+case class SqlBinaryExpr(left: SqlExpr, op: SqlBinaryOperator, right: SqlExpr) extends SqlExpr
+
+case class SqlIdentExpr(name: String) extends SqlExpr
+
+case class SqlPropertyExpr(owner: String, name: String) extends SqlExpr
+
+case object SqlNullExpr extends SqlExpr
+
+case class SqlAllColumnExpr(owner: Option[String]) extends SqlExpr
+
+case class SqlNumberExpr(number: Number) extends SqlExpr
+
+case class SqlDateExpr(date: Date) extends SqlExpr
+
+case class SqlCharExpr(text: String) extends SqlExpr
+
+case class SqlBooleanExpr(boolean: Boolean) extends SqlExpr
+
+case class SqlListExpr(items: List[SqlExpr]) extends SqlExpr
+
+case class SqlAggFuncExpr(
+    name: String, args: List[SqlExpr],
+    distinct: Boolean,
+    attrs: Map[String, SqlExpr],
+    orderBy: List[SqlOrderBy]
+) extends SqlExpr
+
+case class SqlExprFuncExpr(name: String, args: List[SqlExpr]) extends SqlExpr
+
+case class SqlCastExpr(expr: SqlExpr, castType: String) extends SqlExpr
+
+case class SqlQueryExpr(query: SqlQuery) extends SqlExpr
+
+case class SqlInExpr(expr: SqlExpr, inExpr: SqlExpr, not: Boolean) extends SqlExpr
+
+case class SqlBetweenExpr(expr: SqlExpr, start: SqlExpr, end: SqlExpr, not: Boolean) extends SqlExpr
+
+case class SqlOverExpr(agg: SqlAggFuncExpr, partitionBy: List[SqlExpr], orderBy: List[SqlOrderBy]) extends SqlExpr
+
+case class SqlCaseExpr(caseList: List[SqlCase], default: SqlExpr) extends SqlExpr

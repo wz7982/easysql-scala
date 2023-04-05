@@ -2,13 +2,13 @@ package easysql.database
 
 import easysql.dsl.*
 import easysql.jdbc.*
-import easysql.query.select.*
-import easysql.query.nonselect.*
 import easysql.macros.*
 import easysql.query.ToSql
+import easysql.query.nonselect.*
+import easysql.query.select.*
 
-import javax.sql.DataSource
 import java.sql.Connection
+import javax.sql.DataSource
 
 class JdbcConnection(val db: DB, val dataSource: DataSource) {
     def getConnection: Connection = 

@@ -1,13 +1,13 @@
 package easysql.query.select
 
+import easysql.ast.expr.*
 import easysql.ast.statement.*
-import easysql.ast.expr.SqlExpr.*
-import easysql.query.ToSql
 import easysql.database.DB
+import easysql.query.ToSql
 import easysql.util.statementToString
 
 class With[T <: Tuple](
-    private val ast: SqlStatement.SqlWith
+    private val ast: SqlWith
 ) {
     def addTable(query: AliasQuery[_, _]*): With[T] = {
         val withInfo = query.toList map { q =>
@@ -27,7 +27,7 @@ class With[T <: Tuple](
 
 object With {
     def apply(): With[EmptyTuple] = 
-        new With[EmptyTuple](SqlStatement.SqlWith(Nil, false, None))
+        new With[EmptyTuple](SqlWith(Nil, false, None))
 
     given withToSql[T <: Tuple]: ToSql[With[T]] with {
         extension (q: With[T]) {

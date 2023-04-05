@@ -1,12 +1,10 @@
 package easysql.printer
 
-import easysql.ast.statement.SqlQuery.SqlSelect
-import easysql.ast.expr.SqlExpr
-import easysql.ast.expr.SqlExpr.*
-import easysql.ast.statement.SqlSelectItem
-import easysql.ast.table.SqlTable.SqlIdentTable
+import easysql.ast.expr.*
 import easysql.ast.limit.SqlLimit
 import easysql.ast.order.SqlOrderByOption
+import easysql.ast.statement.{SqlSelect, SqlSelectItem}
+import easysql.ast.table.SqlIdentTable
 
 import scala.collection.mutable
 
@@ -15,7 +13,7 @@ class MongoPrinter {
 
     var spaceNum = 0
 
-    def printSelect(s: SqlSelect) = {
+    def printSelect(s: SqlSelect): Unit = {
         s.from match {
             case Some(SqlIdentTable(t, None)) => dslBuilder.append(s"db.$t.find(")
             case _ =>
@@ -39,7 +37,7 @@ class MongoPrinter {
                 item.expr match {
                     case _: SqlIdentExpr => true
                     case _: SqlPropertyExpr => true
-                    case _ => false 
+                    case _ => false
                 }
             }.map { item =>
                 item.expr match {
@@ -53,7 +51,7 @@ class MongoPrinter {
         dslBuilder.append(")")
         if (s.orderBy.nonEmpty) {
             dslBuilder.append(".sort({")
-            for (i <- 0 until s.orderBy.size) {
+            for (i <- s.orderBy.indices) {
                 printExpr(s.orderBy(i).expr)
                 dslBuilder.append(": ")
                 if (s.orderBy(i).order == SqlOrderByOption.Asc) {
@@ -76,14 +74,14 @@ class MongoPrinter {
         e match {
             case SqlIdentExpr(name) => dslBuilder.append(s"\"$name\"")
             case SqlPropertyExpr(_, name) => dslBuilder.append(s"\"$name\"")
-            case SqlNumberExpr(n) => dslBuilder.append(n.toString())
+            case SqlNumberExpr(n) => dslBuilder.append(n.toString)
             case SqlCharExpr(c) => dslBuilder.append(s"\"$c\"")
-            case SqlBooleanExpr(b) => dslBuilder.append(b.toString())
+            case SqlBooleanExpr(b) => dslBuilder.append(b.toString)
             case d: SqlDateExpr => dslBuilder.append(d.toString.replaceAll("'", "\""))
             case b: SqlBinaryExpr => printBinaryExpr(b)
             case l: SqlListExpr => {
                 dslBuilder.append("[")
-                for (i <- 0 until l.items.size) {
+                for (i <- l.items.indices) {
                     printExpr(l.items(i))
                     if (i < l.items.size - 1) {
                         dslBuilder.append(", ")
@@ -97,10 +95,7 @@ class MongoPrinter {
     }
 
     def printInExpr(e: SqlInExpr): Unit = {
-        val operator = e.not match {
-            case true => "$nin"
-            case false => "$in"
-        }
+        val operator = if e.not then "$nin" else "$in"
         dslBuilder.append("{")
         printExpr(e.expr)
         dslBuilder.append(s": {$operator: ")
@@ -149,14 +144,6 @@ class MongoPrinter {
                 dslBuilder.append("}}")
             }
             case _ =>
-        }
-    }
-
-    def printSpace: Unit = {
-        if (spaceNum > 0) {
-            for (_ <- 1 to spaceNum) {
-                dslBuilder.append(" ")
-            }
         }
     }
 }

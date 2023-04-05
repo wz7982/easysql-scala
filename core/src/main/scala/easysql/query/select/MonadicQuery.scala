@@ -1,20 +1,20 @@
 package easysql.query.select
 
-import easysql.query.ToSql
-import easysql.database.DB
-import easysql.util.*
-import easysql.dsl.*
+import easysql.ast.expr.*
+import easysql.ast.limit.SqlLimit
+import easysql.ast.order.SqlOrderBy
 import easysql.ast.statement.*
 import easysql.ast.table.*
 import easysql.ast.{SqlDataType, SqlNumberType}
-import easysql.ast.limit.SqlLimit
-import easysql.ast.order.SqlOrderBy
-import easysql.ast.expr.*
+import easysql.database.DB
+import easysql.dsl.*
+import easysql.query.ToSql
+import easysql.util.*
 
 import scala.annotation.targetName
 
 class MonadicQuery[T <: Tuple, From](
-    private val query: SqlQuery.SqlSelect,
+    private val query: SqlSelect,
     private val from: From
 ) {
     def filter(f: From => Expr[Boolean]): MonadicQuery[T, From] = {
@@ -115,7 +115,7 @@ class MonadicQuery[T <: Tuple, From](
         val sqlOnExpr = exprToSqlExpr(onExpr)
 
         val fromTable = this.query.from.map { f => 
-            SqlTable.SqlJoinTable(f, joinType, SqlTable.SqlIdentTable(table.__tableName, table.__aliasName), Some(sqlOnExpr))
+            SqlJoinTable(f, joinType, SqlIdentTable(table.__tableName, table.__aliasName), Some(sqlOnExpr))
         }
         val sqlSelectItems = table.__cols.map { c =>
             SqlSelectItem(exprToSqlExpr(c), None)
@@ -161,35 +161,35 @@ class MonadicQuery[T <: Tuple, From](
     }
 
     def size: MonadicQuery[Tuple1[Long], None.type] = {
-        val expr = SqlExpr.SqlExprFuncExpr("COUNT", Nil)
+        val expr = SqlExprFuncExpr("COUNT", Nil)
         val selectItem = SqlSelectItem(expr, None)
 
         new MonadicQuery(query.copy(select = selectItem :: Nil), None)
     }
 
     def max[I <: SqlDataType](f: From => Expr[I]): MonadicQuery[Tuple1[I], None.type] = {
-        val expr = SqlExpr.SqlExprFuncExpr("MAX", exprToSqlExpr(f(from)) :: Nil)
+        val expr = SqlExprFuncExpr("MAX", exprToSqlExpr(f(from)) :: Nil)
         val selectItem = SqlSelectItem(expr, None)
 
         new MonadicQuery(query.copy(select = selectItem :: Nil), None)
     }
 
     def min[I <: SqlDataType](f: From => Expr[I]): MonadicQuery[Tuple1[I], None.type] = {
-        val expr = SqlExpr.SqlExprFuncExpr("MIN", exprToSqlExpr(f(from)) :: Nil)
+        val expr = SqlExprFuncExpr("MIN", exprToSqlExpr(f(from)) :: Nil)
         val selectItem = SqlSelectItem(expr, None)
 
         new MonadicQuery(query.copy(select = selectItem :: Nil), None)
     }
 
     def sum[I <: SqlNumberType](f: From => Expr[I]): MonadicQuery[Tuple1[BigDecimal], None.type] = {
-        val expr = SqlExpr.SqlExprFuncExpr("SUM", exprToSqlExpr(f(from)) :: Nil)
+        val expr = SqlExprFuncExpr("SUM", exprToSqlExpr(f(from)) :: Nil)
         val selectItem = SqlSelectItem(expr, None)
 
         new MonadicQuery(query.copy(select = selectItem :: Nil), None)
     }
 
     def avg[I <: SqlNumberType](f: From => Expr[I]): MonadicQuery[Tuple1[BigDecimal], None.type] = {
-        val expr = SqlExpr.SqlExprFuncExpr("AVG", exprToSqlExpr(f(from)) :: Nil)
+        val expr = SqlExprFuncExpr("AVG", exprToSqlExpr(f(from)) :: Nil)
         val selectItem = SqlSelectItem(expr, None)
 
         new MonadicQuery(query.copy(select = selectItem :: Nil), None)
@@ -198,11 +198,11 @@ class MonadicQuery[T <: Tuple, From](
 
 object MonadicQuery {
     def apply[E <: Product](table: TableSchema[E]): MonadicQuery[Tuple1[E], TableSchema[E]] = {
-        val fromTable = SqlTable.SqlIdentTable(table.__tableName, table.__aliasName)
+        val fromTable = SqlIdentTable(table.__tableName, table.__aliasName)
         val sqlSelectItems = table.__cols.map { c =>
             SqlSelectItem(exprToSqlExpr(c), None)
         }
-        val query: SqlQuery.SqlSelect = SqlQuery.SqlSelect(false, sqlSelectItems, Some(fromTable), None, Nil, Nil, false, None, None)
+        val query: SqlSelect = SqlSelect(false, sqlSelectItems, Some(fromTable), None, Nil, Nil, false, None, None)
         
         new MonadicQuery(query, table)
     }
@@ -219,9 +219,9 @@ object MonadicQuery {
 
     extension [T <: SqlDataType] (q: MonadicQuery[Tuple1[T], _]) {
         def exists: MonadicQuery[Tuple1[Boolean], None.type] = {
-            val expr = SqlExpr.SqlExprFuncExpr("EXISTS", SqlExpr.SqlQueryExpr(q.query) :: Nil)
+            val expr = SqlExprFuncExpr("EXISTS", SqlQueryExpr(q.query) :: Nil)
             val selectItem = SqlSelectItem(expr, None)
-            val newQuery: SqlQuery.SqlSelect = SqlQuery.SqlSelect(false, selectItem :: Nil, None, None, Nil, Nil, false, None, None)
+            val newQuery: SqlSelect = SqlSelect(false, selectItem :: Nil, None, None, Nil, Nil, false, None, None)
 
             new MonadicQuery(newQuery, None)
         }

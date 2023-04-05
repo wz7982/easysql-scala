@@ -1,10 +1,10 @@
 package easysql.macros
 
-import easysql.dsl.CustomSerializer
 import easysql.ast.SqlDataType
+import easysql.dsl.CustomSerializer
 
-import java.util.Date
 import java.sql.ResultSet
+import java.util.Date
 import scala.quoted.*
 import scala.util.control.Breaks
 

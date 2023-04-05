@@ -1,6 +1,6 @@
 package easysql.printer
 
-import easysql.ast.statement.SqlStatement.SqlUpsert
+import easysql.ast.statement.SqlUpsert
 
 class PgsqlPrinter(override val prepare: Boolean) extends SqlPrinter(prepare) {
     override def printUpsert(upsert: SqlUpsert): Unit = {

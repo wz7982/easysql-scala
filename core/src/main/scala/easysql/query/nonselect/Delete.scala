@@ -1,17 +1,16 @@
 package easysql.query.nonselect
 
-import easysql.ast.statement.SqlStatement
-import easysql.ast.table.SqlTable.*
 import easysql.ast.SqlDataType
-import easysql.ast.expr.SqlBinaryOperator
-import easysql.ast.expr.SqlExpr.*
-import easysql.query.ToSql
+import easysql.ast.expr.*
+import easysql.ast.statement.{SqlDelete, SqlStatement}
+import easysql.ast.table.*
+import easysql.database.DB
 import easysql.dsl.*
 import easysql.macros.*
+import easysql.query.ToSql
 import easysql.util.*
-import easysql.database.DB
 
-class Delete(private val ast: SqlStatement.SqlDelete) extends NonSelect {
+class Delete(private val ast: SqlDelete) extends NonSelect {
     override def getAst: SqlStatement =
         ast
 
@@ -48,5 +47,5 @@ class Delete(private val ast: SqlStatement.SqlDelete) extends NonSelect {
 
 object Delete {
     def apply(): Delete = 
-        new Delete(SqlStatement.SqlDelete(None, None))
+        new Delete(SqlDelete(None, None))
 }

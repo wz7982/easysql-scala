@@ -1,86 +1,95 @@
 package easysql.ast.statement
 
-import easysql.ast.table.*
 import easysql.ast.expr.*
-import easysql.ast.table.SqlTable
 import easysql.ast.limit.SqlLimit
 import easysql.ast.order.SqlOrderBy
+import easysql.ast.table.*
 
-enum SqlStatement {
-    case SqlDelete(table: Option[SqlTable.SqlIdentTable], where: Option[SqlExpr])
-    case SqlInsert(table: Option[SqlTable.SqlIdentTable], columns: List[SqlExpr], values: List[List[SqlExpr]], query: Option[SqlQuery])
-    case SqlTruncate(table: Option[SqlTable.SqlIdentTable])
-    case SqlUpdate(table: Option[SqlTable.SqlIdentTable], setList: List[(SqlExpr, SqlExpr)], where: Option[SqlExpr])
-    case SqlUpsert(
-        table: Option[SqlTable.SqlIdentTable], 
-        columns: List[SqlExpr], 
-        value: List[SqlExpr], 
-        pkList: List[SqlExpr], 
-        updateList: List[SqlExpr]
-    )
-    case SqlWith(withList: List[SqlWithItem], recursive: Boolean, query: Option[SqlQuery])
+sealed trait SqlStatement
+
+case class SqlDelete(table: Option[SqlIdentTable], where: Option[SqlExpr]) extends SqlStatement {
+    def addCondition(condition: SqlExpr): SqlDelete =
+        this.copy(where = this.where.map(SqlBinaryExpr(_, SqlBinaryOperator.And, condition)).orElse(Some(condition)))
 }
 
-object SqlStatement {
-    extension (d: SqlDelete) def addCondition(condition: SqlExpr): SqlDelete =
-        d.copy(where = d.where.map(SqlExpr.SqlBinaryExpr(_, SqlBinaryOperator.And, condition)).orElse(Some(condition)))
+case class SqlInsert(
+    table: Option[SqlIdentTable],
+    columns: List[SqlExpr],
+    values: List[List[SqlExpr]],
+    query: Option[SqlQuery]
+) extends SqlStatement
 
-    extension (u: SqlUpdate) def addCondition(condition: SqlExpr): SqlUpdate =
-        u.copy(where = u.where.map(SqlExpr.SqlBinaryExpr(_, SqlBinaryOperator.And, condition)).orElse(Some(condition)))
+case class SqlTruncate(table: Option[SqlIdentTable]) extends SqlStatement
+
+case class SqlUpdate(
+    table: Option[SqlIdentTable],
+    setList: List[(SqlExpr, SqlExpr)],
+    where: Option[SqlExpr]
+) extends SqlStatement {
+    def addCondition(condition: SqlExpr): SqlUpdate =
+        this.copy(where = this.where.map(SqlBinaryExpr(_, SqlBinaryOperator.And, condition)).orElse(Some(condition)))
 }
 
-enum SqlQuery {
-    case SqlSelect(
-        distinct: Boolean, 
-        select: List[SqlSelectItem], 
-        from: Option[SqlTable], 
-        where: Option[SqlExpr],
-        groupBy: List[SqlExpr],
-        orderBy: List[SqlOrderBy],
-        forUpdate: Boolean,
-        limit: Option[SqlLimit],
-        having: Option[SqlExpr]
-    )
-    case SqlUnion(left: SqlQuery, unionType: SqlUnionType, right: SqlQuery)
-    case SqlValues(values: List[List[SqlExpr]])
-}
+case class SqlUpsert(
+    table: Option[SqlIdentTable],
+    columns: List[SqlExpr],
+    value: List[SqlExpr],
+    pkList: List[SqlExpr],
+    updateList: List[SqlExpr]
+) extends SqlStatement
 
-object SqlQuery {
-    extension (s: SqlSelect) {
-        def addSelectItem(item: SqlSelectItem): SqlSelect = 
-            s.copy(select = s.select.appended(item))
+case class SqlWith(withList: List[SqlWithItem], recursive: Boolean, query: Option[SqlQuery]) extends SqlStatement
 
-        def addCondition(condition: SqlExpr): SqlSelect =
-            s.copy(where = s.where.map(SqlExpr.SqlBinaryExpr(_, SqlBinaryOperator.And, condition)).orElse(Some(condition)))
+sealed trait SqlQuery
 
-        def addHaving(condition: SqlExpr): SqlSelect =
-            s.copy(having = s.having.map(SqlExpr.SqlBinaryExpr(_, SqlBinaryOperator.And, condition)).orElse(Some(condition)))
+case class SqlSelect(
+    distinct: Boolean,
+    select: List[SqlSelectItem],
+    from: Option[SqlTable],
+    where: Option[SqlExpr],
+    groupBy: List[SqlExpr],
+    orderBy: List[SqlOrderBy],
+    forUpdate: Boolean,
+    limit: Option[SqlLimit],
+    having: Option[SqlExpr]
+) extends SqlQuery {
+    def addSelectItem(item: SqlSelectItem): SqlSelect =
+        this.copy(select = this.select.appended(item))
 
-        def combine(that: SqlSelect): SqlSelect = {
-            s.copy(
-                select = s.select ++ that.select,
+    def addCondition(condition: SqlExpr): SqlSelect =
+        this.copy(where = this.where.map(SqlBinaryExpr(_, SqlBinaryOperator.And, condition)).orElse(Some(condition)))
 
-                from = for {
-                    f <- s.from
-                    tf <- that.from
-                } yield SqlTable.SqlJoinTable(f, SqlJoinType.InnerJoin, tf, None),
+    def addHaving(condition: SqlExpr): SqlSelect =
+        this.copy(having = this.having.map(SqlBinaryExpr(_, SqlBinaryOperator.And, condition)).orElse(Some(condition)))
 
-                where = (s.where, that.where) match {
-                    case (Some(w), Some(tw)) => Some(SqlExpr.SqlBinaryExpr(w, SqlBinaryOperator.And, tw))
-                    case (None, tw) => tw
-                    case (w, None) => w
-                },
-                
-                groupBy = s.groupBy ++ that.groupBy,
+    def combine(that: SqlSelect): SqlSelect = {
+        this.copy(
+            select = this.select ++ that.select,
 
-                orderBy = s.orderBy ++ that.orderBy,
+            from = for {
+                f <- this.from
+                tf <- that.from
+            } yield SqlJoinTable(f, SqlJoinType.InnerJoin, tf, None),
 
-                having = (s.having, that.having) match {
-                    case (Some(h), Some(th)) => Some(SqlExpr.SqlBinaryExpr(h, SqlBinaryOperator.And, th))
-                    case (None, th) => th
-                    case (h, None) => h
-                }
-            )
-        }
+            where = (this.where, that.where) match {
+                case (Some(w), Some(tw)) => Some(SqlBinaryExpr(w, SqlBinaryOperator.And, tw))
+                case (None, tw) => tw
+                case (w, None) => w
+            },
+
+            groupBy = this.groupBy ++ that.groupBy,
+
+            orderBy = this.orderBy ++ that.orderBy,
+
+            having = (this.having, that.having) match {
+                case (Some(h), Some(th)) => Some(SqlBinaryExpr(h, SqlBinaryOperator.And, th))
+                case (None, th) => th
+                case (h, None) => h
+            }
+        )
     }
 }
+
+case class SqlUnion(left: SqlQuery, unionType: SqlUnionType, right: SqlQuery) extends SqlQuery
+
+case class SqlValues(values: List[List[SqlExpr]]) extends SqlQuery

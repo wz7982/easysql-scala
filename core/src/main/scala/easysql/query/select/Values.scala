@@ -1,11 +1,11 @@
 package easysql.query.select
 
-import easysql.ast.statement.SqlQuery
 import easysql.ast.SqlDataType
+import easysql.ast.statement.{SqlQuery, SqlValues}
 import easysql.dsl.*
 import easysql.util.exprToSqlExpr
 
-class Values[T <: Tuple](val ast: SqlQuery.SqlValues) {
+class Values[T <: Tuple](val ast: SqlValues) {
     def addRow(row: T): Values[T] = {
         val add = row.toList.map {
             case d: SqlDataType => exprToSqlExpr(LiteralExpr(d))
@@ -27,8 +27,8 @@ class Values[T <: Tuple](val ast: SqlQuery.SqlValues) {
 
 object Values {
     def apply[T <: Tuple](row: T): Values[T] = 
-        new Values[T](SqlQuery.SqlValues(Nil)).addRow(row)
+        new Values[T](SqlValues(Nil)).addRow(row)
         
     def apply[T <: Tuple](rows: List[T]): Values[T] = 
-        new Values[T](SqlQuery.SqlValues(Nil)).addRows(rows)
+        new Values[T](SqlValues(Nil)).addRows(rows)
 }

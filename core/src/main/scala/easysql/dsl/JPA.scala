@@ -1,12 +1,13 @@
 package easysql.dsl
 
-import easysql.query.select.Select
-import easysql.macros.columnsMeta
 import easysql.ast.SqlDataType
+import easysql.macros.columnsMeta
+import easysql.query.select.Select
 
-import scala.language.dynamics
-import scala.deriving.*
+import scala.collection.BufferedIterator
 import scala.collection.mutable.ListBuffer
+import scala.deriving.*
+import scala.language.dynamics
 
 class JPA[E <: Product](val table: TableSchema[E]) extends Dynamic {
     inline def applyDynamic[N <: String & Singleton](
@@ -38,7 +39,7 @@ class JPA[E <: Product](val table: TableSchema[E]) extends Dynamic {
 
             token match {
                 case ("by" | "and" | "or") => {
-                    val columnName = columns(tokens.next.toString)
+                    val columnName = columns(tokens.next)
                     val column = col(s"$tableName.$columnName")
 
                     val predicate = tokens.headOption

@@ -1,7 +1,7 @@
 package easysql
 package database
 
-enum DB() {
+enum DB {
     case MYSQL
     case PGSQL
     case ORACLE

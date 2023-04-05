@@ -1,23 +1,23 @@
 package easysql.query.nonselect
 
-import easysql.ast.statement.SqlStatement
-import easysql.ast.expr.SqlExpr.*
-import easysql.ast.table.SqlTable.SqlIdentTable
 import easysql.ast.SqlDataType
-import easysql.query.ToSql
+import easysql.ast.expr.*
+import easysql.ast.statement.{SqlStatement, SqlUpsert}
+import easysql.ast.table.SqlIdentTable
+import easysql.database.DB
 import easysql.dsl.*
 import easysql.macros.*
+import easysql.query.ToSql
 import easysql.util.*
-import easysql.database.DB
 
-class Save(private val ast: SqlStatement.SqlUpsert) extends NonSelect {
+class Save(private val ast: SqlUpsert) extends NonSelect {
     override def getAst: SqlStatement =
         ast
 
     inline def save[T <: Product](entity: T): Save = {
         val (tableName, pkList, colList) = updateMetaData[T]
 
-        val table = Some(new SqlIdentTable(tableName, None))
+        val table = Some(SqlIdentTable(tableName, None))
 
         val pkInfo = pkList.map { (pkName, fun) =>
             SqlIdentExpr(pkName) -> exprToSqlExpr(LiteralExpr(fun.apply(entity)))
@@ -37,11 +37,11 @@ class Save(private val ast: SqlStatement.SqlUpsert) extends NonSelect {
         val columns = pkColumns ++ updateColumns
         val values = pkInfo.map(_._2) ++ updateInfo.map(_._2)
 
-        new Save(SqlStatement.SqlUpsert(table, columns, values, pkColumns, updateColumns))
+        new Save(SqlUpsert(table, columns, values, pkColumns, updateColumns))
     }
 }
 
 object Save {
     def apply(): Save = 
-        new Save(SqlStatement.SqlUpsert(None, Nil, Nil, Nil, Nil))
+        new Save(SqlUpsert(None, Nil, Nil, Nil, Nil))
 }

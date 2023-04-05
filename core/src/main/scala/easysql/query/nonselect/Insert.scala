@@ -1,24 +1,23 @@
 package easysql.query.nonselect
 
-import easysql.ast.statement.SqlStatement
-import easysql.ast.table.SqlTable.*
 import easysql.ast.SqlDataType
-import easysql.ast.expr.SqlBinaryOperator
-import easysql.ast.expr.SqlExpr.*
-import easysql.query.ToSql
+import easysql.ast.expr.*
+import easysql.ast.statement.{SqlInsert, SqlStatement}
+import easysql.ast.table.*
+import easysql.database.DB
 import easysql.dsl.*
 import easysql.macros.*
-import easysql.util.*
+import easysql.query.ToSql
 import easysql.query.select.*
-import easysql.database.DB
+import easysql.util.*
 
-class Insert[T <: Tuple, S <: InsertState](private val ast: SqlStatement.SqlInsert) extends NonSelect {
+class Insert[T <: Tuple, S <: InsertState](private val ast: SqlInsert) extends NonSelect {
     override def getAst: SqlStatement =
         ast
 
-    inline def insert[T <: Product, SS >: S <: InsertEntity](entities: T*): Insert[EmptyTuple, InsertEntity] = {
-        val metaData = insertMetaData[T]
-        val table = Some(new SqlIdentTable(metaData._1, None))
+    inline def insert[P <: Product, SS >: S <: InsertEntity](entities: P*): Insert[EmptyTuple, InsertEntity] = {
+        val metaData = insertMetaData[P]
+        val table = Some(SqlIdentTable(metaData._1, None))
         val insertList = entities.toList.map { entity =>
             metaData._2.map { i =>
                 val value = i._2.apply(entity) match {
@@ -35,7 +34,7 @@ class Insert[T <: Tuple, S <: InsertState](private val ast: SqlStatement.SqlInse
     }
 
     def insertInto[C <: Tuple](table: TableSchema[_])(columns: C): Insert[InverseMap[C], Nothing] = {
-        val insertTable = Some(new SqlIdentTable(table.__tableName, None))
+        val insertTable = Some(SqlIdentTable(table.__tableName, None))
         val insertColumns = columns.toList.filter {
             case e: IdentExpr[_] => true
             case e: ColumnExpr[_, _] => true
@@ -70,7 +69,7 @@ class Insert[T <: Tuple, S <: InsertState](private val ast: SqlStatement.SqlInse
 
 object Insert {
     def apply(): Insert[EmptyTuple, Nothing] = 
-        new Insert(SqlStatement.SqlInsert(None, Nil, Nil, None))
+        new Insert(SqlInsert(None, Nil, Nil, None))
 }
 
 sealed trait InsertState
