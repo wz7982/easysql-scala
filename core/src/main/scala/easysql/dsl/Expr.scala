@@ -9,67 +9,87 @@ import java.util.Date
 import scala.annotation.targetName
 
 sealed trait Expr[T <: SqlDataType] {
+    @targetName("eq")
     def ===(value: T): BinaryExpr[Boolean] = 
         BinaryExpr(this, SqlBinaryOperator.Eq, LiteralExpr(value))
 
+    @targetName("eq")
     def ===(value: Option[T]): BinaryExpr[Boolean] = value match {
         case Some(v) => BinaryExpr(this, SqlBinaryOperator.Eq, LiteralExpr(v))
         case None => BinaryExpr(this, SqlBinaryOperator.Is, NullExpr)
     }
 
-    def ===(expr: Expr[T]): BinaryExpr[Boolean] = 
+    @targetName("eq")
+    def ===(expr: Expr[T]): BinaryExpr[Boolean] =
         BinaryExpr(this, SqlBinaryOperator.Eq, expr)
 
-    def ===(q: Query[Tuple1[T], _]): BinaryExpr[Boolean] = 
+    @targetName("eq")
+    def ===(q: Query[Tuple1[T], _]): BinaryExpr[Boolean] =
         BinaryExpr(this, SqlBinaryOperator.Eq, SubQueryExpr(q))
-
+    
+    @targetName("ne")
     def <>(value: T): BinaryExpr[Boolean] = 
         BinaryExpr(this, SqlBinaryOperator.Ne, LiteralExpr(value))
 
+    @targetName("ne")
     def <>(value: Option[T]): BinaryExpr[Boolean] = value match {
         case Some(v) => BinaryExpr(this, SqlBinaryOperator.Ne, LiteralExpr(v))
         case None => BinaryExpr(this, SqlBinaryOperator.IsNot, NullExpr)
     }
 
+    @targetName("ne")
     def <>(expr: Expr[T]): BinaryExpr[Boolean] = 
         BinaryExpr(this, SqlBinaryOperator.Ne, expr)
 
+    @targetName("ne")
     def <>(q: Query[Tuple1[T], _]): BinaryExpr[Boolean] = 
         BinaryExpr(this, SqlBinaryOperator.Ne, SubQueryExpr(q))
 
+    @targetName("gt")
     def >(value: T): BinaryExpr[Boolean] = 
         BinaryExpr(this, SqlBinaryOperator.Gt, LiteralExpr(value))
 
+    @targetName("gt")
     def >(expr: Expr[T]): BinaryExpr[Boolean] = 
         BinaryExpr(this, SqlBinaryOperator.Gt, expr)
 
+    @targetName("gt")
     def >(q: Query[Tuple1[T], _]): BinaryExpr[Boolean] = 
         BinaryExpr(this, SqlBinaryOperator.Gt, SubQueryExpr(q))
 
+    @targetName("ge")
     def >=(value: T): BinaryExpr[Boolean] = 
         BinaryExpr(this, SqlBinaryOperator.Ge, LiteralExpr(value))
 
+    @targetName("ge")
     def >=(expr: Expr[T]): BinaryExpr[Boolean] = 
         BinaryExpr(this, SqlBinaryOperator.Ge, expr)
 
+    @targetName("ge")
     def >=(q: Query[Tuple1[T], _]): BinaryExpr[Boolean] = 
         BinaryExpr(this, SqlBinaryOperator.Ge, SubQueryExpr(q))
 
+    @targetName("lt")
     def <(value: T): BinaryExpr[Boolean] = 
         BinaryExpr(this, SqlBinaryOperator.Lt, LiteralExpr(value))
 
+    @targetName("lt")
     def <(expr: Expr[T]): BinaryExpr[Boolean] = 
         BinaryExpr(this, SqlBinaryOperator.Lt, expr)
 
+    @targetName("lt")
     def <(q: Query[Tuple1[T], _]): BinaryExpr[Boolean] = 
         BinaryExpr(this, SqlBinaryOperator.Lt, SubQueryExpr(q))
 
+    @targetName("le")
     def <=(value: T): BinaryExpr[Boolean] = 
         BinaryExpr(this, SqlBinaryOperator.Le, LiteralExpr(value))
 
+    @targetName("le")
     def <=(expr: Expr[T]): BinaryExpr[Boolean] = 
         BinaryExpr(this, SqlBinaryOperator.Le, expr)
 
+    @targetName("le")
     def <=(q: Query[Tuple1[T], _]): BinaryExpr[Boolean] = 
         BinaryExpr(this, SqlBinaryOperator.Le, SubQueryExpr(q))
 
@@ -121,11 +141,11 @@ sealed trait Expr[T <: SqlDataType] {
     def desc: OrderBy = 
         OrderBy(this, SqlOrderByOption.Desc)
 
-    infix def as(name: String)(using NonEmpty[name.type] =:= true) = 
-        AliasExpr[T, name.type](this, name)
+    infix def as(name: String)(using NonEmpty[name.type] =:= true): AliasExpr[T, name.type] =
+        AliasExpr(this, name)
 
-    infix def unsafeAs(name: String) = 
-        AliasExpr[T, name.type](this, name)
+    def unsafeAs(name: String): AliasExpr[T, name.type] =
+        AliasExpr(this, name)
 }
 
 case class LiteralExpr[T <: SqlDataType](value: T) extends Expr[T]
@@ -203,22 +223,28 @@ case class CastExpr[T <: SqlDataType](expr: Expr[_], castType: String) extends E
 
 trait ExprOperator[T <: SqlDataType] {
     extension (v: T) {
+        @targetName("eq")
         def ===(expr: Expr[T]): BinaryExpr[Boolean] = 
             BinaryExpr(LiteralExpr(v), SqlBinaryOperator.Eq, expr)
 
-        def <>(expr: Expr[T]): BinaryExpr[Boolean] = 
+        @targetName("ne")
+        def <>(expr: Expr[T]): BinaryExpr[Boolean] =
             BinaryExpr(LiteralExpr(v), SqlBinaryOperator.Ne, expr)
 
-        def >(expr: Expr[T]): BinaryExpr[Boolean] = 
+        @targetName("gt")
+        def >(expr: Expr[T]): BinaryExpr[Boolean] =
             BinaryExpr(LiteralExpr(v), SqlBinaryOperator.Gt, expr)
 
-        def >=(expr: Expr[T]): BinaryExpr[Boolean] = 
+        @targetName("ge")
+        def >=(expr: Expr[T]): BinaryExpr[Boolean] =
             BinaryExpr(LiteralExpr(v), SqlBinaryOperator.Ge, expr)
 
-        def <(expr: Expr[T]): BinaryExpr[Boolean] = 
+        @targetName("lt")
+        def <(expr: Expr[T]): BinaryExpr[Boolean] =
             BinaryExpr(LiteralExpr(v), SqlBinaryOperator.Lt, expr)
 
-        def <=(expr: Expr[T]): BinaryExpr[Boolean] = 
+        @targetName("le")
+        def <=(expr: Expr[T]): BinaryExpr[Boolean] =
             BinaryExpr(LiteralExpr(v), SqlBinaryOperator.Le, expr)
 
         def in(list: List[Expr[T]]): Expr[Boolean] =
@@ -244,98 +270,128 @@ trait ExprOperator[T <: SqlDataType] {
 object Expr {
     given numberOperator[T <: SqlNumberType]: ExprOperator[T] with {
         extension [R <: SqlNumberType] (e: Expr[T]) {
+            @targetName("plus")
             def +(value: R): BinaryExpr[BigDecimal] = 
                 BinaryExpr(e, SqlBinaryOperator.Add, LiteralExpr(value))
 
+            @targetName("plus")
             def +(expr: Expr[R]): BinaryExpr[BigDecimal] = 
                 BinaryExpr(e, SqlBinaryOperator.Add, expr)
 
+            @targetName("minus")
             def -(value: R): BinaryExpr[BigDecimal] = 
                 BinaryExpr(e, SqlBinaryOperator.Sub, LiteralExpr(value))
 
+            @targetName("minus")
             def -(expr: Expr[R]): BinaryExpr[BigDecimal] = 
                 BinaryExpr(e, SqlBinaryOperator.Sub, expr)
 
+            @targetName("times")
             def *(value: R): BinaryExpr[BigDecimal] = 
                 BinaryExpr(e, SqlBinaryOperator.Mul, LiteralExpr(value))
 
+            @targetName("times")
             def *(expr: Expr[R]): BinaryExpr[BigDecimal] = 
                 BinaryExpr(e, SqlBinaryOperator.Mul, expr)
 
+            @targetName("div")
             def /(value: R): BinaryExpr[BigDecimal] = 
                 BinaryExpr(e, SqlBinaryOperator.Div, LiteralExpr(value))
 
+            @targetName("div")
             def /(expr: Expr[R]): BinaryExpr[BigDecimal] = 
                 BinaryExpr(e, SqlBinaryOperator.Div, expr)
 
+            @targetName("mod")
             def %(value: R): BinaryExpr[BigDecimal] = 
                 BinaryExpr(e, SqlBinaryOperator.Mod, LiteralExpr(value))
 
+            @targetName("mod")
             def %(expr: Expr[R]): BinaryExpr[BigDecimal] = 
                 BinaryExpr(e, SqlBinaryOperator.Mod, expr)
 
+            @targetName("eq")
             def ===(value: R): BinaryExpr[Boolean] = 
                 BinaryExpr(e, SqlBinaryOperator.Eq, LiteralExpr(value))
 
+            @targetName("eq")
             def ===(value: Option[R]): BinaryExpr[Boolean] = value match {
                 case Some(v) => BinaryExpr(e, SqlBinaryOperator.Eq, LiteralExpr(v))
                 case None => BinaryExpr(e, SqlBinaryOperator.Is, NullExpr)
             }
 
+            @targetName("eq")
             def ===(expr: Expr[R]): BinaryExpr[Boolean] = 
                 BinaryExpr(e, SqlBinaryOperator.Eq, expr)
 
+            @targetName("eq")
             def ===(q: Query[Tuple1[R], _]): BinaryExpr[Boolean] = 
                 BinaryExpr(e, SqlBinaryOperator.Eq, SubQueryExpr(q))
 
+            @targetName("ne")
             def <>(value: R): BinaryExpr[Boolean] = 
                 BinaryExpr(e, SqlBinaryOperator.Ne, LiteralExpr(value))
 
+            @targetName("ne")
             def <>(value: Option[R]): BinaryExpr[Boolean] = value match {
                 case Some(v) => BinaryExpr(e, SqlBinaryOperator.Ne, LiteralExpr(v))
                 case None => BinaryExpr(e, SqlBinaryOperator.IsNot, NullExpr)
             }
 
+            @targetName("ne")
             def <>(expr: Expr[R]): BinaryExpr[Boolean] = 
                 BinaryExpr(e, SqlBinaryOperator.Ne, expr)
 
+            @targetName("ne")
             def <>(q: Query[Tuple1[R], _]): BinaryExpr[Boolean] = 
                 BinaryExpr(e, SqlBinaryOperator.Ne, SubQueryExpr(q))
 
+            @targetName("gt")
             def >(value: R): BinaryExpr[Boolean] = 
                 BinaryExpr(e, SqlBinaryOperator.Gt, LiteralExpr(value))
 
+            @targetName("gt")
             def >(expr: Expr[R]): BinaryExpr[Boolean] = 
                 BinaryExpr(e, SqlBinaryOperator.Gt, expr)
 
+            @targetName("gt")
             def >(q: Query[Tuple1[R], _]): BinaryExpr[Boolean] = 
                 BinaryExpr(e, SqlBinaryOperator.Gt, SubQueryExpr(q))
 
+            @targetName("ge")
             def >=(value: R): BinaryExpr[Boolean] = 
                 BinaryExpr(e, SqlBinaryOperator.Ge, LiteralExpr(value))
 
+            @targetName("ge")
             def >=(expr: Expr[R]): BinaryExpr[Boolean] = 
                 BinaryExpr(e, SqlBinaryOperator.Ge, expr)
 
+            @targetName("ge")
             def >=(q: Query[Tuple1[R], _]): BinaryExpr[Boolean] = 
                 BinaryExpr(e, SqlBinaryOperator.Ge, SubQueryExpr(q))
 
+            @targetName("lt")
             def <(value: R): BinaryExpr[Boolean] = 
                 BinaryExpr(e, SqlBinaryOperator.Lt, LiteralExpr(value))
 
+            @targetName("lt")
             def <(expr: Expr[R]): BinaryExpr[Boolean] = 
                 BinaryExpr(e, SqlBinaryOperator.Lt, expr)
 
+            @targetName("lt")
             def <(q: Query[Tuple1[R], _]): BinaryExpr[Boolean] = 
                 BinaryExpr(e, SqlBinaryOperator.Lt, SubQueryExpr(q))
 
-            def <=(value: R): BinaryExpr[Boolean] = 
+            @targetName("le")
+            def <=(value: R): BinaryExpr[Boolean] =
                 BinaryExpr(e, SqlBinaryOperator.Le, LiteralExpr(value))
 
-            def <=(expr: Expr[R]): BinaryExpr[Boolean] = 
+            @targetName("le")
+            def <=(expr: Expr[R]): BinaryExpr[Boolean] =
                 BinaryExpr(e, SqlBinaryOperator.Le, expr)
 
-            def <=(q: Query[Tuple1[R], _]): BinaryExpr[Boolean] = 
+            @targetName("le")
+            def <=(q: Query[Tuple1[R], _]): BinaryExpr[Boolean] =
                 BinaryExpr(e, SqlBinaryOperator.Le, SubQueryExpr(q))
 
             def in(list: List[R | Expr[R]]): Expr[Boolean] =
@@ -382,36 +438,47 @@ object Expr {
         }
 
         extension [R <: SqlNumberType] (v: Int) {
+            @targetName("plus")
             def +(expr: Expr[R]): BinaryExpr[BigDecimal] = 
                 BinaryExpr(LiteralExpr(v), SqlBinaryOperator.Add, expr)
 
+            @targetName("minus")
             def -(expr: Expr[R]): BinaryExpr[BigDecimal] = 
                 BinaryExpr(LiteralExpr(v), SqlBinaryOperator.Sub, expr)
 
+            @targetName("times")
             def *(expr: Expr[R]): BinaryExpr[BigDecimal] = 
                 BinaryExpr(LiteralExpr(v), SqlBinaryOperator.Mul, expr)
 
+            @targetName("div")
             def /(expr: Expr[R]): BinaryExpr[BigDecimal] = 
                 BinaryExpr(LiteralExpr(v), SqlBinaryOperator.Div, expr)
 
+            @targetName("mod")
             def %(expr: Expr[R]): BinaryExpr[BigDecimal] = 
                 BinaryExpr(LiteralExpr(v), SqlBinaryOperator.Mod, expr)
 
+            @targetName("eq")
             def ===(expr: Expr[R]): BinaryExpr[Boolean] = 
                 BinaryExpr(LiteralExpr(v), SqlBinaryOperator.Eq, expr)
 
+            @targetName("ne")
             def <>(expr: Expr[R]): BinaryExpr[Boolean] = 
                 BinaryExpr(LiteralExpr(v), SqlBinaryOperator.Ne, expr)
 
+            @targetName("gt")
             def >(expr: Expr[R]): BinaryExpr[Boolean] = 
                 BinaryExpr(LiteralExpr(v), SqlBinaryOperator.Gt, expr)
 
+            @targetName("ge")
             def >=(expr: Expr[R]): BinaryExpr[Boolean] = 
                 BinaryExpr(LiteralExpr(v), SqlBinaryOperator.Ge, expr)
 
+            @targetName("lt")
             def <(expr: Expr[R]): BinaryExpr[Boolean] = 
                 BinaryExpr(LiteralExpr(v), SqlBinaryOperator.Lt, expr)
 
+            @targetName("le")
             def <=(expr: Expr[R]): BinaryExpr[Boolean] = 
                 BinaryExpr(LiteralExpr(v), SqlBinaryOperator.Le, expr)
 
@@ -433,44 +500,55 @@ object Expr {
             def notBetween(start: Expr[R], end: Expr[R]): Expr[Boolean] =
                 BetweenExpr(LiteralExpr(v), start, end, true)
 
-            def unsafeAs(name: String) = 
-                AliasExpr[BigDecimal, name.type](LiteralExpr(v), name)
+            def unsafeAs(name: String): AliasExpr[BigDecimal, name.type] =
+                AliasExpr(LiteralExpr(v), name)
 
-            infix def as(name: String)(using NonEmpty[name.type] =:= true) = 
-                AliasExpr[BigDecimal, name.type](LiteralExpr(v), name)
+            infix def as(name: String)(using NonEmpty[name.type] =:= true): AliasExpr[BigDecimal, name.type] =
+                AliasExpr(LiteralExpr(v), name)
         }
 
         extension [R <: SqlNumberType] (v: Long) {
+            @targetName("plus")
             def +(expr: Expr[R]): BinaryExpr[BigDecimal] = 
                 BinaryExpr(LiteralExpr(v), SqlBinaryOperator.Add, expr)
 
+            @targetName("minus")
             def -(expr: Expr[R]): BinaryExpr[BigDecimal] = 
                 BinaryExpr(LiteralExpr(v), SqlBinaryOperator.Sub, expr)
 
+            @targetName("times")
             def *(expr: Expr[R]): BinaryExpr[BigDecimal] = 
                 BinaryExpr(LiteralExpr(v), SqlBinaryOperator.Mul, expr)
 
+            @targetName("div")
             def /(expr: Expr[R]): BinaryExpr[BigDecimal] = 
                 BinaryExpr(LiteralExpr(v), SqlBinaryOperator.Div, expr)
 
+            @targetName("mod")
             def %(expr: Expr[R]): BinaryExpr[BigDecimal] = 
                 BinaryExpr(LiteralExpr(v), SqlBinaryOperator.Mod, expr)
 
+            @targetName("eq")
             def ===(expr: Expr[R]): BinaryExpr[Boolean] = 
                 BinaryExpr(LiteralExpr(v), SqlBinaryOperator.Eq, expr)
 
+            @targetName("ne")
             def <>(expr: Expr[R]): BinaryExpr[Boolean] = 
                 BinaryExpr(LiteralExpr(v), SqlBinaryOperator.Ne, expr)
 
+            @targetName("gt")
             def >(expr: Expr[R]): BinaryExpr[Boolean] = 
                 BinaryExpr(LiteralExpr(v), SqlBinaryOperator.Gt, expr)
 
+            @targetName("ge")
             def >=(expr: Expr[R]): BinaryExpr[Boolean] = 
                 BinaryExpr(LiteralExpr(v), SqlBinaryOperator.Ge, expr)
 
+            @targetName("lt")
             def <(expr: Expr[R]): BinaryExpr[Boolean] = 
                 BinaryExpr(LiteralExpr(v), SqlBinaryOperator.Lt, expr)
 
+            @targetName("le")
             def <=(expr: Expr[R]): BinaryExpr[Boolean] = 
                 BinaryExpr(LiteralExpr(v), SqlBinaryOperator.Le, expr)
 
@@ -492,45 +570,56 @@ object Expr {
             def notBetween(start: Expr[R], end: Expr[R]): Expr[Boolean] =
                 BetweenExpr(LiteralExpr(v), start, end, true)
 
-            def unsafeAs(name: String) = 
-                AliasExpr[BigDecimal, name.type](LiteralExpr(v), name)
+            def unsafeAs(name: String): AliasExpr[BigDecimal, name.type] =
+                AliasExpr(LiteralExpr(v), name)
             
-            infix def as(name: String)(using NonEmpty[name.type] =:= true) = 
-                AliasExpr[BigDecimal, name.type](LiteralExpr(v), name)
+            infix def as(name: String)(using NonEmpty[name.type] =:= true): AliasExpr[BigDecimal, name.type] =
+                AliasExpr(LiteralExpr(v), name)
         }
 
         extension [R <: SqlNumberType] (v: Float) {
-            def +(expr: Expr[R]): BinaryExpr[BigDecimal] = 
+            @targetName("plus")
+            def +(expr: Expr[R]): BinaryExpr[BigDecimal] =
                 BinaryExpr(LiteralExpr(v), SqlBinaryOperator.Add, expr)
 
-            def -(expr: Expr[R]): BinaryExpr[BigDecimal] = 
+            @targetName("minus")
+            def -(expr: Expr[R]): BinaryExpr[BigDecimal] =
                 BinaryExpr(LiteralExpr(v), SqlBinaryOperator.Sub, expr)
 
-            def *(expr: Expr[R]): BinaryExpr[BigDecimal] = 
+            @targetName("times")
+            def *(expr: Expr[R]): BinaryExpr[BigDecimal] =
                 BinaryExpr(LiteralExpr(v), SqlBinaryOperator.Mul, expr)
 
-            def /(expr: Expr[R]): BinaryExpr[BigDecimal] = 
+            @targetName("div")
+            def /(expr: Expr[R]): BinaryExpr[BigDecimal] =
                 BinaryExpr(LiteralExpr(v), SqlBinaryOperator.Div, expr)
 
-            def %(expr: Expr[R]): BinaryExpr[BigDecimal] = 
+            @targetName("mod")
+            def %(expr: Expr[R]): BinaryExpr[BigDecimal] =
                 BinaryExpr(LiteralExpr(v), SqlBinaryOperator.Mod, expr)
 
-            def ===(expr: Expr[R]): BinaryExpr[Boolean] = 
+            @targetName("eq")
+            def ===(expr: Expr[R]): BinaryExpr[Boolean] =
                 BinaryExpr(LiteralExpr(v), SqlBinaryOperator.Eq, expr)
 
-            def <>(expr: Expr[R]): BinaryExpr[Boolean] = 
+            @targetName("ne")
+            def <>(expr: Expr[R]): BinaryExpr[Boolean] =
                 BinaryExpr(LiteralExpr(v), SqlBinaryOperator.Ne, expr)
 
-            def >(expr: Expr[R]): BinaryExpr[Boolean] = 
+            @targetName("gt")
+            def >(expr: Expr[R]): BinaryExpr[Boolean] =
                 BinaryExpr(LiteralExpr(v), SqlBinaryOperator.Gt, expr)
 
-            def >=(expr: Expr[R]): BinaryExpr[Boolean] = 
+            @targetName("ge")
+            def >=(expr: Expr[R]): BinaryExpr[Boolean] =
                 BinaryExpr(LiteralExpr(v), SqlBinaryOperator.Ge, expr)
 
-            def <(expr: Expr[R]): BinaryExpr[Boolean] = 
+            @targetName("lt")
+            def <(expr: Expr[R]): BinaryExpr[Boolean] =
                 BinaryExpr(LiteralExpr(v), SqlBinaryOperator.Lt, expr)
 
-            def <=(expr: Expr[R]): BinaryExpr[Boolean] = 
+            @targetName("le")
+            def <=(expr: Expr[R]): BinaryExpr[Boolean] =
                 BinaryExpr(LiteralExpr(v), SqlBinaryOperator.Le, expr)
 
             def in(list: List[Expr[R]]): Expr[Boolean] =
@@ -551,45 +640,56 @@ object Expr {
             def notBetween(start: Expr[R], end: Expr[R]): Expr[Boolean] =
                 BetweenExpr(LiteralExpr(v), start, end, true)
 
-            def unsafeAs(name: String) = 
-                AliasExpr[BigDecimal, name.type](LiteralExpr(v.toDouble), name)
+            def unsafeAs(name: String): AliasExpr[BigDecimal, name.type] =
+                AliasExpr(LiteralExpr(v.toDouble), name)
 
-            infix def as(name: String)(using NonEmpty[name.type] =:= true) = 
-                AliasExpr[BigDecimal, name.type](LiteralExpr(v.toDouble), name)
+            infix def as(name: String)(using NonEmpty[name.type] =:= true): AliasExpr[BigDecimal, name.type] =
+                AliasExpr(LiteralExpr(v.toDouble), name)
         }
 
         extension [R <: SqlNumberType] (v: Double) {
-            def +(expr: Expr[R]): BinaryExpr[BigDecimal] = 
+            @targetName("plus")
+            def +(expr: Expr[R]): BinaryExpr[BigDecimal] =
                 BinaryExpr(LiteralExpr(v), SqlBinaryOperator.Add, expr)
 
-            def -(expr: Expr[R]): BinaryExpr[BigDecimal] = 
+            @targetName("minus")
+            def -(expr: Expr[R]): BinaryExpr[BigDecimal] =
                 BinaryExpr(LiteralExpr(v), SqlBinaryOperator.Sub, expr)
 
-            def *(expr: Expr[R]): BinaryExpr[BigDecimal] = 
+            @targetName("times")
+            def *(expr: Expr[R]): BinaryExpr[BigDecimal] =
                 BinaryExpr(LiteralExpr(v), SqlBinaryOperator.Mul, expr)
 
-            def /(expr: Expr[R]): BinaryExpr[BigDecimal] = 
+            @targetName("div")
+            def /(expr: Expr[R]): BinaryExpr[BigDecimal] =
                 BinaryExpr(LiteralExpr(v), SqlBinaryOperator.Div, expr)
 
-            def %(expr: Expr[R]): BinaryExpr[BigDecimal] = 
+            @targetName("mod")
+            def %(expr: Expr[R]): BinaryExpr[BigDecimal] =
                 BinaryExpr(LiteralExpr(v), SqlBinaryOperator.Mod, expr)
 
-            def ===(expr: Expr[R]): BinaryExpr[Boolean] = 
+            @targetName("eq")
+            def ===(expr: Expr[R]): BinaryExpr[Boolean] =
                 BinaryExpr(LiteralExpr(v), SqlBinaryOperator.Eq, expr)
 
-            def <>(expr: Expr[R]): BinaryExpr[Boolean] = 
+            @targetName("ne")
+            def <>(expr: Expr[R]): BinaryExpr[Boolean] =
                 BinaryExpr(LiteralExpr(v), SqlBinaryOperator.Ne, expr)
 
-            def >(expr: Expr[R]): BinaryExpr[Boolean] = 
+            @targetName("gt")
+            def >(expr: Expr[R]): BinaryExpr[Boolean] =
                 BinaryExpr(LiteralExpr(v), SqlBinaryOperator.Gt, expr)
 
-            def >=(expr: Expr[R]): BinaryExpr[Boolean] = 
+            @targetName("ge")
+            def >=(expr: Expr[R]): BinaryExpr[Boolean] =
                 BinaryExpr(LiteralExpr(v), SqlBinaryOperator.Ge, expr)
 
-            def <(expr: Expr[R]): BinaryExpr[Boolean] = 
+            @targetName("lt")
+            def <(expr: Expr[R]): BinaryExpr[Boolean] =
                 BinaryExpr(LiteralExpr(v), SqlBinaryOperator.Lt, expr)
 
-            def <=(expr: Expr[R]): BinaryExpr[Boolean] = 
+            @targetName("le")
+            def <=(expr: Expr[R]): BinaryExpr[Boolean] =
                 BinaryExpr(LiteralExpr(v), SqlBinaryOperator.Le, expr)
 
             def in(list: List[Expr[R]]): Expr[Boolean] =
@@ -610,44 +710,55 @@ object Expr {
             def notBetween(start: Expr[R], end: Expr[R]): Expr[Boolean] =
                 BetweenExpr(LiteralExpr(v), start, end, true)
 
-            def unsafeAs(name: String) = 
-                AliasExpr[BigDecimal, name.type](LiteralExpr(v), name)
+            def unsafeAs(name: String): AliasExpr[BigDecimal, name.type] =
+                AliasExpr(LiteralExpr(v), name)
 
-            infix def as(name: String)(using NonEmpty[name.type] =:= true) = 
-                AliasExpr[BigDecimal, name.type](LiteralExpr(v), name)
+            infix def as(name: String)(using NonEmpty[name.type] =:= true): AliasExpr[BigDecimal, name.type] =
+                AliasExpr(LiteralExpr(v), name)
         }
 
         extension [R <: SqlNumberType] (v: BigDecimal) {
+            @targetName("plus")
             def +(expr: Expr[R]): BinaryExpr[BigDecimal] = 
                 BinaryExpr(LiteralExpr(v), SqlBinaryOperator.Add, expr)
 
+            @targetName("minus")
             def -(expr: Expr[R]): BinaryExpr[BigDecimal] = 
                 BinaryExpr(LiteralExpr(v), SqlBinaryOperator.Sub, expr)
 
+            @targetName("times")
             def *(expr: Expr[R]): BinaryExpr[BigDecimal] = 
                 BinaryExpr(LiteralExpr(v), SqlBinaryOperator.Mul, expr)
 
+            @targetName("div")
             def /(expr: Expr[R]): BinaryExpr[BigDecimal] = 
                 BinaryExpr(LiteralExpr(v), SqlBinaryOperator.Div, expr)
 
+            @targetName("mod")
             def %(expr: Expr[R]): BinaryExpr[BigDecimal] = 
                 BinaryExpr(LiteralExpr(v), SqlBinaryOperator.Mod, expr)
 
+            @targetName("eq")
             def ===(expr: Expr[R]): BinaryExpr[Boolean] = 
                 BinaryExpr(LiteralExpr(v), SqlBinaryOperator.Eq, expr)
 
+            @targetName("ne")
             def <>(expr: Expr[R]): BinaryExpr[Boolean] = 
                 BinaryExpr(LiteralExpr(v), SqlBinaryOperator.Ne, expr)
 
+            @targetName("gt")
             def >(expr: Expr[R]): BinaryExpr[Boolean] = 
                 BinaryExpr(LiteralExpr(v), SqlBinaryOperator.Gt, expr)
 
+            @targetName("ge")
             def >=(expr: Expr[R]): BinaryExpr[Boolean] = 
                 BinaryExpr(LiteralExpr(v), SqlBinaryOperator.Ge, expr)
 
+            @targetName("lt")
             def <(expr: Expr[R]): BinaryExpr[Boolean] = 
                 BinaryExpr(LiteralExpr(v), SqlBinaryOperator.Lt, expr)
 
+            @targetName("le")
             def <=(expr: Expr[R]): BinaryExpr[Boolean] = 
                 BinaryExpr(LiteralExpr(v), SqlBinaryOperator.Le, expr)
 
@@ -669,110 +780,130 @@ object Expr {
             def notBetween(start: Expr[R], end: Expr[R]): Expr[Boolean] =
                 BetweenExpr(LiteralExpr(v), start, end, true)
 
-            def unsafeAs(name: String) = 
-                AliasExpr[BigDecimal, name.type](LiteralExpr(v), name)
+            def unsafeAs(name: String): AliasExpr[BigDecimal, name.type] =
+                AliasExpr(LiteralExpr(v), name)
             
-            infix def as(name: String)(using NonEmpty[name.type] =:= true) = 
-                AliasExpr[BigDecimal, name.type](LiteralExpr(v), name)
+            infix def as(name: String)(using NonEmpty[name.type] =:= true): AliasExpr[BigDecimal, name.type] =
+                AliasExpr(LiteralExpr(v), name)
         }
     }
 
     given stringOperator: ExprOperator[String] with {
         extension (e: Expr[String]) {
-            infix def like(value: String): BinaryExpr[Boolean] =
+            def like(value: String): BinaryExpr[Boolean] =
                 BinaryExpr(e, SqlBinaryOperator.Like, LiteralExpr(value))
 
-            infix def like(expr: Expr[String]): BinaryExpr[Boolean] =
+            def like(expr: Expr[String]): BinaryExpr[Boolean] =
                 BinaryExpr(e, SqlBinaryOperator.Like, expr)
 
-            infix def notLike(value: String): BinaryExpr[Boolean] =
+            def notLike(value: String): BinaryExpr[Boolean] =
                 BinaryExpr(e, SqlBinaryOperator.NotLike, LiteralExpr(value))
 
-            infix def notLike(expr: Expr[String]): BinaryExpr[Boolean] =
+            def notLike(expr: Expr[String]): BinaryExpr[Boolean] =
                 BinaryExpr(e, SqlBinaryOperator.NotLike, expr)
 
-            def ->(json: Int): BinaryExpr[String] = 
+            @targetName("json")
+            def ->(json: Int): BinaryExpr[String] =
                 BinaryExpr(e, SqlBinaryOperator.Json, LiteralExpr(json))
 
-            def ->(json: String): BinaryExpr[String] = 
+            @targetName("json")
+            def ->(json: String): BinaryExpr[String] =
                 BinaryExpr(e, SqlBinaryOperator.Json, LiteralExpr(json))
 
-            def ->>(json: Int): BinaryExpr[String] = 
+            @targetName("jsonText")
+            def ->>(json: Int): BinaryExpr[String] =
                 BinaryExpr(e, SqlBinaryOperator.JsonText, LiteralExpr(json))
 
-            def ->>(json: String): BinaryExpr[String] = 
+            @targetName("jsonText")
+            def ->>(json: String): BinaryExpr[String] =
                 BinaryExpr(e, SqlBinaryOperator.JsonText, LiteralExpr(json))
         }
 
         extension (v: String) {
-            def unsafeAs(name: String) = 
-                AliasExpr[String, name.type](LiteralExpr(v), name)
+            def unsafeAs(name: String): AliasExpr[String, name.type] =
+                AliasExpr(LiteralExpr(v), name)
 
-            infix def as(name: String)(using NonEmpty[name.type] =:= true) = 
-                AliasExpr[String, name.type](LiteralExpr(v), name)
+            infix def as(name: String)(using NonEmpty[name.type] =:= true): AliasExpr[String, name.type] =
+                AliasExpr(LiteralExpr(v), name)
         }
     }
 
     given boolOperator: ExprOperator[Boolean] with {
         extension (e: Expr[Boolean]) {
-            def &&(query: Expr[Boolean]): BinaryExpr[Boolean] = 
+            @targetName("and")
+            def &&(query: Expr[Boolean]): BinaryExpr[Boolean] =
                 BinaryExpr(e, SqlBinaryOperator.And, query)
 
-            def &&(v: Boolean): BinaryExpr[Boolean] = 
+            @targetName("and")
+            def &&(v: Boolean): BinaryExpr[Boolean] =
                 BinaryExpr(e, SqlBinaryOperator.And, LiteralExpr(v))
 
-            def ||(query: Expr[Boolean]): BinaryExpr[Boolean] = 
+            @targetName("or")
+            def ||(query: Expr[Boolean]): BinaryExpr[Boolean] =
                 BinaryExpr(e, SqlBinaryOperator.Or, query)
 
-            def ||(v: Boolean): BinaryExpr[Boolean] = 
+            @targetName("or")
+            def ||(v: Boolean): BinaryExpr[Boolean] =
                 BinaryExpr(e, SqlBinaryOperator.Or, LiteralExpr(v))
 
-            def ^(query: Expr[Boolean]): BinaryExpr[Boolean] = 
+            @targetName("xor")
+            def ^(query: Expr[Boolean]): BinaryExpr[Boolean] =
                 BinaryExpr(e, SqlBinaryOperator.Xor, query)
 
-            def ^(v: Boolean): BinaryExpr[Boolean] = 
+            @targetName("xor")
+            def ^(v: Boolean): BinaryExpr[Boolean] =
                 BinaryExpr(e, SqlBinaryOperator.Xor, LiteralExpr(v))
 
-            def unary_! : FuncExpr[Boolean] = 
+            @targetName("not")
+            def unary_! : FuncExpr[Boolean] =
                 FuncExpr("NOT", List(e))
         }
 
         extension (v: Boolean) {
-            def &&(query: Expr[Boolean]): BinaryExpr[Boolean] = 
+            @targetName("and")
+            def &&(query: Expr[Boolean]): BinaryExpr[Boolean] =
                 BinaryExpr(LiteralExpr(v), SqlBinaryOperator.And, query)
 
-            def ||(query: Expr[Boolean]): BinaryExpr[Boolean] = 
+            @targetName("or")
+            def ||(query: Expr[Boolean]): BinaryExpr[Boolean] =
                 BinaryExpr(LiteralExpr(v), SqlBinaryOperator.Or, query)
 
-            def ^(query: Expr[Boolean]): BinaryExpr[Boolean] = 
+            @targetName("xor")
+            def ^(query: Expr[Boolean]): BinaryExpr[Boolean] =
                 BinaryExpr(LiteralExpr(v), SqlBinaryOperator.Xor, query)
 
-            def unsafeAs(name: String) = 
-                AliasExpr[Boolean, name.type](LiteralExpr(v), name)
+            def unsafeAs(name: String): AliasExpr[Boolean, name.type] =
+                AliasExpr(LiteralExpr(v), name)
 
-            infix def as(name: String)(using NonEmpty[name.type] =:= true) = 
-                AliasExpr[Boolean, name.type](LiteralExpr(v), name)            
+            infix def as(name: String)(using NonEmpty[name.type] =:= true): AliasExpr[Boolean, name.type] =
+                AliasExpr(LiteralExpr(v), name)
         }
     }
 
     given dateOperator: ExprOperator[Date] with {
         extension (e: Expr[Date]) {
-            def ===(s: String): BinaryExpr[Boolean] = 
+            @targetName("eq")
+            def ===(s: String): BinaryExpr[Boolean] =
                 BinaryExpr(e, SqlBinaryOperator.Eq, LiteralExpr(s))
 
-            def <>(s: String): BinaryExpr[Boolean] = 
+            @targetName("ne")
+            def <>(s: String): BinaryExpr[Boolean] =
                 BinaryExpr(e, SqlBinaryOperator.Ne, LiteralExpr(s))
 
-            def >(s: String): BinaryExpr[Boolean] = 
+            @targetName("gt")
+            def >(s: String): BinaryExpr[Boolean] =
                 BinaryExpr(e, SqlBinaryOperator.Gt, LiteralExpr(s))
 
-            def >=(s: String): BinaryExpr[Boolean] = 
+            @targetName("ge")
+            def >=(s: String): BinaryExpr[Boolean] =
                 BinaryExpr(e, SqlBinaryOperator.Ge, LiteralExpr(s))
 
-            def <(s: String): BinaryExpr[Boolean] = 
+            @targetName("lt")
+            def <(s: String): BinaryExpr[Boolean] =
                 BinaryExpr(e, SqlBinaryOperator.Lt, LiteralExpr(s))
 
-            def <=(s: String): BinaryExpr[Boolean] = 
+            @targetName("le")
+            def <=(s: String): BinaryExpr[Boolean] =
                 BinaryExpr(e, SqlBinaryOperator.Le, LiteralExpr(s))
 
             def between(start: String, end: String): Expr[Boolean] =
@@ -783,109 +914,139 @@ object Expr {
         }
 
         extension (v: Date) {
-            def unsafeAs(name: String) = 
-                AliasExpr[Date, name.type](LiteralExpr(v), name)
+            def unsafeAs(name: String): AliasExpr[Date, name.type] =
+                AliasExpr(LiteralExpr(v), name)
 
-            infix def as(name: String)(using NonEmpty[name.type] =:= true) = 
-                AliasExpr[Date, name.type](LiteralExpr(v), name)
+            infix def as(name: String)(using NonEmpty[name.type] =:= true): AliasExpr[Date, name.type] =
+                AliasExpr(LiteralExpr(v), name)
         }
     }
 }
 
 given unsafeOperator: ExprOperator[_] with {
     extension (e: Expr[_]) {
-        def +(value: SqlNumberType): BinaryExpr[Nothing] = 
+        @targetName("plus")
+        def +(value: SqlNumberType): BinaryExpr[Nothing] =
             BinaryExpr(e, SqlBinaryOperator.Add, LiteralExpr(value))
 
-        def +(expr: Expr[_]): BinaryExpr[Nothing] = 
+        @targetName("plus")
+        def +(expr: Expr[_]): BinaryExpr[Nothing] =
             BinaryExpr(e, SqlBinaryOperator.Add, expr)
 
-        def -(value: SqlNumberType): BinaryExpr[Nothing] = 
+        @targetName("minus")
+        def -(value: SqlNumberType): BinaryExpr[Nothing] =
             BinaryExpr(e, SqlBinaryOperator.Sub, LiteralExpr(value))
 
-        def -(expr: Expr[_]): BinaryExpr[Nothing] = 
+        @targetName("minus")
+        def -(expr: Expr[_]): BinaryExpr[Nothing] =
             BinaryExpr(e, SqlBinaryOperator.Sub, expr)
 
-        def *(value: SqlNumberType): BinaryExpr[Nothing] = 
+        @targetName("times")
+        def *(value: SqlNumberType): BinaryExpr[Nothing] =
             BinaryExpr(e, SqlBinaryOperator.Mul, LiteralExpr(value))
 
-        def *(expr: Expr[_]): BinaryExpr[Nothing] = 
+        @targetName("times")
+        def *(expr: Expr[_]): BinaryExpr[Nothing] =
             BinaryExpr(e, SqlBinaryOperator.Mul, expr)
 
-        def /(value: SqlNumberType): BinaryExpr[Nothing] = 
+        @targetName("div")
+        def /(value: SqlNumberType): BinaryExpr[Nothing] =
             BinaryExpr(e, SqlBinaryOperator.Div, LiteralExpr(value))
 
-        def /(expr: Expr[_]): BinaryExpr[Nothing] = 
+        @targetName("div")
+        def /(expr: Expr[_]): BinaryExpr[Nothing] =
             BinaryExpr(e, SqlBinaryOperator.Div, expr)
 
-        def %(value: SqlNumberType): BinaryExpr[Nothing] = 
+        @targetName("mod")
+        def %(value: SqlNumberType): BinaryExpr[Nothing] =
             BinaryExpr(e, SqlBinaryOperator.Mod, LiteralExpr(value))
 
-        def %(expr: Expr[_]): BinaryExpr[Nothing] = 
+        @targetName("mod")
+        def %(expr: Expr[_]): BinaryExpr[Nothing] =
             BinaryExpr(e, SqlBinaryOperator.Mod, expr)
 
-        def ===(value: SqlDataType): BinaryExpr[Boolean] = 
+        @targetName("eq")
+        def ===(value: SqlDataType): BinaryExpr[Boolean] =
             BinaryExpr(e, SqlBinaryOperator.Eq, LiteralExpr(value))
 
+        @targetName("eq")
         def ===(value: Option[SqlDataType]): BinaryExpr[Boolean] = value match {
             case Some(v) => BinaryExpr(e, SqlBinaryOperator.Eq, LiteralExpr(v))
             case None => BinaryExpr(e, SqlBinaryOperator.Is, NullExpr)
         }
 
-        def ===(expr: Expr[_]): BinaryExpr[Boolean] = 
+        @targetName("eq")
+        def ===(expr: Expr[_]): BinaryExpr[Boolean] =
             BinaryExpr(e, SqlBinaryOperator.Eq, expr)
 
-        def ===[R <: SqlDataType](q: Query[Tuple1[R], _]): BinaryExpr[Boolean] = 
+        @targetName("eq")
+        def ===[R <: SqlDataType](q: Query[Tuple1[R], _]): BinaryExpr[Boolean] =
             BinaryExpr(e, SqlBinaryOperator.Eq, SubQueryExpr(q))
 
-        def <>(value: SqlDataType): BinaryExpr[Boolean] = 
+        @targetName("ne")
+        def <>(value: SqlDataType): BinaryExpr[Boolean] =
             BinaryExpr(e, SqlBinaryOperator.Ne, LiteralExpr(value))
 
+        @targetName("ne")
         def <>(value: Option[SqlDataType]): BinaryExpr[Boolean] = value match {
             case Some(v) => BinaryExpr(e, SqlBinaryOperator.Ne, LiteralExpr(v))
             case None => BinaryExpr(e, SqlBinaryOperator.IsNot, NullExpr)
         }
 
-        def <>(expr: Expr[_]): BinaryExpr[Boolean] = 
+        @targetName("ne")
+        def <>(expr: Expr[_]): BinaryExpr[Boolean] =
             BinaryExpr(e, SqlBinaryOperator.Ne, expr)
 
-        def <>[R <: SqlDataType](q: Query[Tuple1[R], _]): BinaryExpr[Boolean] = 
+        @targetName("ne")
+        def <>[R <: SqlDataType](q: Query[Tuple1[R], _]): BinaryExpr[Boolean] =
             BinaryExpr(e, SqlBinaryOperator.Ne, SubQueryExpr(q))
 
-        def >(value: SqlDataType): BinaryExpr[Boolean] = 
+        @targetName("gt")
+        def >(value: SqlDataType): BinaryExpr[Boolean] =
             BinaryExpr(e, SqlBinaryOperator.Gt, LiteralExpr(value))
 
-        def >(expr: Expr[SqlDataType]): BinaryExpr[Boolean] = 
+        @targetName("gt")
+        def >(expr: Expr[SqlDataType]): BinaryExpr[Boolean] =
             BinaryExpr(e, SqlBinaryOperator.Gt, expr)
 
-        def >[R <: SqlDataType](q: Query[Tuple1[R], _]): BinaryExpr[Boolean] = 
+        @targetName("gt")
+        def >[R <: SqlDataType](q: Query[Tuple1[R], _]): BinaryExpr[Boolean] =
             BinaryExpr(e, SqlBinaryOperator.Gt, SubQueryExpr(q))
 
-        def >=(value: SqlDataType): BinaryExpr[Boolean] = 
+        @targetName("ge")
+        def >=(value: SqlDataType): BinaryExpr[Boolean] =
             BinaryExpr(e, SqlBinaryOperator.Ge, LiteralExpr(value))
 
-        def >=(expr: Expr[SqlDataType]): BinaryExpr[Boolean] = 
+        @targetName("ge")
+        def >=(expr: Expr[SqlDataType]): BinaryExpr[Boolean] =
             BinaryExpr(e, SqlBinaryOperator.Ge, expr)
 
-        def >=[R <: SqlDataType](q: Query[Tuple1[R], _]): BinaryExpr[Boolean] = 
+        @targetName("ge")
+        def >=[R <: SqlDataType](q: Query[Tuple1[R], _]): BinaryExpr[Boolean] =
             BinaryExpr(e, SqlBinaryOperator.Ge, SubQueryExpr(q))
 
-        def <(value: SqlDataType): BinaryExpr[Boolean] = 
+        @targetName("lt")
+        def <(value: SqlDataType): BinaryExpr[Boolean] =
             BinaryExpr(e, SqlBinaryOperator.Lt, LiteralExpr(value))
 
-        def <(expr: Expr[SqlDataType]): BinaryExpr[Boolean] = 
+        @targetName("lt")
+        def <(expr: Expr[SqlDataType]): BinaryExpr[Boolean] =
             BinaryExpr(e, SqlBinaryOperator.Lt, expr)
 
-        def <[R <: SqlDataType](q: Query[Tuple1[R], _]): BinaryExpr[Boolean] = 
+        @targetName("lt")
+        def <[R <: SqlDataType](q: Query[Tuple1[R], _]): BinaryExpr[Boolean] =
             BinaryExpr(e, SqlBinaryOperator.Lt, SubQueryExpr(q))
 
-        def <=(value: SqlDataType): BinaryExpr[Boolean] = 
+        @targetName("le")
+        def <=(value: SqlDataType): BinaryExpr[Boolean] =
             BinaryExpr(e, SqlBinaryOperator.Le, LiteralExpr(value))
 
-        def <=(expr: Expr[SqlDataType]): BinaryExpr[Boolean] = 
+        @targetName("le")
+        def <=(expr: Expr[SqlDataType]): BinaryExpr[Boolean] =
             BinaryExpr(e, SqlBinaryOperator.Le, expr)
 
-        def <=[R <: SqlDataType](q: Query[Tuple1[R], _]): BinaryExpr[Boolean] = 
+        @targetName("le")
+        def <=[R <: SqlDataType](q: Query[Tuple1[R], _]): BinaryExpr[Boolean] =
             BinaryExpr(e, SqlBinaryOperator.Le, SubQueryExpr(q))
 
         def in(list: List[SqlDataType | Expr[_]]): Expr[Boolean] =
@@ -930,27 +1091,31 @@ given unsafeOperator: ExprOperator[_] with {
         def notBetween(start: Expr[_], end: Expr[_]): Expr[Boolean] =
             BetweenExpr(e, start, end, true)
 
-        infix def like(value: String): BinaryExpr[Boolean] =
+        def like(value: String): BinaryExpr[Boolean] =
             BinaryExpr(e, SqlBinaryOperator.Like, LiteralExpr(value))
 
-        infix def like(expr: Expr[_]): BinaryExpr[Boolean] =
+        def like(expr: Expr[_]): BinaryExpr[Boolean] =
             BinaryExpr(e, SqlBinaryOperator.Like, expr)
 
-        infix def notLike(value: String): BinaryExpr[Boolean] =
+        def notLike(value: String): BinaryExpr[Boolean] =
             BinaryExpr(e, SqlBinaryOperator.NotLike, LiteralExpr(value))
 
-        infix def notLike(expr: Expr[_]): BinaryExpr[Boolean] =
+        def notLike(expr: Expr[_]): BinaryExpr[Boolean] =
             BinaryExpr(e, SqlBinaryOperator.NotLike, expr)
 
-        def ->(json: Int): BinaryExpr[Nothing] = 
+        @targetName("json")
+        def ->(json: Int): BinaryExpr[Nothing] =
             BinaryExpr(e, SqlBinaryOperator.Json, LiteralExpr(json))
 
-        def ->(json: String): BinaryExpr[Nothing] = 
+        @targetName("json")
+        def ->(json: String): BinaryExpr[Nothing] =
             BinaryExpr(e, SqlBinaryOperator.Json, LiteralExpr(json))
 
-        def ->>(json: Int): BinaryExpr[Nothing] = 
+        @targetName("jsonText")
+        def ->>(json: Int): BinaryExpr[Nothing] =
             BinaryExpr(e, SqlBinaryOperator.JsonText, LiteralExpr(json))
 
+        @targetName("jsonText")
         def ->>(json: String): BinaryExpr[Nothing] = 
             BinaryExpr(e, SqlBinaryOperator.JsonText, LiteralExpr(json))
     }

@@ -2,9 +2,9 @@ package easysql.macros
 
 import easysql.util.*
 
-import scala.quoted.{Expr, Quotes, Type}
 import scala.annotation.experimental
 import scala.collection.mutable.ListBuffer
+import scala.quoted.{Expr, Quotes, Type}
 
 def fetchTableNameMacro[T <: Product](using quotes: Quotes, tpe: Type[T]): Expr[String] = {
     import quotes.reflect.*

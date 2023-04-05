@@ -1,24 +1,19 @@
 package easysql.query.select
 
-import easysql.ast.table.SqlTable
-import easysql.ast.table.SqlTable.*
-import easysql.ast.statement.SqlQuery
-import easysql.ast.statement.*
 import easysql.ast.SqlDataType
-import easysql.ast.order.SqlOrderBy
 import easysql.ast.limit.SqlLimit
-import easysql.dsl.*
-import easysql.util.*
-import easysql.query.ToCountSql
-import easysql.query.ToPageSql
+import easysql.ast.order.SqlOrderBy
+import easysql.ast.statement.*
+import easysql.ast.table.*
 import easysql.database.DB
+import easysql.dsl.*
+import easysql.query.{ToCountSql, ToPageSql, ToSql}
+import easysql.util.*
 
 import scala.Tuple.Concat
-import easysql.ast.table.SqlJoinType
-import easysql.query.ToSql
 
 class Select[T <: Tuple, A <: Tuple](
-    private[easysql] val ast: SqlQuery.SqlSelect, 
+    private[easysql] val ast: SqlSelect,
     private val selectItems: Map[String, String], 
     private val joinLeft: Option[SqlTable]
 ) extends Query[T, A] {
@@ -29,23 +24,23 @@ class Select[T <: Tuple, A <: Tuple](
         selectItems
 
     infix def from(table: TableSchema[_]): Select[T, A] = {
-        val fromTable = SqlTable.SqlIdentTable(table.__tableName, table.__aliasName)
+        val fromTable = SqlIdentTable(table.__tableName, table.__aliasName)
         new Select(ast.copy(from = Some(fromTable)), selectItems, Some(fromTable))
     }
 
     infix def from(table: AliasQuery[_, _])(using inWithQuery: InWithQuery = NotIn): Select[T, A] = {
         val fromTable = 
             if inWithQuery == In
-            then SqlTable.SqlIdentTable(table.__queryName, None)
-            else SqlTable.SqlSubQueryTable(table.__ast, false, Some(table.__queryName))
+            then SqlIdentTable(table.__queryName, None)
+            else SqlSubQueryTable(table.__ast, false, Some(table.__queryName))
         new Select(ast.copy(from = Some(fromTable)), selectItems, Some(fromTable))
     }
 
     infix def fromLateral(table: AliasQuery[_, _])(using inWithQuery: InWithQuery = NotIn): Select[T, A] = {
         val fromTable = 
             if inWithQuery == In 
-            then SqlTable.SqlIdentTable(table.__queryName, None)
-            else SqlTable.SqlSubQueryTable(table.__ast, true, Some(table.__queryName))
+            then SqlIdentTable(table.__queryName, None)
+            else SqlSubQueryTable(table.__ast, true, Some(table.__queryName))
         new Select(ast.copy(from = Some(fromTable)), selectItems, Some(fromTable))
     }
 
@@ -191,11 +186,9 @@ class Select[T <: Tuple, A <: Tuple](
     }
 
     infix def on(expr: Expr[Boolean]): Select[T, A] = {
-        val from = ast.from.map { f =>
-            f match {
-                case jt: SqlJoinTable => jt.copy(on = Some(exprToSqlExpr(expr)))
-                case _ => f
-            }
+        val from = ast.from.map {
+            case jt: SqlJoinTable => jt.copy(on = Some(exprToSqlExpr(expr)))
+            case f => f
         }
 
         new Select(ast.copy(from = from), selectItems, from)
@@ -261,7 +254,7 @@ class Select[T <: Tuple, A <: Tuple](
 
 object Select {
     def apply(): Select[EmptyTuple, EmptyTuple] =
-        new Select(SqlQuery.SqlSelect(false, Nil, None, None, Nil, Nil, false, None, None), Map(), None)
+        new Select(SqlSelect(false, Nil, None, None, Nil, Nil, false, None, None), Map(), None)
 
     given selectToCountSql: ToCountSql[Select[_, _]] with {
         extension (x: Select[_, _]) {
@@ -303,5 +296,7 @@ object Select {
 }
 
 sealed trait InWithQuery
+
 case object In extends InWithQuery
+
 case object NotIn extends InWithQuery

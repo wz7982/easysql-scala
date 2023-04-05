@@ -1,12 +1,12 @@
 package easysql.database
 
-import easysql.query.nonselect.*
-import easysql.query.select.*
-import easysql.jdbc.*
-import easysql.dsl.*
 import easysql.ast.SqlDataType
 import easysql.database.DBOperator.dbMonadId
+import easysql.dsl.*
+import easysql.jdbc.*
 import easysql.query.ToSql
+import easysql.query.nonselect.*
+import easysql.query.select.*
 
 import java.sql.Connection
 

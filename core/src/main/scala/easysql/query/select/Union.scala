@@ -1,12 +1,10 @@
 package easysql.query.select
 
-import easysql.ast.statement.SqlQuery
+import easysql.ast.statement.{SqlQuery, SqlUnion, SqlUnionType}
 import easysql.ast.table.SqlTable
-import easysql.ast.statement.SqlUnionType
-import easysql.dsl.NonEmpty
-import easysql.dsl.TableSchema
-import easysql.query.ToSql
 import easysql.database.DB
+import easysql.dsl.{NonEmpty, TableSchema}
+import easysql.query.ToSql
 import easysql.util.queryToString
 
 class Union[T <: Tuple, A <: Tuple](
@@ -16,7 +14,7 @@ class Union[T <: Tuple, A <: Tuple](
     private[select] val right: SqlQuery
 ) extends Query[T, A] {
     override def getAst: SqlQuery = 
-        SqlQuery.SqlUnion(left, op, right)
+        SqlUnion(left, op, right)
 
     override def getSelectItems: Map[String, String] = 
         selectItems

@@ -2,14 +2,14 @@ package easysql.dsl
 
 import easysql.ast.SqlDataType
 import easysql.ast.expr.SqlBinaryOperator
-import easysql.query.select.*
-import easysql.query.nonselect.*
-import easysql.macros.*
-import easysql.util.*
-import easysql.printer.*
 import easysql.database.DB
+import easysql.macros.*
+import easysql.printer.*
+import easysql.query.nonselect.*
+import easysql.query.select.*
+import easysql.util.*
 
-import scala.annotation.experimental
+import scala.annotation.{experimental, targetName}
 import scala.collection.mutable
 
 def value[T <: SqlDataType](v: T): LiteralExpr[T] = 
@@ -65,7 +65,8 @@ extension [T <: SqlDataType] (expr: ColumnExpr[T, _] | IdentExpr[T]) {
 }
 
 object AllColumn {
-    def * : Expr[Nothing] = 
+    @targetName("allColumn")
+    def * : Expr[Nothing] =
         AllColumnExpr(None)
 }
 
@@ -88,7 +89,7 @@ def from[P <: Product](table: TableSchema[P]): Select[Tuple1[P], EmptyTuple] =
     Select().select(table).from(table)
 
 inline def find[T <: Product](pk: SqlDataType | Tuple): Select[Tuple1[T], EmptyTuple] = {
-    val (tableName, cols) = fetchPk[T, pk.type]
+    val (_, cols) = fetchPk[T, pk.type]
     val table = asTable[T]
     val select = Select().select(table).from(table)
 
@@ -117,8 +118,8 @@ def insertInto[T <: Tuple](table: TableSchema[_])(columns: T): Insert[InverseMap
 inline def insert[T <: Product](entities: T*): Insert[EmptyTuple, InsertEntity] = 
     Insert().insert(entities: _*)
 
-inline def insert[T <: Product](eneityList: List[T]) = 
-    Insert().insert(eneityList*)
+inline def insert[T <: Product](entityList: List[T]) =
+    Insert().insert(entityList*)
 
 inline def save[T <: Product](entity: T): Save = 
     Save().save(entity)

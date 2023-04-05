@@ -1,11 +1,9 @@
 package easysql.printer
 
-import easysql.ast.statement.SqlQuery.SqlSelect
-import easysql.ast.expr.SqlExpr
-import easysql.ast.expr.SqlExpr.*
-import easysql.ast.statement.SqlSelectItem
-import easysql.ast.table.SqlTable.SqlIdentTable
+import easysql.ast.expr.*
 import easysql.ast.limit.SqlLimit
+import easysql.ast.statement.{SqlSelect, SqlSelectItem}
+import easysql.ast.table.SqlIdentTable
 
 import scala.collection.mutable
 
@@ -24,39 +22,39 @@ class ESPrinter {
 
         s.limit match {
             case Some(SqlLimit(limit, offset)) => {
-                printSpace
+                printSpace()
                 dslBuilder.append(s"\"from\": $offset,")
                 dslBuilder.append("\n")
-                printSpace
+                printSpace()
                 dslBuilder.append(s"\"size\": $limit,")
                 dslBuilder.append("\n")
             }
             case _ =>
         }
 
-        s.select.toList match {
+        s.select match {
             case SqlSelectItem(SqlAllColumnExpr(_), _) :: Nil => {
-                printSpace        
+                printSpace()        
                 dslBuilder.append("\"_source\": ")
                 spaceNum += 4
                 dslBuilder.append("[],\n")
             }
             case SqlSelectItem(SqlPropertyExpr(_, _), _) :: xs => {
-                printSpace
+                printSpace()
                 dslBuilder.append("\"_source\": ")
                 spaceNum += 4
                 printSource(s.select)
                 dslBuilder.append("\n")
             }
             case SqlSelectItem(SqlIdentExpr(_), _) :: xs => {
-                printSpace
+                printSpace()
                 dslBuilder.append("\"_source\": ")
                 spaceNum += 4
                 printSource(s.select)
                 dslBuilder.append("\n")
             }
             case SqlSelectItem(SqlAggFuncExpr(_, _, _, _, _), _) :: xs => {
-                s.groupBy.toList match {
+                s.groupBy match {
                     case Nil => printAggs(s.select)
                     case _ =>
                 }
@@ -65,32 +63,31 @@ class ESPrinter {
         }
         spaceNum = 4
 
-        printSpace
+        printSpace()
         dslBuilder.append("\"query\": {")
         dslBuilder.append("\n")
         spaceNum += 4
         s.where match {
             case Some(expr) => expr match {
-                // todo in和between
                 case b: SqlBinaryExpr => printQuery(b)
                 case _ => {
-                    printSpace
+                    printSpace()
                     dslBuilder.append("\"match_all\": {}")
                 }
             }
             case _ => {
-                printSpace
+                printSpace()
                 dslBuilder.append("\"match_all\": {}")
             }
         }
         spaceNum -= 4
-        printSpace
+        printSpace()
         dslBuilder.append("\n")
-        printSpace
+        printSpace()
         dslBuilder.append("},")
         dslBuilder.append("\n")
         
-        s.groupBy.toList match {
+        s.groupBy match {
             case x :: xs => printGroup(x, xs, s.select)
             case _ =>
         }
@@ -101,9 +98,9 @@ class ESPrinter {
         e match {
             case SqlIdentExpr(name) => dslBuilder.append(s"\"$name\"")
             case SqlPropertyExpr(_, name) => dslBuilder.append(s"\"$name\"")
-            case SqlNumberExpr(n) => dslBuilder.append(n.toString())
+            case SqlNumberExpr(n) => dslBuilder.append(n.toString)
             case SqlCharExpr(c) => dslBuilder.append(s"\"$c\"")
-            case SqlBooleanExpr(b) => dslBuilder.append(b.toString())
+            case SqlBooleanExpr(b) => dslBuilder.append(b.toString)
             case d: SqlDateExpr => dslBuilder.append(d.toString.replaceAll("'", "\""))
             case _ =>
         }
@@ -114,44 +111,44 @@ class ESPrinter {
 
         e.op match {
             case Eq => {
-                printSpace
+                printSpace()
                 dslBuilder.append("\"term\": {")
                 dslBuilder.append("\n")
                 spaceNum += 4
-                printSpace
+                printSpace()
                 printExpr(e.left)
                 dslBuilder.append(": ")
                 printExpr(e.right)
                 dslBuilder.append("\n")
                 spaceNum -= 4
-                printSpace
+                printSpace()
                 dslBuilder.append("},")
             }
             case Like => {
-                printSpace
+                printSpace()
                 dslBuilder.append("\"match\": {")
                 dslBuilder.append("\n")
                 spaceNum += 4
-                printSpace
+                printSpace()
                 printExpr(e.left)
                 dslBuilder.append(": ")
                 printExpr(e.right)
                 dslBuilder.append("\n")
                 spaceNum -= 4
-                printSpace
+                printSpace()
                 dslBuilder.append("},")
             }
             case Gt | Ge | Lt | Le => {
-                printSpace
+                printSpace()
                 dslBuilder.append("\"range\": {")
                 dslBuilder.append("\n")
                 spaceNum += 4
-                printSpace
+                printSpace()
                 printExpr(e.left)
                 dslBuilder.append(": {")
                 dslBuilder.append("\n")
                 spaceNum += 4
-                printSpace
+                printSpace()
                 e.op match {
                     case Gt => dslBuilder.append("\"gt\"")
                     case Ge => dslBuilder.append("\"gte\"")
@@ -163,47 +160,47 @@ class ESPrinter {
                 printExpr(e.right)
                 dslBuilder.append("\n")
                 spaceNum -= 4
-                printSpace
+                printSpace()
                 dslBuilder.append("},")
                 dslBuilder.append("\n")
                 spaceNum -= 4
-                printSpace
+                printSpace()
                 dslBuilder.append("},")
             }
             case And => printMustOrShould("must", e)
             case Or => printMustOrShould("should", e)
             case Ne => {
-                printSpace
+                printSpace()
                 dslBuilder.append("\"bool\": {")
                 dslBuilder.append("\n")
                 spaceNum += 4
-                printSpace
+                printSpace()
                 dslBuilder.append(s"\"must_not\" [\n")
                 spaceNum += 4
                 printQuery(SqlBinaryExpr(e.left, Eq, e.right))
                 spaceNum -= 4
                 dslBuilder.append("\n")
-                printSpace
+                printSpace()
                 dslBuilder.append("],\n")
                 spaceNum -= 4
-                printSpace
+                printSpace()
                 dslBuilder.append("},")
             }
             case NotLike => {
-                printSpace
+                printSpace()
                 dslBuilder.append("\"bool\": {")
                 dslBuilder.append("\n")
                 spaceNum += 4
-                printSpace
+                printSpace()
                 dslBuilder.append(s"\"must_not\" [\n")
                 spaceNum += 4
                 printQuery(SqlBinaryExpr(e.left, Like, e.right))
                 spaceNum -= 4
                 dslBuilder.append("\n")
-                printSpace
+                printSpace()
                 dslBuilder.append("],\n")
                 spaceNum -= 4
-                printSpace
+                printSpace()
                 dslBuilder.append("},")
             }
             case _ =>
@@ -211,11 +208,11 @@ class ESPrinter {
     }
 
     def printMustOrShould(key: String, e: SqlBinaryExpr) = {
-        printSpace
+        printSpace()
         dslBuilder.append("\"bool\": {")
         dslBuilder.append("\n")
         spaceNum += 4
-        printSpace
+        printSpace()
         dslBuilder.append(s"\"$key\" [\n")
         spaceNum += 4
         printQuery(e.left.asInstanceOf[SqlBinaryExpr])
@@ -223,10 +220,10 @@ class ESPrinter {
         printQuery(e.right.asInstanceOf[SqlBinaryExpr])
         spaceNum -= 4
         dslBuilder.append("\n")
-        printSpace
+        printSpace()
         dslBuilder.append("],\n")
         spaceNum -= 4
-        printSpace
+        printSpace()
         dslBuilder.append("},")
     }
 
@@ -237,56 +234,54 @@ class ESPrinter {
                 case SqlSelectItem(SqlPropertyExpr(_, _), _) => true
                 case _ => false
             }
-        } map { i => 
-            i match {
-                case SqlSelectItem(SqlIdentExpr(name), _) => name
-                case SqlSelectItem(SqlPropertyExpr(_, name), _) => name
-                case _ => ""
-            }
+        } map {
+            case SqlSelectItem(SqlIdentExpr(name), _) => name
+            case SqlSelectItem(SqlPropertyExpr(_, name), _) => name
+            case _ => ""
         }
         dslBuilder.append(s"[${sourceList.mkString(", ")}],")
     }
 
     def printGroup(head: SqlExpr, tail: List[SqlExpr], l: List[SqlSelectItem]): Unit = {
-        printSpace
+        printSpace()
         dslBuilder.append("\"aggregations\": {\n")
         spaceNum += 4
-        printSpace
+        printSpace()
         dslBuilder.append(s"\"${getGroupName(head)}\": {\n")
         spaceNum += 4
-        printSpace
+        printSpace()
         dslBuilder.append("\"terms\": {\n")
         spaceNum += 4
-        printSpace
+        printSpace()
         dslBuilder.append(s"\"field\": ")
         printExpr(head)
         dslBuilder.append("\n")
         spaceNum -= 4
-        printSpace
+        printSpace()
         dslBuilder.append("},\n")
         tail match {
             case x :: xs => printGroup(x, xs, l)
             case Nil => printAggs(l)
         }
         spaceNum -= 4
-        printSpace
+        printSpace()
         dslBuilder.append("},\n")
         spaceNum -= 4
-        printSpace
+        printSpace()
         dslBuilder.append("},\n")
     }
 
     def printAggs(l: List[SqlSelectItem]) = {
-        printSpace
+        printSpace()
         dslBuilder.append("\"aggregations\": {\n")
         l.foreach { i =>
             spaceNum += 4
-            printSpace
+            printSpace()
             dslBuilder.append(s"\"${i.alias.get}\": {\n")
             spaceNum += 4
             i.expr match {
                 case SqlAggFuncExpr(n, x :: Nil, d, _, _) => {
-                    printSpace
+                    printSpace()
                     (n, d) match {
                         case ("COUNT", false) => dslBuilder.append("\"value_count\": {\n")
                         case ("COUNT", true) => dslBuilder.append("\"cardinality\": {\n")
@@ -297,22 +292,22 @@ class ESPrinter {
                         case _ => dslBuilder.append("\"\": {\n")
                     }
                     spaceNum += 4
-                    printSpace
+                    printSpace()
                     dslBuilder.append("\"field\": ")
                     printExpr(x)
                     dslBuilder.append("\n")
                     spaceNum -= 4
-                    printSpace
+                    printSpace()
                     dslBuilder.append("},\n")
                 }
                 case _ =>
             }
             spaceNum -= 4
-            printSpace
+            printSpace()
             dslBuilder.append("},\n")
             spaceNum -= 4
         }
-        printSpace
+        printSpace()
         dslBuilder.append("},\n")
     }
 
@@ -322,7 +317,7 @@ class ESPrinter {
         case _ => ""
     }
 
-    def printSpace: Unit = {
+    def printSpace(): Unit = {
         if (spaceNum > 0) {
             for (_ <- 1 to spaceNum) {
                 dslBuilder.append(" ")

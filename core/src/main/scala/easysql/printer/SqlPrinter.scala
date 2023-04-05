@@ -1,20 +1,14 @@
 package easysql.printer
 
-import easysql.ast.statement.SqlStatement
-import easysql.ast.statement.SqlStatement.*
-import easysql.ast.statement.*
-import easysql.ast.statement.SqlQuery
-import easysql.ast.statement.SqlQuery.*
-import easysql.ast.expr.SqlExpr
-import easysql.ast.expr.SqlExpr.*
+import easysql.ast.expr.*
 import easysql.ast.expr.SqlBinaryOperator.*
 import easysql.ast.limit.SqlLimit
 import easysql.ast.order.*
-import easysql.ast.table.SqlTable
-import easysql.ast.table.SqlTable.*
+import easysql.ast.statement.*
+import easysql.ast.table.*
 
-import scala.collection.mutable
 import java.text.SimpleDateFormat
+import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 
 trait SqlPrinter(val prepare: Boolean) {
@@ -171,7 +165,7 @@ trait SqlPrinter(val prepare: Boolean) {
 
         if (select.forUpdate) {
             sqlBuilder.append(" ")
-            printForUpdate
+            printForUpdate()
         }
     }
 
@@ -180,14 +174,14 @@ trait SqlPrinter(val prepare: Boolean) {
         printList(values.values.map(SqlListExpr(_)))(printExpr)
     }
 
-    def printWithRecursive: Unit = {
+    def printWithRecursive(): Unit = {
         sqlBuilder.append("RECURSIVE ")
     }
 
     def printWith(cte: SqlWith): Unit = {
         sqlBuilder.append("WITH ")
         if (cte.recursive) {
-            printWithRecursive
+            printWithRecursive()
         }
 
         def printWithItem(sqlWithItem: SqlWithItem): Unit = {
@@ -501,7 +495,7 @@ trait SqlPrinter(val prepare: Boolean) {
         selectItem.alias.foreach(a => sqlBuilder.append(s" AS $quote$a$quote"))
     }
 
-    def printForUpdate: Unit = sqlBuilder.append("FOR UPDATE")
+    def printForUpdate(): Unit = sqlBuilder.append("FOR UPDATE")
 
     def printSpace(num: Int): Unit = {
         if (num > 0) {
@@ -512,7 +506,7 @@ trait SqlPrinter(val prepare: Boolean) {
     }
 
     def printList[T](list: List[T])(printer: T => Unit): Unit = {
-        for (i <- 0 until list.size) {
+        for (i <- list.indices) {
             printer(list(i))
             if (i < list.size - 1) {
                 sqlBuilder.append(", ")

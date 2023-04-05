@@ -1,6 +1,5 @@
 package easysql.dsl
 
-import easysql.dsl.Expr.*
 import easysql.ast.*
 
 def count(): AggExpr[Long] =

@@ -1,24 +1,23 @@
 package easysql.query.nonselect
 
-import easysql.ast.statement.SqlStatement
-import easysql.ast.expr.SqlExpr.*
-import easysql.ast.expr.SqlBinaryOperator
-import easysql.ast.table.SqlTable.SqlIdentTable
 import easysql.ast.SqlDataType
-import easysql.query.ToSql
+import easysql.ast.expr.*
+import easysql.ast.statement.{SqlStatement, SqlUpdate}
+import easysql.ast.table.SqlIdentTable
+import easysql.database.DB
 import easysql.dsl.*
 import easysql.macros.*
+import easysql.query.ToSql
 import easysql.util.*
-import easysql.database.DB
 
-class Update(private val ast: SqlStatement.SqlUpdate) extends NonSelect {
+class Update(private val ast: SqlUpdate) extends NonSelect {
     override def getAst: SqlStatement =
         ast
 
     inline def update[T <: Product](entity: T, skipNone: Boolean): Update = {
         val (tableName, pkList, colList) = updateMetaData[T]
 
-        val table = Some(new SqlIdentTable(tableName, None))
+        val table = Some(SqlIdentTable(tableName, None))
 
         val where = pkList map { (pkName, fun) =>
             SqlBinaryExpr(SqlIdentExpr(pkName), SqlBinaryOperator.Eq, exprToSqlExpr(LiteralExpr(fun.apply(entity))))
@@ -47,7 +46,7 @@ class Update(private val ast: SqlStatement.SqlUpdate) extends NonSelect {
             throw Exception("no fields need to be updated in the entity class")
         }
 
-        new Update(SqlStatement.SqlUpdate(table, updateList, Some(where)))
+        new Update(SqlUpdate(table, updateList, Some(where)))
     }
 
     def update(table: TableSchema[_]): Update =
@@ -78,5 +77,5 @@ class Update(private val ast: SqlStatement.SqlUpdate) extends NonSelect {
 
 object Update {
     def apply(): Update = 
-        new Update(SqlStatement.SqlUpdate(None, Nil, None))
+        new Update(SqlUpdate(None, Nil, None))
 }

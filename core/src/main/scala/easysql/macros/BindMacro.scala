@@ -1,9 +1,9 @@
 package easysql.macros
 
+import java.util.Date
 import scala.compiletime.erasedValue
 import scala.deriving.*
 import scala.language.unsafeNulls
-import java.util.Date
 
 inline def entityOffset[T]: Int =
     ${ entityOffsetMacro[T] }
@@ -29,7 +29,7 @@ inline def bindSingleton[T](nextIndex: Int, data: Array[Any]): Option[T] = {
         case _: Product =>
             bindEntity[T](nextIndex, data)
         case _ => 
-            if data(nextIndex) == null then None else Some(data(nextIndex))
+            Option(data(nextIndex))
     }
     bindValue.asInstanceOf[Option[T]]
 }

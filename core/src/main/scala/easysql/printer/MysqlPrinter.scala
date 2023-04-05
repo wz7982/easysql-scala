@@ -1,9 +1,8 @@
 package easysql.printer
 
+import easysql.ast.expr.SqlListExpr
 import easysql.ast.limit.SqlLimit
-import easysql.ast.statement.SqlStatement.*
-import easysql.ast.statement.SqlQuery.*
-import easysql.ast.expr.SqlExpr.SqlListExpr
+import easysql.ast.statement.*
 
 class MysqlPrinter(override val prepare: Boolean) extends SqlPrinter(prepare) {
     override val quote = "`"

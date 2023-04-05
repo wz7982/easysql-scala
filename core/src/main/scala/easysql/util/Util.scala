@@ -1,14 +1,12 @@
 package easysql.util
 
-import easysql.database.DB
-import easysql.printer.*
-import easysql.ast.statement.*
-import easysql.ast.expr.SqlExpr
-import easysql.ast.expr.SqlExpr.*
-import easysql.ast.expr.SqlCase
 import easysql.ast.SqlDataType
+import easysql.ast.expr.*
 import easysql.ast.order.SqlOrderBy
+import easysql.ast.statement.*
+import easysql.database.DB
 import easysql.dsl.*
+import easysql.printer.*
 
 import java.util.Date
 
@@ -97,7 +95,13 @@ def parseIdent(column: String): SqlExpr = {
 
 def aggExprToSqlExpr(agg: AggExpr[_]): SqlAggFuncExpr = agg match {
     case AggExpr(name, args, distinct, attrs, orderBy) =>
-        SqlAggFuncExpr(name, args.map(exprToSqlExpr), distinct, attrs.mapValues(exprToSqlExpr).toMap, orderBy.map(o => SqlOrderBy(exprToSqlExpr(o.expr), o.order)))
+        SqlAggFuncExpr(
+            name,
+            args.map(exprToSqlExpr),
+            distinct,
+            attrs.map((k, v) => k -> exprToSqlExpr(v)),
+            orderBy.map(o => SqlOrderBy(exprToSqlExpr(o.expr), o.order))
+        )
 }
 
 def valueToSqlExpr(value: SqlDataType): SqlExpr = value match {

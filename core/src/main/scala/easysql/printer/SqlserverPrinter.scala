@@ -1,8 +1,7 @@
 package easysql.printer
 
 import easysql.ast.limit.SqlLimit
-import easysql.ast.statement.SqlQuery.*
-import easysql.ast.statement.SqlStatement.*
+import easysql.ast.statement.*
 
 class SqlserverPrinter(override val prepare: Boolean) extends SqlPrinter(prepare) {
     override def printLimit(limit: SqlLimit): Unit = {
@@ -15,7 +14,7 @@ class SqlserverPrinter(override val prepare: Boolean) extends SqlPrinter(prepare
         }
     }
 
-    override def printForUpdate: Unit = {
+    override def printForUpdate(): Unit = {
         sqlBuilder.append("WITH (UPDLOCK)")
     }
 
@@ -41,7 +40,7 @@ class SqlserverPrinter(override val prepare: Boolean) extends SqlPrinter(prepare
 
         if (select.forUpdate) {
             sqlBuilder.append(" ")
-            printForUpdate
+            printForUpdate()
         }
 
         select.where.foreach { it =>
@@ -79,7 +78,7 @@ class SqlserverPrinter(override val prepare: Boolean) extends SqlPrinter(prepare
         }
     }
 
-    override def printWithRecursive: Unit = {}
+    override def printWithRecursive(): Unit = {}
 
     override def printUpsert(upsert: SqlUpsert): Unit = {
         sqlBuilder.append("MERGE INTO ")
