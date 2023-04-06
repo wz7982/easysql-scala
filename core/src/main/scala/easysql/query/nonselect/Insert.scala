@@ -16,19 +16,26 @@ class Insert[T <: Tuple, S <: InsertState](private val ast: SqlInsert) extends N
         ast
 
     inline def insert[P <: Product, SS >: S <: InsertEntity](entities: P*): Insert[EmptyTuple, InsertEntity] = {
-        val metaData = insertMetaData[P]
-        val table = Some(SqlIdentTable(metaData._1, None))
-        val insertList = entities.toList.map { entity =>
-            metaData._2.map { i =>
-                val value = i._2.apply(entity) match {
+        val tableName = fetchTableName[P]    
+        val table = Some(SqlIdentTable(tableName, None))
+
+        val metaDataList = entities.toList.map { entity =>
+            val metaData = insertMetaData[P](entity)
+            metaData.map { (name, value) => 
+                val valueExpr = value match {
                     case d: SqlDataType => LiteralExpr(d)
-                    case o: Option[SqlDataType] => o.map(LiteralExpr(_)).getOrElse(NullExpr)
+                    case o: Option[_] => o.map(v => LiteralExpr(v.asInstanceOf[SqlDataType])).getOrElse(NullExpr)
+                    case _ => NullExpr
                 }
-                
-                exprToSqlExpr(value)
+
+                name -> exprToSqlExpr(valueExpr)
             }
         }
-        val columns = metaData._2.map(e => exprToSqlExpr(IdentExpr(e._1)))
+
+        val columns = metaDataList.head.map { (name, _) =>
+            exprToSqlExpr(IdentExpr(name))
+        }
+        val insertList = metaDataList.map(_.map(_._2))
 
         new Insert(ast.copy(table = table, values = insertList, columns = columns))
     }

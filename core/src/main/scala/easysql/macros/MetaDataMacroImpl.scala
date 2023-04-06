@@ -8,26 +8,19 @@ import scala.annotation.experimental
 import scala.collection.mutable.*
 import scala.quoted.{Expr, Quotes, Type}
 
-def insertMetaDataMacro[T <: Product](using q: Quotes, tpe: Type[T]): Expr[(String, List[(String, T => SqlDataType | Option[SqlDataType])])] = {
+def insertMetaDataMacro[T <: Product](entity: Expr[T])(using q: Quotes, tpe: Type[T]): Expr[List[(String, Any)]] = {
     import q.reflect.*
 
     val sym = TypeTree.of[T].symbol
-    val insertFieldExprs = ListBuffer[Expr[String]]()
-    val insertFunctionExprs = ListBuffer[Expr[T => SqlDataType | Option[SqlDataType]]]()
-
-    val tableName = sym.annotations.map {
-        case Apply(Select(New(TypeIdent(name)), _), Literal(v) :: Nil) if name == "Table" => v.value.toString()
-        case _ => ""
-    }.find(_ != "") match {
-        case None => camelToSnake(sym.name)
-        case Some(value) => value
-    }
-
     val fields = sym.declaredFields
+    val names = ListBuffer[Expr[String]]()
+    val values = ListBuffer[Expr[Any]]()
 
     val annoNames = List("PrimaryKey", "IncrKey", "Column", "PrimaryKeyGenerator", "CustomColumn")
 
-    fields.foreach { field =>
+    val entityTerm = entity.asTerm
+
+    fields foreach { field =>
         val annoInfo = field.annotations.map {
             case Apply(Select(New(TypeIdent(name)), _), args) if annoNames.contains(name) => {
                 args match {
@@ -49,74 +42,54 @@ def insertMetaDataMacro[T <: Product](using q: Quotes, tpe: Type[T]): Expr[(Stri
             case Some(_, value, _) => value
         }
 
-        def createLambda = {
-            val mtpe = MethodType(List("x"))(_ => List(TypeRepr.of[T]), _ => TypeRepr.of[SqlDataType | Option[SqlDataType]])
-            def rhsFn(sym: Symbol, paramRefs: List[Tree]) = {
-                val x = paramRefs.head.asExprOf[T].asTerm
-                Select.unique(x, field.name)
-            }
-            Lambda(field, mtpe, rhsFn).asExprOf[T => SqlDataType | Option[SqlDataType]]
+        def generatorTerm(statement: Statement): Term = statement match {
+            case DefDef(_, _, _, t) => t.get
         }
 
-        def createGeneratorLambda(s: Statement) = {
-            val mtpe = MethodType(List("x"))(_ => List(TypeRepr.of[T]), _ => TypeRepr.of[SqlDataType | Option[SqlDataType]])
-            def rhsFn(sym: Symbol, paramRefs: List[Tree]): Tree = s match {
-                case DefDef(_, _, _, t) => t.get
-            }
-            Lambda(field, mtpe, rhsFn).asExprOf[T => SqlDataType | Option[SqlDataType]]
-        }
-
-        def createCustomLambda(s: Statement) = {
-            val mtpe = MethodType(List("x"))(_ => List(TypeRepr.of[T]), _ => TypeRepr.of[SqlDataType | Option[SqlDataType]])
-            def rhsFn(sym: Symbol, paramRefs: List[Tree]): Tree = {
-                val x = paramRefs.head.asExprOf[T].asTerm
-                val fieldTerm = Select.unique(x, field.name)
-                field.tree match {
-                    case vd: ValDef => {
-                        val vdt = vd.tpt.tpe.asType
-                        vdt match {
-                            case '[t] => {
-                                val expr = s.asExprOf[CustomSerializer[t, _]]
-                                val fieldExpr = fieldTerm.asExprOf[t]
-                                '{ $expr.toValue($fieldExpr) }.asTerm
-                            }
+        def customTerm(statement: Statement): Term = {
+            val fieldTerm = Select.unique(entityTerm, field.name)
+            field.tree match {
+                case vd: ValDef => {
+                    val vdt = vd.tpt.tpe.asType
+                    vdt match {
+                        case '[t] => {
+                            val expr = statement.asExprOf[CustomSerializer[t, _]]
+                            val fieldExpr = fieldTerm.asExprOf[t]
+                            '{ $expr.toValue($fieldExpr) }.asTerm
                         }
                     }
                 }
             }
-            Lambda(field, mtpe, rhsFn).asExprOf[T => SqlDataType | Option[SqlDataType]]
         }
 
-        val lambda = annoInfo.find(_._1 != "") match {
+        val term = annoInfo.find(_._1 != "") match {
             case Some("PrimaryKeyGenerator", _, args) => args match {
-                case _ :: NamedArg(_, Block(l, _)) :: _ => createGeneratorLambda(l.head)
-                case _ :: Block(l, _) :: _ => createGeneratorLambda(l.head)
-                case _ => createLambda
+                case _ :: NamedArg(_, Block(l, _)) :: _ => generatorTerm(l.head)
+                case _ :: Block(l, _) :: _ => generatorTerm(l.head)
+                case _ => Select.unique(entityTerm, field.name)
             }
-            case Some("CustomColumn", _, args) => createCustomLambda(args(1))
-            case _ => createLambda
+            case Some("CustomColumn", _, args) => customTerm(args(1))
+            case _ => Select.unique(entityTerm, field.name)
         }
 
         annoInfo.find(_._1 == "IncrKey") match {
             case None => {
-                insertFieldExprs.addOne(Expr.apply(insertName))
-                insertFunctionExprs.addOne(lambda)
+                names.addOne(Expr(insertName))
+                values.addOne(term.asExpr)
             }
             case _ =>
         }
     }
 
-    if (insertFieldExprs.isEmpty) {
+    if (names.isEmpty) {
         report.error(s"entity ${sym.name} has no field for inserting data")
     }
 
-    val insertFields = Expr.ofList(insertFieldExprs.toList)
-    val insertFunctions = Expr.ofList(insertFunctionExprs.toList)
-    val tableNameExpr = Expr(tableName)
+    val namesExpr = Expr.ofList(names.toList)
+    val valuesExpr = Expr.ofList(values.toList)
 
-    '{ 
-        val insertList = $insertFields.zip($insertFunctions)
-        ($tableNameExpr, insertList)
+    '{
+        $namesExpr.zip($valuesExpr)
     }
 }
 

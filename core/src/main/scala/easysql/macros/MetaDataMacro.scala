@@ -2,8 +2,8 @@ package easysql.macros
 
 import easysql.ast.SqlDataType
 
-inline def insertMetaData[T <: Product]: (String, List[(String, T => SqlDataType | Option[SqlDataType])]) = 
-    ${ insertMetaDataMacro[T] }
+inline def insertMetaData[T <: Product](x: T): List[(String, Any)] =
+    ${ insertMetaDataMacro[T]('x) }
 
 inline def updateMetaData[T <: Product]: (String, List[(String, T => SqlDataType)], List[(String, T => SqlDataType | Option[SqlDataType])]) = 
     ${ updateMetaDataMacro[T] }
