@@ -15,17 +15,18 @@ class Save(private val ast: SqlUpsert) extends NonSelect {
         ast
 
     inline def save[T <: Product](entity: T): Save = {
-        val (tableName, pkList, colList) = updateMetaData[T]
+        val (pkList, colList) = updateMetaData[T](entity)
 
+        val tableName = fetchTableName[T]
         val table = Some(SqlIdentTable(tableName, None))
 
-        val pkInfo = pkList.map { (pkName, fun) =>
-            SqlIdentExpr(pkName) -> exprToSqlExpr(LiteralExpr(fun.apply(entity)))
+        val pkInfo = pkList.map { (pkName, pkValue) =>
+            SqlIdentExpr(pkName) -> exprToSqlExpr(LiteralExpr(pkValue))
         }
 
-        val updateInfo = colList.map { (colName, fun) =>
+        val updateInfo = colList.map { (colName, colValue) =>
             val col = SqlIdentExpr(colName)
-            val value = fun.apply(entity) match {
+            val value = colValue match {
                 case d: SqlDataType => exprToSqlExpr(LiteralExpr(d))
                 case o: Option[SqlDataType] => exprToSqlExpr(o.map(LiteralExpr(_)).getOrElse(NullExpr))
             }

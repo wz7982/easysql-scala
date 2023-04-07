@@ -8,13 +8,13 @@ import scala.annotation.experimental
 import scala.collection.mutable.*
 import scala.quoted.{Expr, Quotes, Type}
 
-def insertMetaDataMacro[T <: Product](entity: Expr[T])(using q: Quotes, tpe: Type[T]): Expr[List[(String, Any)]] = {
+def insertMetaDataMacro[T <: Product](entity: Expr[T])(using q: Quotes, tpe: Type[T]): Expr[List[(String, SqlDataType | Option[SqlDataType])]] = {
     import q.reflect.*
 
     val sym = TypeTree.of[T].symbol
     val fields = sym.declaredFields
     val names = ListBuffer[Expr[String]]()
-    val values = ListBuffer[Expr[Any]]()
+    val values = ListBuffer[Expr[SqlDataType | Option[SqlDataType]]]()
 
     val annoNames = List("PrimaryKey", "IncrKey", "Column", "PrimaryKeyGenerator", "CustomColumn")
 
@@ -75,7 +75,7 @@ def insertMetaDataMacro[T <: Product](entity: Expr[T])(using q: Quotes, tpe: Typ
         annoInfo.find(_._1 == "IncrKey") match {
             case None => {
                 names.addOne(Expr(insertName))
-                values.addOne(term.asExpr)
+                values.addOne(term.asExprOf[SqlDataType | Option[SqlDataType]])
             }
             case _ =>
         }
@@ -93,26 +93,20 @@ def insertMetaDataMacro[T <: Product](entity: Expr[T])(using q: Quotes, tpe: Typ
     }
 }
 
-def updateMetaDataMacro[T <: Product](using q: Quotes, tpe: Type[T]): Expr[(String, List[(String, T => SqlDataType)], List[(String, T => SqlDataType | Option[SqlDataType])])] = {
+def updateMetaDataMacro[T <: Product](entity: Expr[T])(using q: Quotes, tpe: Type[T]): Expr[(List[(String, SqlDataType)], List[(String, SqlDataType | Option[SqlDataType])])] = {
     import q.reflect.*
 
     val sym = TypeTree.of[T].symbol
     val pkFieldExprs = ListBuffer[Expr[String]]()
-    val pkFunctionExprs = ListBuffer[Expr[T => SqlDataType]]()
+    val pkValueExprs = ListBuffer[Expr[SqlDataType]]()
     val updateFieldExprs = ListBuffer[Expr[String]]()
-    val updateFunctionExprs = ListBuffer[Expr[T => SqlDataType | Option[SqlDataType]]]()
-
-    val tableName = sym.annotations.map {
-        case Apply(Select(New(TypeIdent(name)), _), Literal(v) :: Nil) if name == "Table" => v.value.toString()
-        case _ => ""
-    }.find(_ != "") match {
-        case None => camelToSnake(sym.name)
-        case Some(value) => value
-    }
+    val updateValueExprs = ListBuffer[Expr[SqlDataType | Option[SqlDataType]]]()
 
     val fields = sym.declaredFields
 
     val annoNames = List("PrimaryKey", "IncrKey", "Column", "PrimaryKeyGenerator", "CustomColumn")
+
+    val entityTerm = entity.asTerm
 
     fields.foreach { field =>
         val annoInfo = field.annotations.map {
@@ -136,39 +130,20 @@ def updateMetaDataMacro[T <: Product](using q: Quotes, tpe: Type[T]): Expr[(Stri
             case Some(_, value, _) => value
         }
 
-        val mtpePk = MethodType(List("x"))(_ => List(TypeRepr.of[T]), _ => TypeRepr.of[SqlDataType])
-        def rhsFnPk(sym: Symbol, paramRefs: List[Tree]) = {
-            val x = paramRefs.head.asExprOf[T].asTerm
-            Select.unique(x, field.name)
-        }
-        val lambdaPk = Lambda(field, mtpePk, rhsFnPk).asExprOf[T => SqlDataType]
-
-        val mtpeUpdate = MethodType(List("x"))(_ => List(TypeRepr.of[T]), _ => TypeRepr.of[SqlDataType | Option[SqlDataType]])
-        def rhsFnUpdate(sym: Symbol, paramRefs: List[Tree]) = {
-            val x = paramRefs.head.asExprOf[T].asTerm
-            Select.unique(x, field.name)
-        }
-        val lambdaUpdate = Lambda(field, mtpeUpdate, rhsFnUpdate).asExprOf[T => SqlDataType | Option[SqlDataType]]
-
-        def lambdaCustomUpdate(s: Statement) = {
-            val mtpe = MethodType(List("x"))(_ => List(TypeRepr.of[T]), _ => TypeRepr.of[SqlDataType | Option[SqlDataType]])
-            def rhsFn(sym: Symbol, paramRefs: List[Tree]): Tree = {
-                val x = paramRefs.head.asExprOf[T].asTerm
-                val fieldTerm = Select.unique(x, field.name)
-                field.tree match {
-                    case vd: ValDef => {
-                        val vdt = vd.tpt.tpe.asType
-                        vdt match {
-                            case '[t] => {
-                                val expr = s.asExprOf[CustomSerializer[t, _]]
-                                val fieldExpr = fieldTerm.asExprOf[t]
-                                '{ $expr.toValue($fieldExpr) }.asTerm
-                            }
+        def customTerm(statement: Statement): Term = {
+            val fieldTerm = Select.unique(entityTerm, field.name)
+            field.tree match {
+                case vd: ValDef => {
+                    val vdt = vd.tpt.tpe.asType
+                    vdt match {
+                        case '[t] => {
+                            val expr = statement.asExprOf[CustomSerializer[t, _]]
+                            val fieldExpr = fieldTerm.asExprOf[t]
+                            '{ $expr.toValue($fieldExpr) }.asTerm
                         }
                     }
                 }
             }
-            Lambda(field, mtpe, rhsFn).asExprOf[T => SqlDataType | Option[SqlDataType]]
         }
 
         annoInfo.find {
@@ -177,17 +152,17 @@ def updateMetaDataMacro[T <: Product](using q: Quotes, tpe: Type[T]): Expr[(Stri
         } match {
             case None => {
                 updateFieldExprs.addOne(Expr(fieldName))
-                updateFunctionExprs.addOne(lambdaUpdate)
+                updateValueExprs.addOne(Select.unique(entityTerm, field.name).asExprOf[SqlDataType | Option[SqlDataType]])
             }
             case Some(name, _, args) => {
                 name match {
                     case "CustomColumn" => {
                         updateFieldExprs.addOne(Expr(fieldName))
-                        updateFunctionExprs.addOne(lambdaCustomUpdate(args(1)))
+                        updateValueExprs.addOne(customTerm(args(1)).asExprOf[SqlDataType | Option[SqlDataType]])
                     }
                     case _ => {
                         pkFieldExprs.addOne(Expr(fieldName))
-                        pkFunctionExprs.addOne(lambdaPk)
+                        pkValueExprs.addOne(Select.unique(entityTerm, field.name).asExprOf[SqlDataType])
                     }
                 }
             }
@@ -203,15 +178,14 @@ def updateMetaDataMacro[T <: Product](using q: Quotes, tpe: Type[T]): Expr[(Stri
     }
 
     val pkFields = Expr.ofList(pkFieldExprs.toList)
-    val pkFunctions = Expr.ofList(pkFunctionExprs.toList)
+    val pkValues = Expr.ofList(pkValueExprs.toList)
     val updateFields = Expr.ofList(updateFieldExprs.toList)
-    val updateFunctions = Expr.ofList(updateFunctionExprs.toList)
-    val tableNameExpr = Expr(tableName)
+    val updateValues = Expr.ofList(updateValueExprs.toList)
 
     '{ 
-        val pkList = $pkFields.zip($pkFunctions)
-        val updateList = $updateFields.zip($updateFunctions)
-        ($tableNameExpr, pkList, updateList)
+        val pkList = $pkFields.zip($pkValues)
+        val updateList = $updateFields.zip($updateValues)
+        (pkList, updateList)
     }
 }
 

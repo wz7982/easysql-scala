@@ -24,8 +24,7 @@ class Insert[T <: Tuple, S <: InsertState](private val ast: SqlInsert) extends N
             metaData.map { (name, value) => 
                 val valueExpr = value match {
                     case d: SqlDataType => LiteralExpr(d)
-                    case o: Option[_] => o.map(v => LiteralExpr(v.asInstanceOf[SqlDataType])).getOrElse(NullExpr)
-                    case _ => NullExpr
+                    case o: Option[SqlDataType] => o.map(v => LiteralExpr(v)).getOrElse(NullExpr)
                 }
 
                 name -> exprToSqlExpr(valueExpr)
