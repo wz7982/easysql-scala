@@ -15,20 +15,21 @@ class Update(private val ast: SqlUpdate) extends NonSelect {
         ast
 
     inline def update[T <: Product](entity: T, skipNone: Boolean): Update = {
-        val (tableName, pkList, colList) = updateMetaData[T]
+        val (pkList, colList) = updateMetaData[T](entity)
 
+        val tableName = fetchTableName[T]
         val table = Some(SqlIdentTable(tableName, None))
 
-        val where = pkList map { (pkName, fun) =>
-            SqlBinaryExpr(SqlIdentExpr(pkName), SqlBinaryOperator.Eq, exprToSqlExpr(LiteralExpr(fun.apply(entity))))
+        val where = pkList map { (pkName, pkValue) =>
+            SqlBinaryExpr(SqlIdentExpr(pkName), SqlBinaryOperator.Eq, exprToSqlExpr(LiteralExpr(pkValue)))
         } reduce { (x, y) =>
             SqlBinaryExpr(x, SqlBinaryOperator.And, y)
         }
 
-        val updateInfo = colList.map { (colName, fun) =>
+        val updateInfo = colList.map { (colName, colValue) =>
             val col = SqlIdentExpr(colName)
 
-            val value = fun.apply(entity) match {
+            val value = colValue match {
                 case d: SqlDataType => exprToSqlExpr(LiteralExpr(d))
                 case o: Option[SqlDataType] => exprToSqlExpr(o.map(LiteralExpr(_)).getOrElse(NullExpr))
             }
