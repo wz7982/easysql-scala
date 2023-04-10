@@ -20,7 +20,7 @@ trait ToCountSql[T] {
     extension (x: T) {
         def countSql(db: DB): String
 
-        def countToSql(using db: DB): String = 
+        def toCountSql(using db: DB): String = 
             countSql(db)
 
         def preparedCountSql(db: DB): (String, Array[Any])
