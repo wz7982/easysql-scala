@@ -48,7 +48,7 @@ def bindEntityMacro[T](nextIndex: Expr[Int], data: Expr[Array[Any]])(using q: Qu
                             case _ => true
                         }
 
-                        val term = args match {
+                        val expr = args match {
                             case None => {
                                 val offset = Expr(i)
                                 '{ $data($nextIndex + $offset).asInstanceOf[t] }
@@ -61,7 +61,7 @@ def bindEntityMacro[T](nextIndex: Expr[Int], data: Expr[Array[Any]])(using q: Qu
                         }
 
                         i = i + 1
-                        term
+                        expr
                     }
                 }
             }
