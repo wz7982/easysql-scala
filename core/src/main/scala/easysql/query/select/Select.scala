@@ -108,10 +108,7 @@ class Select[T <: Tuple, A <: Tuple](
     infix def where(expr: Expr[Boolean]): Select[T, A] =
         new Select(ast.addCondition(exprToSqlExpr(expr)), selectItems, joinLeft)
 
-    def where(test: () => Boolean, expr: Expr[Boolean]): Select[T, A] = 
-        if test() then where(expr) else this
-
-    def where(test: Boolean, expr: Expr[Boolean]): Select[T, A] =
+    def where(test: => Boolean, expr: Expr[Boolean]): Select[T, A] =
         if test then where(expr) else this
 
     infix def having(expr: Expr[Boolean]): Select[T, A] =
