@@ -6,7 +6,6 @@ import easysql.dsl.CustomSerializer
 import java.sql.ResultSet
 import java.util.Date
 import scala.quoted.*
-import scala.util.control.Breaks
 
 def entityOffsetMacro[T](using q: Quotes, tpe: Type[T]): Expr[Int] = {
     import q.reflect.*
@@ -26,23 +25,20 @@ def bindEntityMacro[T](nextIndex: Expr[Int], data: Expr[Array[Any]])(using q: Qu
     val fieldSize = Expr(fields.size)
     var i = 0
 
-    val bindExprs = fields map { f =>
+    val bindExprs = fields map { f => 
         f.tree match {
             case vd: ValDef => {
                 val vdt = vd.tpt.tpe.asType
                 vdt match {
                     case '[Option[t]] => {
-                        val mtpe = MethodType(List("x"))(_ => List(TypeRepr.of[Array[Any]]), _ => TypeRepr.of[Option[t]])
-                        def rhsFn(sym: Symbol, paramRefs: List[Tree]) = {
-                            val x = paramRefs.head.asExprOf[Array[Any]]
-                            val offset = Expr(i)
-                            '{ if $x($nextIndex + $offset) == null then None else Some($x($nextIndex + $offset)).asInstanceOf[Option[t]] }.asTerm
+                        val offset = Expr(i)
+                        val expr = '{ 
+                            if $data($nextIndex + $offset) == null then None else Some($data($nextIndex + $offset)).asInstanceOf[Option[t]] 
                         }
-                        val lambda = Lambda(f, mtpe, rhsFn).asExprOf[Array[Any] => Option[t]]
-                        i = i + 1
-                        lambda
-                    }
 
+                        i = i + 1
+                        expr
+                    }
                     case '[t] => {
                         val args = f.annotations.map {
                             case Apply(TypeApply(Select(New(TypeIdent(name)), _), _), args) if name == "CustomColumn" => args
@@ -52,32 +48,20 @@ def bindEntityMacro[T](nextIndex: Expr[Int], data: Expr[Array[Any]])(using q: Qu
                             case _ => true
                         }
 
-                        val lambda = args match {
+                        val expr = args match {
                             case None => {
-                                val mtpe = MethodType(List("x"))(_ => List(TypeRepr.of[Array[Any]]), _ => TypeRepr.of[t])
-                                def rhsFn(sym: Symbol, paramRefs: List[Tree]) = {
-                                    val x = paramRefs.head.asExprOf[Array[Any]]
-                                    val offset = Expr(i)
-                                    '{ $x($nextIndex + $offset).asInstanceOf[t] }.asTerm
-                                }
-                                Lambda(f, mtpe, rhsFn).asExprOf[Array[Any] => t]
+                                val offset = Expr(i)
+                                '{ $data($nextIndex + $offset).asInstanceOf[t] }
                             }
-
-                            case Some(args) => {
-                                val mtpe = MethodType(List("x"))(_ => List(TypeRepr.of[Array[Any]]), _ => TypeRepr.of[t])
-                                def rhsFn(sym: Symbol, paramRefs: List[Tree]) = {
-                                    val x = paramRefs.head.asExprOf[Array[Any]]
-                                    val offset = Expr(i)
-                                    val expr = args(1).asExprOf[CustomSerializer[t, _]]
-                                    
-                                    '{ $expr.fromValue($x($nextIndex + $offset)) }.asTerm
-                                }
-                                Lambda(f, mtpe, rhsFn).asExprOf[Array[Any] => t]
+                            case Some(value) => {
+                                val offset = Expr(i)
+                                val expr = value(1).asExprOf[CustomSerializer[t, _]]
+                                '{ $expr.fromValue($data($nextIndex + $offset)) }
                             }
                         }
 
                         i = i + 1
-                        lambda
+                        expr
                     }
                 }
             }
@@ -87,9 +71,7 @@ def bindEntityMacro[T](nextIndex: Expr[Int], data: Expr[Array[Any]])(using q: Qu
     '{
         val bindFunc = (result: Array[Any]) =>
             ${
-                val terms = bindExprs.map { f => 
-                    '{ $f.apply(result) }.asTerm 
-                }
+                val terms = bindExprs.map(_.asTerm)
                 New(Inferred(tpr)).select(ctor).appliedToArgs(terms).asExprOf[T]
             }
 
