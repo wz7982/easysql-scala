@@ -69,18 +69,14 @@ def bindEntityMacro[T](nextIndex: Expr[Int], data: Expr[Array[Any]])(using q: Qu
     }
 
     '{
-        val bindFunc = (result: Array[Any]) =>
-            ${
+        val isNull = $data.slice($nextIndex, $nextIndex + $fieldSize).map(i => i == null).reduce((l, r) => l && r)
+
+        if isNull then None else {
+            val result = ${
                 val terms = bindExprs.map(_.asTerm)
                 New(Inferred(tpr)).select(ctor).appliedToArgs(terms).asExprOf[T]
             }
-
-        val bind = (result: Array[Any]) => {
-            val isNull = 
-                result.slice($nextIndex, $nextIndex + $fieldSize).map(i => i == null).reduce((l, r) => l && r)
-            if isNull then None else Some(bindFunc(result))
+            Some(result)
         }
-
-        bind($data)
     }
 }
