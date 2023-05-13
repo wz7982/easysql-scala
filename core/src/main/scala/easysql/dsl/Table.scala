@@ -5,8 +5,6 @@ import easysql.macros.*
 import easysql.ast.SqlDataType
 
 import java.util.Date
-import scala.reflect.Selectable.reflectiveSelectable
-import scala.deriving.*
 
 sealed trait AnyTable {
     infix def join(table: AnyTable): JoinTable = 
@@ -43,11 +41,14 @@ class TableSchema[E <: Product](
         }
     }
 
-    def unsafeAs(aliasName: String): TableSchema[E] =
-        new TableSchema(this.__tableName, Some(aliasName), __cols.map(_.copy(tableName = aliasName)))
+    def unsafeAs(aliasName: String): this.type =
+        new TableSchema(this.__tableName, Some(aliasName), __cols.map(_.copy(tableName = aliasName))).asInstanceOf[this.type]
 
-    infix def as(aliasName: String)(using NonEmpty[aliasName.type] =:= true): TableSchema[E] =
+    infix def as(aliasName: String)(using NonEmpty[aliasName.type] =:= true): this.type =
         unsafeAs(aliasName)
+
+    def * : this.type =
+        this
 }
 
 case class JoinTable(
