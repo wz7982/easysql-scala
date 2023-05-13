@@ -5,7 +5,7 @@ import easysql.macros.*
 import easysql.ast.SqlDataType
 
 import java.util.Date
-import scala.language.dynamics
+import scala.reflect.Selectable.reflectiveSelectable
 import scala.deriving.*
 
 sealed trait AnyTable {
@@ -32,32 +32,14 @@ class TableSchema[E <: Product](
     private[easysql] val __tableName: String,
     private[easysql] val __aliasName: Option[String],
     private[easysql] val __cols: List[ColumnExpr[_, _]]
-) extends AnyTable with Dynamic {
-    transparent inline def selectDynamic[N <: String & Singleton](inline name: N)(using m: Mirror.ProductOf[E]) = {
+) extends AnyTable with Selectable {
+    transparent inline def selectDynamic[N <: String & Singleton](inline name: N): Expr[_] = {
         val tableName = __aliasName.getOrElse(__tableName)
+        val columnInfo = __cols.find(_.identName == name).get
         inline exprMeta[E](name) match {
-            case ("pk", n) => 
-                PrimaryKeyExpr[ElementType[m.MirroredElemTypes, m.MirroredElemLabels, N] & SqlDataType, N](tableName, n, name, false)
-            case ("incr", n) => 
-                PrimaryKeyExpr[ElementType[m.MirroredElemTypes, m.MirroredElemLabels, N] & SqlDataType, N](tableName, n, name, true)
-            case ("Int", n) =>
-                ColumnExpr[Int, N](tableName, n, name)
-            case ("Long", n) =>
-                ColumnExpr[Long, N](tableName, n, name)
-            case ("Float", n) =>
-                ColumnExpr[Float, N](tableName, n, name)
-            case ("Double", n) =>
-                ColumnExpr[Double, N](tableName, n, name)
-            case ("BigDecimal", n) =>
-                ColumnExpr[BigDecimal, N](tableName, n, name)
-            case ("Boolean", n) =>
-                ColumnExpr[Boolean, N](tableName, n, name)
-            case ("String", n) =>
-                ColumnExpr[String, N](tableName, n, name)
-            case ("Date", n) =>
-                ColumnExpr[Date, N](tableName, n, name)
-            case (_, n) =>
-                ColumnExpr[ElementType[m.MirroredElemTypes, m.MirroredElemLabels, N] & SqlDataType, N](tableName, n, name)
+            case "pk" => PrimaryKeyExpr(tableName, columnInfo.columnName, columnInfo.identName, false)
+            case "incr" => PrimaryKeyExpr(tableName, columnInfo.columnName, columnInfo.identName, true)
+            case _ => columnInfo
         }
     }
 
