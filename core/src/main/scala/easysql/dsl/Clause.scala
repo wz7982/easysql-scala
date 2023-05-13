@@ -42,10 +42,8 @@ def cast[T <: SqlDataType](expr: Expr[_], castType: String): CastExpr[T] =
 def table(name: String): TableSchema[Nothing] = 
     TableSchema(name, None, Nil)
 
-inline def asTable[T <: Product]: TableSchema[T] = {
-    val tableName = fetchTableName[T]
-    TableSchema(tableName, None, fieldNames[T].zip(identNames[T]).map((n, i) => ColumnExpr(tableName, n, i)))
-}
+transparent inline def asTable[T <: Product]: Any = 
+    tableInfo[T]
 
 extension [T <: SqlDataType] (expr: ColumnExpr[T, _] | IdentExpr[T]) {
     infix def toExpr[R <: UpdateType[T]](value: Expr[R]): (ColumnExpr[T, _] | IdentExpr[T], Expr[R]) = 
@@ -90,7 +88,7 @@ def from[P <: Product](table: TableSchema[P]): Select[Tuple1[P], EmptyTuple] =
 
 inline def find[T <: Product](pk: SqlDataType | Tuple): Select[Tuple1[T], EmptyTuple] = {
     val (_, cols) = fetchPk[T, pk.type]
-    val table = asTable[T]
+    val table = asTable[T].asInstanceOf[TableSchema[T]]
     val select = Select().select(table).from(table)
 
     val conditions: List[Expr[Boolean]] = inline pk match {
