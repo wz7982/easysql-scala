@@ -135,33 +135,48 @@ def tableInfoMacro[T <: Product](using q: Quotes, t: Type[T]): Expr[Any] = {
     var typ = TypeRepr.of[TableSchema[T]]
     val tableName = fetchTableNameMacro[T]
     val typs = fields.map { field =>
+        val singletonName = Singleton(Expr(field.name).asTerm)
+        val annoNames = List("PrimaryKey", "IncrKey", "Column", "PrimaryKeyGenerator", "CustomColumn")
+        var columnName = field.name
+
+        val columnType: (String, Option[Type[_]], List[Term]) = field.annotations.find {
+            case Apply(Select(New(TypeIdent(name)), _), _) if annoNames.contains(name) => true
+            case Apply(TypeApply(Select(New(TypeIdent(name)), _), _), _) if name == "CustomColumn" => true
+            case _ => false
+        } match {
+            case Some(Apply(Select(New(TypeIdent("PrimaryKey")), _), args)) => ("pk", None, args)
+            case Some(Apply(Select(New(TypeIdent("PrimaryKeyGenerator")), _), args)) => ("pk", None, args)
+            case Some(Apply(Select(New(TypeIdent("IncrKey")), _), args)) => ("pk", None, args)
+            case Some(Apply(TypeApply(Select(New(TypeIdent(_)), _), t), args)) => ("custom", Some(t(1).tpe.asType), args)
+            case Some(Apply(Select(New(TypeIdent(_)), _), args)) => ("column", None, args)
+            case _ => ("column", None, Nil)
+        }
+
+        columnType._3 match {
+            case Literal(v) :: _ => columnName = v.value.toString
+            case _ =>
+        }
+
         field.tree match {
             case vd: ValDef => {
                 val vdt = vd.tpt.tpe.asType
                 vdt match {
+                    case '[Option[t]] => {
+                        singletonName.tpe.asType match {
+                            case '[n] => columnType match {
+                                case ("pk", _, _) => 
+                                    (field.name, TypeRepr.of[PrimaryKeyExpr[t & SqlDataType, n & String]], columnName)
+                                case ("custom", Some(customType), _) => {
+                                    customType match {
+                                        case '[c] => 
+                                            (field.name, TypeRepr.of[ColumnExpr[c & SqlDataType, n & String]], columnName)
+                                    }
+                                }
+                                case _ => (field.name, TypeRepr.of[ColumnExpr[t & SqlDataType, n & String]], columnName)
+                            }
+                        }
+                    }
                     case '[t] => {
-                        val singletonName = Singleton(Expr(field.name).asTerm)
-                        val annoNames = List("PrimaryKey", "IncrKey", "Column", "PrimaryKeyGenerator", "CustomColumn")
-                        var columnName = field.name
-
-                        val columnType: (String, Option[Type[_]], List[Term]) = field.annotations.find {
-                            case Apply(Select(New(TypeIdent(name)), _), _) if annoNames.contains(name) => true
-                            case Apply(TypeApply(Select(New(TypeIdent(name)), _), _), _) if name == "CustomColumn" => true
-                            case _ => false
-                        } match {
-                            case Some(Apply(Select(New(TypeIdent("PrimaryKey")), _), args)) => ("pk", None, args)
-                            case Some(Apply(Select(New(TypeIdent("PrimaryKeyGenerator")), _), args)) => ("pk", None, args)
-                            case Some(Apply(Select(New(TypeIdent("IncrKey")), _), args)) => ("pk", None, args)
-                            case Some(Apply(TypeApply(Select(New(TypeIdent(_)), _), t), args)) => ("custom", Some(t(1).tpe.asType), args)
-                            case Some(Apply(Select(New(TypeIdent(_)), _), args)) => ("column", None, args)
-                            case _ => ("column", None, Nil)
-                        }
-
-                        columnType._3 match {
-                            case Literal(v) :: _ => columnName = v.value.toString
-                            case _ =>
-                        }
-
                         singletonName.tpe.asType match {
                             case '[n] => columnType match {
                                 case ("pk", _, _) => 
@@ -185,11 +200,11 @@ def tableInfoMacro[T <: Product](using q: Quotes, t: Type[T]): Expr[Any] = {
     for (i <- 1 until typs.size) {
         refinement = Refinement(refinement, typs(i)._1, typs(i)._2)
     }
-    val columnNamesExpr = Expr.ofList(typs.map(f => Expr(f._3 -> f._1)))
+    // val columnNamesExpr = Expr.ofList(typs.map(f => Expr(f._3 -> f._1)))
 
     refinement.asType match {
         case '[t] => '{
-            new TableSchema[T]($tableName, None, $columnNamesExpr.map(c => ColumnExpr($tableName, c._1, c._2))).asInstanceOf[t]
+            new TableSchema[T]($tableName, None, Nil).asInstanceOf[t]
         }
     }
 }
