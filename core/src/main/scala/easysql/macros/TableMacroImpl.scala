@@ -189,10 +189,6 @@ def tableInfoMacro[T <: Product](using q: Quotes, t: Type[T]): Expr[Any] = {
         }
     }
 
-    // val columnNamesExpr = Expr.ofList(typs.map(f => Expr(f._3 -> f._1)))
-
-    // val columnNamesExpr: Expr[List[(String, String)]] = Expr(List("a" -> "b"))
-
     var refinement = Refinement(typ, typs.head._1, typs.head._2)
     for (i <- 1 until typs.size) {
         refinement = Refinement(refinement, typs(i)._1, typs(i)._2)
@@ -200,7 +196,8 @@ def tableInfoMacro[T <: Product](using q: Quotes, t: Type[T]): Expr[Any] = {
     
     refinement.asType match {
         case '[t] => '{
-            new TableSchema[T]($tableName, None, Nil).asInstanceOf[t]
+            val columns = columnsMeta[T].map((ident, column) => ColumnExpr($tableName, column, ident))
+            new TableSchema[T]($tableName, None, columns).asInstanceOf[t]
         }
     }
 }
