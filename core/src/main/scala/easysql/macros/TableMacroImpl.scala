@@ -157,38 +157,31 @@ def tableInfoMacro[T <: Product](using q: Quotes, t: Type[T]): Expr[Any] = {
             case _ =>
         }
 
-        field.tree match {
-            case vd: ValDef => {
-                val vdt = vd.tpt.tpe.asType
-                vdt match {
-                    case '[Option[t]] => {
-                        singletonName.tpe.asType match {
-                            case '[n] => columnType match {
-                                case ("pk", _, _) => 
-                                    (field.name, TypeRepr.of[PrimaryKeyExpr[t & SqlDataType, n & String]], columnName)
-                                case ("custom", Some(customType), _) => {
-                                    customType match {
-                                        case '[c] => 
-                                            (field.name, TypeRepr.of[ColumnExpr[c & SqlDataType, n & String]], columnName)
-                                    }
-                                }
-                                case _ => (field.name, TypeRepr.of[ColumnExpr[t & SqlDataType, n & String]], columnName)
-                            }
+        singletonName.tpe.asType match {
+            case '[n] => columnType match {
+                case ("custom", Some(customType), _) => {
+                    customType match {
+                        case '[c] => 
+                            (field.name, TypeRepr.of[ColumnExpr[c & SqlDataType, n & String]], columnName)
+                    }
+                }
+                case ("pk", _, _) => field.tree match {
+                    case vd: ValDef => {
+                        val vdt = vd.tpt.tpe.asType
+                        vdt match {
+                            case '[t] =>
+                                (field.name, TypeRepr.of[PrimaryKeyExpr[t & SqlDataType, n & String]], columnName)
                         }
                     }
-                    case '[t] => {
-                        singletonName.tpe.asType match {
-                            case '[n] => columnType match {
-                                case ("pk", _, _) => 
-                                    (field.name, TypeRepr.of[PrimaryKeyExpr[t & SqlDataType, n & String]], columnName)
-                                case ("custom", Some(customType), _) => {
-                                    customType match {
-                                        case '[c] => 
-                                            (field.name, TypeRepr.of[ColumnExpr[c & SqlDataType, n & String]], columnName)
-                                    }
-                                }
-                                case _ => (field.name, TypeRepr.of[ColumnExpr[t & SqlDataType, n & String]], columnName)
-                            }
+                }
+                case _ => field.tree match {
+                    case vd: ValDef => {
+                        val vdt = vd.tpt.tpe.asType
+                        vdt match {
+                            case '[Option[t]] => 
+                                (field.name, TypeRepr.of[ColumnExpr[t & SqlDataType, n & String]], columnName)
+                            case '[t] => 
+                                (field.name, TypeRepr.of[ColumnExpr[t & SqlDataType, n & String]], columnName)
                         }
                     }
                 }
@@ -196,12 +189,15 @@ def tableInfoMacro[T <: Product](using q: Quotes, t: Type[T]): Expr[Any] = {
         }
     }
 
+    // val columnNamesExpr = Expr.ofList(typs.map(f => Expr(f._3 -> f._1)))
+
+    // val columnNamesExpr: Expr[List[(String, String)]] = Expr(List("a" -> "b"))
+
     var refinement = Refinement(typ, typs.head._1, typs.head._2)
     for (i <- 1 until typs.size) {
         refinement = Refinement(refinement, typs(i)._1, typs(i)._2)
     }
-    // val columnNamesExpr = Expr.ofList(typs.map(f => Expr(f._3 -> f._1)))
-
+    
     refinement.asType match {
         case '[t] => '{
             new TableSchema[T]($tableName, None, Nil).asInstanceOf[t]
