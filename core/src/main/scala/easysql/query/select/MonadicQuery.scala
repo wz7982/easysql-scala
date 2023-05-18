@@ -197,7 +197,7 @@ class MonadicQuery[T <: Tuple, From](
 }
 
 object MonadicQuery {
-    def apply[E <: Product](table: TableSchema[E]): MonadicQuery[Tuple1[E], TableSchema[E]] = {
+    def apply[E <: Product](table: TableSchema[E]): MonadicQuery[Tuple1[E], table.type] = {
         val fromTable = SqlIdentTable(table.__tableName, table.__aliasName)
         val sqlSelectItems = table.__cols.map { c =>
             SqlSelectItem(exprToSqlExpr(c), None)
