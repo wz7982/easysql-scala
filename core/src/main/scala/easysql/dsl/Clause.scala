@@ -107,7 +107,7 @@ inline def find[T <: Product](pk: SqlDataType | Tuple): Select[Tuple1[T], EmptyT
 def withQuery(query: AliasQuery[_, _]*): With[EmptyTuple] =
     With().addTable(query*)
 
-def query[T <: Product](table: TableSchema[T]): MonadicQuery[Tuple1[T], TableSchema[T]] =
+def query[T <: Product](table: TableSchema[T]): MonadicQuery[Tuple1[T], table.type] =
     MonadicQuery(table)
 
 def insertInto[T <: Tuple](table: TableSchema[_])(columns: T): Insert[InverseMap[T], Nothing] = 

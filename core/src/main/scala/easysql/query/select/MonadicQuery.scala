@@ -102,14 +102,14 @@ class MonadicQuery[T <: Tuple, From](
     private def join[E <: Product](
         table: TableSchema[E], 
         joinType: SqlJoinType, 
-        on: MonadicJoin[From, TableSchema[E]] => Expr[Boolean]
-    ): MonadicQuery[Tuple.Concat[T, Tuple1[E]], MonadicJoin[From, TableSchema[E]]] = {
+        on: MonadicJoin[From, table.type] => Expr[Boolean]
+    ): MonadicQuery[Tuple.Concat[T, Tuple1[E]], MonadicJoin[From, table.type]] = {
         val from = {
             this.from match {
                 case t: TableSchema[_] => (t, table)
                 case t: Tuple => t ++ Tuple1(table)
             }
-        }.asInstanceOf[MonadicJoin[From, TableSchema[E]]]
+        }.asInstanceOf[MonadicJoin[From, table.type]]
 
         val onExpr = on(from)
         val sqlOnExpr = exprToSqlExpr(onExpr)
@@ -127,29 +127,29 @@ class MonadicQuery[T <: Tuple, From](
     def innerJoin[E <: Product](
         table: TableSchema[E]
     )(
-        on: MonadicJoin[From, TableSchema[E]] => Expr[Boolean]
-    ): MonadicQuery[Tuple.Concat[T, Tuple1[E]], MonadicJoin[From, TableSchema[E]]] =
+        on: MonadicJoin[From, table.type] => Expr[Boolean]
+    ): MonadicQuery[Tuple.Concat[T, Tuple1[E]], MonadicJoin[From, table.type]] =
         join(table, SqlJoinType.InnerJoin, on)
 
     def leftJoin[E <: Product](
         table: TableSchema[E]
     )(
-        on: MonadicJoin[From, TableSchema[E]] => Expr[Boolean]
-    ): MonadicQuery[Tuple.Concat[T, Tuple1[E]], MonadicJoin[From, TableSchema[E]]] =
+        on: MonadicJoin[From, table.type] => Expr[Boolean]
+    ): MonadicQuery[Tuple.Concat[T, Tuple1[E]], MonadicJoin[From, table.type]] =
         join(table, SqlJoinType.LeftJoin, on)
 
     def rightJoin[E <: Product](
         table: TableSchema[E]
     )(
-        on: MonadicJoin[From, TableSchema[E]] => Expr[Boolean]
-    ): MonadicQuery[Tuple.Concat[T, Tuple1[E]], MonadicJoin[From, TableSchema[E]]] =
+        on: MonadicJoin[From, table.type] => Expr[Boolean]
+    ): MonadicQuery[Tuple.Concat[T, Tuple1[E]], MonadicJoin[From, table.type]] =
         join(table, SqlJoinType.RightJoin, on)
 
     def fullJoin[E <: Product](
         table: TableSchema[E]
     )(
-        on: MonadicJoin[From, TableSchema[E]] => Expr[Boolean]
-    ): MonadicQuery[Tuple.Concat[T, Tuple1[E]], MonadicJoin[From, TableSchema[E]]] =
+        on: MonadicJoin[From, table.type] => Expr[Boolean]
+    ): MonadicQuery[Tuple.Concat[T, Tuple1[E]], MonadicJoin[From, table.type]] =
         join(table, SqlJoinType.FullJoin, on)
 
     def having(f: From => Expr[Boolean]): MonadicQuery[T, From] = {
@@ -197,7 +197,7 @@ class MonadicQuery[T <: Tuple, From](
 }
 
 object MonadicQuery {
-    def apply[E <: Product](table: TableSchema[E]): MonadicQuery[Tuple1[E], TableSchema[E]] = {
+    def apply[E <: Product](table: TableSchema[E]): MonadicQuery[Tuple1[E], table.type] = {
         val fromTable = SqlIdentTable(table.__tableName, table.__aliasName)
         val sqlSelectItems = table.__cols.map { c =>
             SqlSelectItem(exprToSqlExpr(c), None)
