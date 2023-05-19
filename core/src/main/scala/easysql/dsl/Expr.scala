@@ -221,6 +221,8 @@ case class OverExpr[T <: SqlDataType](func: AggExpr[T], partitionBy: List[Expr[_
 
 case class CastExpr[T <: SqlDataType](expr: Expr[_], castType: String) extends Expr[T]
 
+case class DynamicExpr[T <: SqlDataType](text: String) extends Expr[T]
+
 trait ExprOperator[T <: SqlDataType] {
     extension (v: T) {
         @targetName("eq")

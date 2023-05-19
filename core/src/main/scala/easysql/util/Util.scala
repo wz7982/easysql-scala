@@ -9,6 +9,7 @@ import easysql.dsl.*
 import easysql.printer.*
 
 import java.util.Date
+import easysql.parser.SqlParser
 
 def fetchPrinter(db: DB, prepare: Boolean): SqlPrinter = db match {
     case DB.MYSQL => new MysqlPrinter(prepare)
@@ -72,6 +73,8 @@ def exprToSqlExpr(expr: Expr[_]): SqlExpr = expr match {
         SqlOverExpr(aggExprToSqlExpr(func), partitionBy.map(exprToSqlExpr), orderBy.map(o => SqlOrderBy(exprToSqlExpr(o.expr), o.order)))
     case ListExpr(list) =>
         SqlListExpr(list.map(exprToSqlExpr))
+    case DynamicExpr(text) => 
+        new SqlParser().parse(text)
 }
 
 def parseIdent(column: String): SqlExpr = {

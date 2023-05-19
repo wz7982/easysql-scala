@@ -18,6 +18,9 @@ def value[T <: SqlDataType](v: T): LiteralExpr[T] =
 def col[T <: SqlDataType](columnName: String): IdentExpr[T] = 
     IdentExpr(columnName)
 
+def dynamicExpr[T <: SqlDataType](text: String): DynamicExpr[T] =
+    DynamicExpr(text)
+
 def caseWhen[T <: SqlDataType](branches: CaseBranch[T]*): CaseExpr[T] = 
     CaseExpr(branches.toList, NullExpr)
 
