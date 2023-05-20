@@ -28,7 +28,8 @@ case class SqlBooleanExpr(boolean: Boolean) extends SqlExpr
 case class SqlListExpr(items: List[SqlExpr]) extends SqlExpr
 
 case class SqlAggFuncExpr(
-    name: String, args: List[SqlExpr],
+    name: String, 
+    args: List[SqlExpr],
     distinct: Boolean,
     attrs: Map[String, SqlExpr],
     orderBy: List[SqlOrderBy]
