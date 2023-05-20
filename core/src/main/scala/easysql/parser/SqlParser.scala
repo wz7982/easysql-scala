@@ -1,14 +1,11 @@
 package easysql.parser
 
 import easysql.ast.expr.*
+import easysql.ast.order.*
 
 import scala.util.parsing.combinator.*
-import scala.util.parsing.combinator.syntactical.StandardTokenParsers
-import easysql.printer.MysqlPrinter
 
 class SqlParser extends JavaTokenParsers {
-    // todo 函数、聚合函数、窗口函数、is null
-
     def expr: Parser[SqlExpr] = 
         or
 
@@ -25,6 +22,9 @@ class SqlParser extends JavaTokenParsers {
         add ~ rep(
             ("=" | "<>" | "!=" | ">" | ">=" | "<" | "<=") ~ add ^^ { 
                 case op ~ right => (op, right)
+            } |
+            "is" ~ opt("not") ~ "null" ^^ {
+                case op ~ n ~ right => (n.isDefined, op, right)
             } |
             opt("not") ~ "between" ~ add ~ "and" ~ add ^^ { 
                 case n ~ op ~ start ~ _ ~ end => (n.isDefined, op, start, end)
@@ -44,6 +44,8 @@ class SqlParser extends JavaTokenParsers {
                 case (acc, (">=", right)) => SqlBinaryExpr(acc, SqlBinaryOperator.Ge, right)
                 case (acc, ("<", right)) => SqlBinaryExpr(acc, SqlBinaryOperator.Lt, right)
                 case (acc, ("<=", right)) => SqlBinaryExpr(acc, SqlBinaryOperator.Le, right)
+                case (acc, (false, "is", _)) => SqlBinaryExpr(acc, SqlBinaryOperator.Is, SqlNullExpr)
+                case (acc, (true, "is", _)) => SqlBinaryExpr(acc, SqlBinaryOperator.IsNot, SqlNullExpr)
                 case (acc, (not: Boolean, "between", l: SqlExpr, r: SqlExpr)) => SqlBetweenExpr(acc, l, r, not)
                 case (acc, (not: Boolean, "in", in: List[_])) => SqlInExpr(acc, SqlListExpr(in.asInstanceOf[List[SqlExpr]]), not)
                 case (acc, (false, "like", expr: SqlExpr)) => SqlBinaryExpr(acc, SqlBinaryOperator.Like, expr)
@@ -68,13 +70,34 @@ class SqlParser extends JavaTokenParsers {
     def primary : Parser[SqlExpr] =
         literal |
         caseWhen |
-        ident ~ opt("." ~> ident | "(" ~> repsep(expr, ",") <~ ")") ^^ {
+        cast |
+        function |
+        aggFunction |
+        ident ~ opt("." ~> (ident | "*")) ^^ {
             case id ~ None => SqlIdentExpr(id)
-            case table ~ Some(column: String) => SqlPropertyExpr(table, column)
-            case id ~ Some(args: List[_]) => SqlExprFuncExpr(id, args.asInstanceOf[List[SqlExpr]])
-            case _ ~ _ => SqlNullExpr
+            case table ~ Some("*") => SqlAllColumnExpr(Some(table))
+            case table ~ Some(column) => SqlPropertyExpr(table, column)
         } |
         "(" ~> expr <~ ")"
+
+    def function: Parser[SqlExpr] =
+        ident ~ ("(" ~> repsep(expr, ",") <~ ")") ^^ {
+            case funcName ~ args => SqlExprFuncExpr(funcName.toUpperCase.nn, args)
+        }
+
+    def aggFunction: Parser[SqlExpr] =
+        "count" ~ "(" ~ "*" ~ ")" ^^ (_ => SqlAggFuncExpr("COUNT", SqlAllColumnExpr(None) :: Nil, false, Map(), Nil)) |
+        ident ~ ("(" ~> repsep(expr, ",") <~ ")") ^^ {
+            case funcName ~ args => SqlAggFuncExpr(funcName.toUpperCase.nn, args, false, Map(), Nil)
+        } |
+        ident ~ ("(" ~ "distinct" ~> expr <~ ")") ^^ {
+            case funcName ~ arg =>  SqlAggFuncExpr(funcName.toUpperCase.nn, arg :: Nil, true, Map(), Nil)
+        }
+
+    def cast: Parser[SqlExpr] =
+        "cast" ~> ("(" ~> expr ~ "as" ~ ident <~ ")") ^^ {
+            case expr ~ _ ~ castType => SqlCastExpr(expr, castType.toUpperCase.nn)
+        }
 
     def caseWhen: Parser[SqlExpr] = 
         "case" ~>
@@ -87,7 +110,8 @@ class SqlParser extends JavaTokenParsers {
         decimalNumber ^^ (i => SqlNumberExpr(BigDecimal(i))) |
         charLiteral ^^ (xs => SqlCharExpr(xs.toString.substring(1, xs.size -1).nn)) |
         "true" ^^ (_ => SqlBooleanExpr(true)) |
-        "false" ^^ (_ => SqlBooleanExpr(false))
+        "false" ^^ (_ => SqlBooleanExpr(false)) |
+        "null" ^^ (_ => SqlNullExpr)
 
     def charLiteral: Parser[String] =
         ("'" + """([^'\x00-\x1F\x7F\\]|\\[\\'"bfnrt]|\\u[a-fA-F0-9]{4})*""" + "'").r
@@ -95,9 +119,8 @@ class SqlParser extends JavaTokenParsers {
     def parse(text: String): SqlExpr = {
         val parseResult = parseAll(expr, text)
         parseResult match {
-            case Success(result, next) => result
-            case Error(msg, next) => throw ParseException("\n" + next.pos.longString)
-            case Failure(msg, next) => throw ParseException("\n" + next.pos.longString)
+            case Success(result, _) => result
+            case _ => throw ParseException("\n" + parseResult.toString)
         }
     }
 }

@@ -7,6 +7,7 @@ import easysql.query.select.*
 
 import java.util.Date
 import scala.annotation.targetName
+import easysql.ast.expr.SqlExpr
 
 sealed trait Expr[T <: SqlDataType] {
     @targetName("eq")
@@ -162,8 +163,6 @@ extension (x: BinaryExpr[Boolean]) {
         CaseBranch(x, value)
 }
 
-case class IdentExpr[T <: SqlDataType](column: String) extends Expr[T]
-
 case class ColumnExpr[T <: SqlDataType, N <: String](
     tableName: String, 
     columnName: String, 
@@ -221,7 +220,7 @@ case class OverExpr[T <: SqlDataType](func: AggExpr[T], partitionBy: List[Expr[_
 
 case class CastExpr[T <: SqlDataType](expr: Expr[_], castType: String) extends Expr[T]
 
-case class DynamicExpr[T <: SqlDataType](text: String) extends Expr[T]
+case class DynamicExpr[T <: SqlDataType](expr: SqlExpr) extends Expr[T]
 
 trait ExprOperator[T <: SqlDataType] {
     extension (v: T) {

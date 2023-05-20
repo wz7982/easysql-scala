@@ -24,10 +24,10 @@ class Delete(private val ast: SqlDelete) extends NonSelect {
         val conditions = inline pk match {
             case t: Tuple => t.toArray.toList.zip(cols).map { (p, c) =>
                 p match {
-                    case d: SqlDataType => exprToSqlExpr(BinaryExpr(IdentExpr(c), SqlBinaryOperator.Eq, LiteralExpr(d)))
+                    case d: SqlDataType => exprToSqlExpr(BinaryExpr(col(c), SqlBinaryOperator.Eq, LiteralExpr(d)))
                 }
             }
-            case d: SqlDataType => List(exprToSqlExpr(BinaryExpr(IdentExpr(cols.head), SqlBinaryOperator.Eq, LiteralExpr(d))))
+            case d: SqlDataType => List(exprToSqlExpr(BinaryExpr(col(cols.head), SqlBinaryOperator.Eq, LiteralExpr(d))))
         }
 
         val where = conditions.reduce((x, y) => SqlBinaryExpr(x, SqlBinaryOperator.And, y))

@@ -47,8 +47,6 @@ def exprToSqlExpr(expr: Expr[_]): SqlExpr = expr match {
         valueToSqlExpr(value)
     case BinaryExpr(left, op, right) => 
         SqlBinaryExpr(exprToSqlExpr(left), op, exprToSqlExpr(right))
-    case IdentExpr(column) => 
-        parseIdent(column)
     case ColumnExpr(tableName, columnName, _) =>
         SqlPropertyExpr(tableName, columnName)
     case PrimaryKeyExpr(tableName, columnName, _, _) =>
@@ -73,8 +71,8 @@ def exprToSqlExpr(expr: Expr[_]): SqlExpr = expr match {
         SqlOverExpr(aggExprToSqlExpr(func), partitionBy.map(exprToSqlExpr), orderBy.map(o => SqlOrderBy(exprToSqlExpr(o.expr), o.order)))
     case ListExpr(list) =>
         SqlListExpr(list.map(exprToSqlExpr))
-    case DynamicExpr(text) => 
-        new SqlParser().parse(text)
+    case DynamicExpr(expr) => 
+        expr
 }
 
 def parseIdent(column: String): SqlExpr = {

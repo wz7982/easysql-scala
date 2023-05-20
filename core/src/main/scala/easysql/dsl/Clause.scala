@@ -11,15 +11,13 @@ import easysql.util.*
 
 import scala.annotation.{experimental, targetName}
 import scala.collection.mutable
+import easysql.parser.SqlParser
 
 def value[T <: SqlDataType](v: T): LiteralExpr[T] = 
     LiteralExpr(v)
 
-def col[T <: SqlDataType](columnName: String): IdentExpr[T] = 
-    IdentExpr(columnName)
-
-def dynamicExpr[T <: SqlDataType](text: String): DynamicExpr[T] =
-    DynamicExpr(text)
+def col[T <: SqlDataType](text: String): DynamicExpr[T] = 
+    DynamicExpr(new SqlParser().parse(text))
 
 def caseWhen[T <: SqlDataType](branches: CaseBranch[T]*): CaseExpr[T] = 
     CaseExpr(branches.toList, NullExpr)
@@ -48,14 +46,14 @@ def table(name: String): TableSchema[Nothing] =
 transparent inline def asTable[T <: Product]: Any = 
     tableInfo[T]
 
-extension [T <: SqlDataType] (expr: ColumnExpr[T, _] | IdentExpr[T]) {
-    infix def toExpr[R <: UpdateType[T]](value: Expr[R]): (ColumnExpr[T, _] | IdentExpr[T], Expr[R]) = 
+extension [T <: SqlDataType] (expr: ColumnExpr[T, _] | DynamicExpr[T]) {
+    infix def toExpr[R <: UpdateType[T]](value: Expr[R]): (ColumnExpr[T, _] | DynamicExpr[T], Expr[R]) = 
         (expr, value)
 
-    infix def to[R <: UpdateType[T]](value: R): (ColumnExpr[T, _] | IdentExpr[T], Expr[R]) = 
+    infix def to[R <: UpdateType[T]](value: R): (ColumnExpr[T, _] | DynamicExpr[T], Expr[R]) = 
         (expr, LiteralExpr(value))
 
-    infix def toOption[R <: UpdateType[T]](value: Option[R]): (ColumnExpr[T, _] | IdentExpr[T], Expr[_]) = {
+    infix def toOption[R <: UpdateType[T]](value: Option[R]): (ColumnExpr[T, _] | DynamicExpr[T], Expr[_]) = {
         val updateExpr = value match {
             case None => NullExpr
             case Some(value) => LiteralExpr(value)
@@ -97,10 +95,10 @@ inline def find[T <: Product](pk: SqlDataType | Tuple): Select[Tuple1[T], EmptyT
     val conditions: List[Expr[Boolean]] = inline pk match {
         case t: Tuple => t.toArray.toList.zip(cols).map { (p, c) =>
             p match {
-                case d: SqlDataType => BinaryExpr[Boolean](IdentExpr(c), SqlBinaryOperator.Eq, LiteralExpr(d))
+                case d: SqlDataType => BinaryExpr[Boolean](col(c), SqlBinaryOperator.Eq, LiteralExpr(d))
             }
         }
-        case d: SqlDataType => List(BinaryExpr[Boolean](IdentExpr(cols.head), SqlBinaryOperator.Eq, LiteralExpr(d)))
+        case d: SqlDataType => List(BinaryExpr[Boolean](col(cols.head), SqlBinaryOperator.Eq, LiteralExpr(d)))
     }
     val where = conditions.reduce((x, y) => x && y)
     

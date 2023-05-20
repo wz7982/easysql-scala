@@ -32,7 +32,7 @@ class Insert[T <: Tuple, S <: InsertState](private val ast: SqlInsert) extends N
         }
 
         val columns = metaDataList.head.map { (name, _) =>
-            exprToSqlExpr(IdentExpr(name))
+            exprToSqlExpr(col(name))
         }
         val insertList = metaDataList.map(_.map(_._2))
 
@@ -42,12 +42,12 @@ class Insert[T <: Tuple, S <: InsertState](private val ast: SqlInsert) extends N
     def insertInto[C <: Tuple](table: TableSchema[_])(columns: C): Insert[InverseMap[C], Nothing] = {
         val insertTable = Some(SqlIdentTable(table.__tableName, None))
         val insertColumns = columns.toList.filter {
-            case e: IdentExpr[_] => true
+            case e: DynamicExpr[_] => true
             case e: ColumnExpr[_, _] => true
             case e: PrimaryKeyExpr[_, _] => true
             case _ => false
         }.map {
-            case e: IdentExpr[_] => SqlIdentExpr(e.column)
+            case e: DynamicExpr[_] => e.expr
             case e: ColumnExpr[_, _] => SqlIdentExpr(e.columnName)
             case e: PrimaryKeyExpr[_, _] => SqlIdentExpr(e.columnName)
         }
