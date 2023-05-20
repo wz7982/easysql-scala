@@ -9,6 +9,9 @@ import easysql.util.statementToString
 class With[T <: Tuple](
     private val ast: SqlWith
 ) {
+    def getAst: SqlWith = 
+        ast
+
     def addTable(query: AliasQuery[_, _]*): With[T] = {
         val withInfo = query.toList map { q =>
             SqlWithItem(SqlIdentExpr(q.__queryName), q.__ast, q.__selectItems.values.map(SqlIdentExpr(_)).toList)
