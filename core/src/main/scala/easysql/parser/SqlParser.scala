@@ -120,7 +120,8 @@ class SqlParser extends JavaTokenParsers {
         val parseResult = parseAll(expr, text)
         parseResult match {
             case Success(result, _) => result
-            case _ => throw ParseException("\n" + parseResult.toString)
+            case Failure(_, next) => throw ParseException(next.pos.longString)
+            case Error(_, next) => throw ParseException(next.pos.longString)
         }
     }
 }
