@@ -6,6 +6,9 @@ import easysql.dsl.*
 import easysql.util.exprToSqlExpr
 
 class Values[T <: Tuple](val ast: SqlValues) {
+    def getAst: SqlValues = 
+        ast
+
     def addRow(row: T): Values[T] = {
         val add = row.toList.map {
             case d: SqlDataType => exprToSqlExpr(LiteralExpr(d))
