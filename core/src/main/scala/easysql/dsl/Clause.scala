@@ -125,8 +125,13 @@ inline def find[T <: Product](pk: SqlDataType | Tuple): Select[Tuple1[T], EmptyT
     select.where(where)
 }
 
-def withQuery(query: AliasQuery[_, _]*): With[EmptyTuple] =
-    With().addTable(query*)
+def cte[T <: Tuple](withQuery: InWithQuery ?=> With[T]) = {
+    given InWithQuery = In
+    withQuery
+}
+
+def commonTable(query: AliasQuery[_, _]*): With[EmptyTuple] =
+    With().commonTable(query*)
 
 def query[T <: Product](table: TableSchema[T]): MonadicQuery[Tuple1[T], table.type] =
     MonadicQuery(table)
