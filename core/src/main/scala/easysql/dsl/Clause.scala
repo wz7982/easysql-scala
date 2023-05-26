@@ -2,16 +2,19 @@ package easysql.dsl
 
 import easysql.ast.SqlDataType
 import easysql.ast.expr.SqlBinaryOperator
+import easysql.ast.expr.SqlOverBetween
+import easysql.ast.expr.SqlOverBetweenType
 import easysql.database.DB
 import easysql.macros.*
 import easysql.printer.*
 import easysql.query.nonselect.*
 import easysql.query.select.*
 import easysql.util.*
+import easysql.parser.SqlParser
 
 import scala.annotation.{experimental, targetName}
 import scala.collection.mutable
-import easysql.parser.SqlParser
+import easysql.ast.expr.SqlNumberExpr
 
 def value[T <: SqlDataType](v: T): LiteralExpr[T] = 
     LiteralExpr(v)
@@ -42,6 +45,23 @@ def cast[T <: SqlDataType](expr: Expr[_], castType: String): CastExpr[T] =
 
 def table(name: String): TableSchema[Nothing] = 
     TableSchema(name, None, Nil)
+
+def unboundedPreceding: SqlOverBetweenType =
+    SqlOverBetweenType.UnboundedPreceding
+
+def unboundedFollowing: SqlOverBetweenType =
+    SqlOverBetweenType.UnboundedFollowing
+
+def currentRow: SqlOverBetweenType =
+    SqlOverBetweenType.CurrentRow
+
+extension (n: Int) {
+    infix def preceding: SqlOverBetweenType =
+        SqlOverBetweenType.Preceding(SqlNumberExpr(n))
+
+    infix def following: SqlOverBetweenType =
+        SqlOverBetweenType.Following(SqlNumberExpr(n))
+}
 
 transparent inline def asTable[T <: Product]: Any = 
     tableInfo[T]

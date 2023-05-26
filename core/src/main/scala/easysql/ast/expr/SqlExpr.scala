@@ -45,6 +45,11 @@ case class SqlInExpr(expr: SqlExpr, inExpr: SqlExpr, not: Boolean) extends SqlEx
 
 case class SqlBetweenExpr(expr: SqlExpr, start: SqlExpr, end: SqlExpr, not: Boolean) extends SqlExpr
 
-case class SqlOverExpr(agg: SqlAggFuncExpr, partitionBy: List[SqlExpr], orderBy: List[SqlOrderBy]) extends SqlExpr
+case class SqlOverExpr(
+    agg: SqlAggFuncExpr, 
+    partitionBy: List[SqlExpr], 
+    orderBy: List[SqlOrderBy],
+    between: Option[SqlOverBetween]
+) extends SqlExpr
 
 case class SqlCaseExpr(caseList: List[SqlCase], default: SqlExpr) extends SqlExpr
