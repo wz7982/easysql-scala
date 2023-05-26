@@ -10,30 +10,30 @@ class SqlParser extends JavaTokenParsers {
         or
 
     def or: Parser[SqlExpr] =
-        xor * ("or" ^^^ { (l: SqlExpr, r: SqlExpr) => SqlBinaryExpr(l, SqlBinaryOperator.Or, r) })
+        xor * (("or" | "OR") ^^^ { (l: SqlExpr, r: SqlExpr) => SqlBinaryExpr(l, SqlBinaryOperator.Or, r) })
 
     def xor: Parser[SqlExpr] =
-        and * ("xor" ^^^ { (l: SqlExpr, r: SqlExpr) => SqlBinaryExpr(l, SqlBinaryOperator.Xor, r) })
+        and * (("xor" | "XOR") ^^^ { (l: SqlExpr, r: SqlExpr) => SqlBinaryExpr(l, SqlBinaryOperator.Xor, r) })
 
     def and: Parser[SqlExpr] =
-        relation * ("and" ^^^ { (l: SqlExpr, r: SqlExpr) => SqlBinaryExpr(l, SqlBinaryOperator.And, r) })
+        relation * (("and" | "AND") ^^^ { (l: SqlExpr, r: SqlExpr) => SqlBinaryExpr(l, SqlBinaryOperator.And, r) })
 
     def relation: Parser[SqlExpr] =
         add ~ rep(
             ("=" | "<>" | "!=" | ">" | ">=" | "<" | "<=") ~ add ^^ { 
                 case op ~ right => (op, right)
             } |
-            "is" ~ opt("not") ~ "null" ^^ {
-                case op ~ n ~ right => (n.isDefined, op, right)
+            ("is" | "IS") ~ opt("not" | "NOT") ~ ("null" | "NULL") ^^ {
+                case op ~ n ~ right => (n.isDefined, "is", right)
             } |
-            opt("not") ~ "between" ~ add ~ "and" ~ add ^^ { 
-                case n ~ op ~ start ~ _ ~ end => (n.isDefined, op, start, end)
+            opt("not" | "NOT") ~ ("between" | "BETWEEN") ~ add ~ ("and" | "AND") ~ add ^^ { 
+                case n ~ op ~ start ~ _ ~ end => (n.isDefined, "between", start, end)
             } |
-            opt("not") ~ "in" ~ "(" ~ rep1sep(expr, ",") ~ ")" ^^ { 
-                case n ~ op ~ _ ~ in ~ _ => (n.isDefined, op, in)
+            opt("not" | "NOT") ~ ("in" | "IN") ~ "(" ~ rep1sep(expr, ",") ~ ")" ^^ { 
+                case n ~ op ~ _ ~ in ~ _ => (n.isDefined, "in", in)
             } |
-            opt("not") ~ "like" ~ add ^^ {
-                case n ~ op ~ right => (n.isDefined, op, right)
+            opt("not" | "NOT") ~ ("like" | "LIKE") ~ add ^^ {
+                case n ~ op ~ right => (n.isDefined, "like", right)
             }
         ) ^^ { 
             case left ~ elems => elems.foldLeft(left) {
@@ -86,32 +86,32 @@ class SqlParser extends JavaTokenParsers {
         }
 
     def aggFunction: Parser[SqlExpr] =
-        "count" ~ "(" ~ "*" ~ ")" ^^ (_ => SqlAggFuncExpr("COUNT", SqlAllColumnExpr(None) :: Nil, false, Map(), Nil)) |
+        ("count" | "COUNT") ~ "(" ~ "*" ~ ")" ^^ (_ => SqlAggFuncExpr("COUNT", SqlAllColumnExpr(None) :: Nil, false, Map(), Nil)) |
         ident ~ ("(" ~> repsep(expr, ",") <~ ")") ^^ {
             case funcName ~ args => SqlAggFuncExpr(funcName.toUpperCase.nn, args, false, Map(), Nil)
         } |
-        ident ~ ("(" ~ "distinct" ~> expr <~ ")") ^^ {
+        ident ~ ("(" ~ ("distinct" | "DISTINCT") ~> expr <~ ")") ^^ {
             case funcName ~ arg =>  SqlAggFuncExpr(funcName.toUpperCase.nn, arg :: Nil, true, Map(), Nil)
         }
 
     def cast: Parser[SqlExpr] =
-        "cast" ~> ("(" ~> expr ~ "as" ~ ident <~ ")") ^^ {
+        ("cast" | "CAST") ~> ("(" ~> expr ~ ("as" | "AS") ~ ident <~ ")") ^^ {
             case expr ~ _ ~ castType => SqlCastExpr(expr, castType.toUpperCase.nn)
         }
 
     def caseWhen: Parser[SqlExpr] = 
-        "case" ~>
-            rep1("when" ~> expr ~ "then" ~ expr ^^ { case e ~ _ ~ te => SqlCase(e, te) }) ~ 
-            opt("else" ~> expr) <~ "end" ^^ {
+        ("case" | "CASE") ~>
+            rep1(("when" | "WHEN") ~> expr ~ ("then" | "THEN") ~ expr ^^ { case e ~ _ ~ te => SqlCase(e, te) }) ~ 
+            opt(("else" | "ELSE") ~> expr) <~ ("end" | "END") ^^ {
                 case branches ~ default => SqlCaseExpr(branches, default.getOrElse(SqlNullExpr))
             }
     
     def literal: Parser[SqlExpr] = 
         decimalNumber ^^ (i => SqlNumberExpr(BigDecimal(i))) |
         charLiteral ^^ (xs => SqlCharExpr(xs.toString.substring(1, xs.size -1).nn)) |
-        "true" ^^ (_ => SqlBooleanExpr(true)) |
-        "false" ^^ (_ => SqlBooleanExpr(false)) |
-        "null" ^^ (_ => SqlNullExpr)
+        ("true" | "TRUE") ^^ (_ => SqlBooleanExpr(true)) |
+        ("false" | "FALSE") ^^ (_ => SqlBooleanExpr(false)) |
+        ("null" | "NULL") ^^ (_ => SqlNullExpr)
 
     def charLiteral: Parser[String] =
         ("'" + """([^'\x00-\x1F\x7F\\]|\\[\\'"bfnrt]|\\u[a-fA-F0-9]{4})*""" + "'").r
