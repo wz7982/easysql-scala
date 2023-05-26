@@ -2,6 +2,8 @@ package easysql.printer
 
 import easysql.ast.expr.*
 import easysql.ast.expr.SqlBinaryOperator.*
+import easysql.ast.expr.SqlOverBetween.*
+import easysql.ast.expr.SqlOverBetweenType.*
 import easysql.ast.limit.SqlLimit
 import easysql.ast.order.*
 import easysql.ast.statement.*
@@ -332,7 +334,7 @@ trait SqlPrinter(val prepare: Boolean) {
                 sqlBuilder.append(")")
             }
 
-            case SqlOverExpr(agg, partitionBy, orderBy) => {
+            case SqlOverExpr(agg, partitionBy, orderBy, between) => {
                 printAggFuncExpr(agg)
                 sqlBuilder.append(" OVER (")
                 if (partitionBy.nonEmpty) {
@@ -345,6 +347,31 @@ trait SqlPrinter(val prepare: Boolean) {
                     }
                     sqlBuilder.append("ORDER BY ")
                     printList(orderBy)(printOrderBy)
+                }
+                between match {
+                    case Some(b) => {
+                        def printOverBetweenType(b: SqlOverBetweenType): Unit =
+                            b match {
+                                case Following(n) => {
+                                    printExpr(n)
+                                    sqlBuilder.append(" " + b.show)
+                                }
+                                case Preceding(n) => {
+                                    printExpr(n)
+                                    sqlBuilder.append(" " + b.show)
+                                }
+                                case _ => sqlBuilder.append(b.show)
+                            }
+
+                        b match {
+                            case rows: Rows => sqlBuilder.append(" ROWS BETWEEN ")
+                            case range: Range => sqlBuilder.append(" RANGE BETWEEN ")
+                        }
+                        printOverBetweenType(b.start)
+                        sqlBuilder.append(" AND ")
+                        printOverBetweenType(b.end)
+                    }
+                    case None =>
                 }
                 sqlBuilder.append(")")
             }

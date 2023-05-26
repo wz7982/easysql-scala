@@ -2,16 +2,19 @@ package easysql.dsl
 
 import easysql.ast.SqlDataType
 import easysql.ast.expr.SqlBinaryOperator
+import easysql.ast.expr.SqlOverBetween
+import easysql.ast.expr.SqlOverBetweenType
+import easysql.ast.expr.SqlNumberExpr
 import easysql.database.DB
 import easysql.macros.*
 import easysql.printer.*
 import easysql.query.nonselect.*
 import easysql.query.select.*
 import easysql.util.*
+import easysql.parser.SqlParser
 
 import scala.annotation.{experimental, targetName}
 import scala.collection.mutable
-import easysql.parser.SqlParser
 
 def value[T <: SqlDataType](v: T): LiteralExpr[T] = 
     LiteralExpr(v)
@@ -42,6 +45,23 @@ def cast[T <: SqlDataType](expr: Expr[_], castType: String): CastExpr[T] =
 
 def table(name: String): TableSchema[Nothing] = 
     TableSchema(name, None, Nil)
+
+def unboundedPreceding: SqlOverBetweenType =
+    SqlOverBetweenType.UnboundedPreceding
+
+def unboundedFollowing: SqlOverBetweenType =
+    SqlOverBetweenType.UnboundedFollowing
+
+def currentRow: SqlOverBetweenType =
+    SqlOverBetweenType.CurrentRow
+
+extension (n: Int) {
+    infix def preceding: SqlOverBetweenType =
+        SqlOverBetweenType.Preceding(SqlNumberExpr(n))
+
+    infix def following: SqlOverBetweenType =
+        SqlOverBetweenType.Following(SqlNumberExpr(n))
+}
 
 transparent inline def asTable[T <: Product]: Any = 
     tableInfo[T]
@@ -105,8 +125,13 @@ inline def find[T <: Product](pk: SqlDataType | Tuple): Select[Tuple1[T], EmptyT
     select.where(where)
 }
 
-def withQuery(query: AliasQuery[_, _]*): With[EmptyTuple] =
-    With().addTable(query*)
+def cte[T <: Tuple](withQuery: InWithQuery ?=> With[T]) = {
+    given InWithQuery = In
+    withQuery
+}
+
+def commonTable(query: AliasQuery[_, _]*): With[EmptyTuple] =
+    With().commonTable(query*)
 
 def query[T <: Product](table: TableSchema[T]): MonadicQuery[Tuple1[T], table.type] =
     MonadicQuery(table)

@@ -12,7 +12,7 @@ class With[T <: Tuple](
     def getAst: SqlWith = 
         ast
 
-    def addTable(query: AliasQuery[_, _]*): With[T] = {
+    def commonTable(query: AliasQuery[_, _]*): With[T] = {
         val withInfo = query.toList map { q =>
             SqlWithItem(SqlIdentExpr(q.__queryName), q.__ast, q.__selectItems.values.map(SqlIdentExpr(_)).toList)
         }
@@ -22,8 +22,7 @@ class With[T <: Tuple](
     def recursive: With[T] =
         new With(ast.copy(recursive = true))
 
-    def query[QT <: Tuple, A <: Tuple](query: InWithQuery ?=> Query[QT, A]): With[QT] = {
-        given InWithQuery = In
+    def query[QT <: Tuple, A <: Tuple](query: Query[QT, A]): With[QT] = {
         new With(ast.copy(query = Some(query.getAst)))
     }       
 }

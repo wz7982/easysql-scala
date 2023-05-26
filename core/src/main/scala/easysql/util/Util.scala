@@ -67,8 +67,8 @@ def exprToSqlExpr(expr: Expr[_]): SqlExpr = expr match {
         SqlBetweenExpr(exprToSqlExpr(expr), exprToSqlExpr(start), exprToSqlExpr(end), not)
     case AllColumnExpr(owner) =>
         SqlAllColumnExpr(owner)
-    case OverExpr(func, partitionBy, orderBy) =>
-        SqlOverExpr(aggExprToSqlExpr(func), partitionBy.map(exprToSqlExpr), orderBy.map(o => SqlOrderBy(exprToSqlExpr(o.expr), o.order)))
+    case OverExpr(func, partitionBy, orderBy, between) =>
+        SqlOverExpr(aggExprToSqlExpr(func), partitionBy.map(exprToSqlExpr), orderBy.map(o => SqlOrderBy(exprToSqlExpr(o.expr), o.order)), between)
     case ListExpr(list) =>
         SqlListExpr(list.map(exprToSqlExpr))
     case DynamicExpr(expr) => 

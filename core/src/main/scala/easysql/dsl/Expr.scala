@@ -1,6 +1,6 @@
 package easysql.dsl
 
-import easysql.ast.expr.SqlBinaryOperator
+import easysql.ast.expr.*
 import easysql.ast.order.SqlOrderByOption
 import easysql.ast.{SqlDataType, SqlNumberType}
 import easysql.query.select.*
@@ -188,7 +188,7 @@ case class AggExpr[T <: SqlDataType](
     orderBy: List[OrderBy]
 ) extends Expr[T] {
     def over: OverExpr[T] = 
-        OverExpr(this, Nil, Nil)
+        OverExpr(this, Nil, Nil, None)
 }
 
 case class CaseExpr[T <: SqlDataType](branches: List[CaseBranch[_]], default: Expr[_]) extends Expr[T] {
@@ -210,12 +210,23 @@ case class BetweenExpr[T <: SqlDataType](expr: Expr[_], start: Expr[_], end: Exp
 
 case class AllColumnExpr(owner: Option[String]) extends Expr[Nothing]
 
-case class OverExpr[T <: SqlDataType](func: AggExpr[T], partitionBy: List[Expr[_]], orderBy: List[OrderBy]) extends Expr[T] {
-    def partitionBy(p: Expr[_]*): OverExpr[T] =
+case class OverExpr[T <: SqlDataType](
+    func: AggExpr[T], 
+    partitionBy: List[Expr[_]], 
+    orderBy: List[OrderBy],
+    between: Option[SqlOverBetween]
+) extends Expr[T] {
+    infix def partitionBy(p: Expr[_]*): OverExpr[T] =
         copy(partitionBy = partitionBy ++ p)
 
-    def orderBy(o: OrderBy*): OverExpr[T] =
+    infix def orderBy(o: OrderBy*): OverExpr[T] =
         copy(orderBy = orderBy ++ o)
+
+    infix def rowsBetween(start: SqlOverBetweenType, end: SqlOverBetweenType): OverExpr[T] =
+        copy(between = Some(SqlOverBetween.Rows(start, end)))
+
+    infix def rangeBetween(start: SqlOverBetweenType, end: SqlOverBetweenType): OverExpr[T] =
+        copy(between = Some(SqlOverBetween.Range(start, end)))
 }
 
 case class CastExpr[T <: SqlDataType](expr: Expr[_], castType: String) extends Expr[T]
