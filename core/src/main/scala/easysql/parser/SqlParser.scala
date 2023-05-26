@@ -73,7 +73,7 @@ class SqlParser extends JavaTokenParsers {
         cast |
         function |
         aggFunction |
-        ident ~ opt("." ~> (ident | "*")) ^^ {
+        (opt("`" | "\"") ~> ident <~ opt("`" | "\"")) ~ opt("." ~> ((opt("`" | "\"") ~> ident <~ opt("`" | "\"")) | "*")) ^^ {
             case id ~ None => SqlIdentExpr(id)
             case table ~ Some("*") => SqlAllColumnExpr(Some(table))
             case table ~ Some(column) => SqlPropertyExpr(table, column)
