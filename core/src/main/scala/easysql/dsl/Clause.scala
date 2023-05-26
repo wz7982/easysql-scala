@@ -4,6 +4,7 @@ import easysql.ast.SqlDataType
 import easysql.ast.expr.SqlBinaryOperator
 import easysql.ast.expr.SqlOverBetween
 import easysql.ast.expr.SqlOverBetweenType
+import easysql.ast.expr.SqlNumberExpr
 import easysql.database.DB
 import easysql.macros.*
 import easysql.printer.*
@@ -14,7 +15,6 @@ import easysql.parser.SqlParser
 
 import scala.annotation.{experimental, targetName}
 import scala.collection.mutable
-import easysql.ast.expr.SqlNumberExpr
 
 def value[T <: SqlDataType](v: T): LiteralExpr[T] = 
     LiteralExpr(v)
