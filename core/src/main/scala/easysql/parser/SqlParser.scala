@@ -3,9 +3,51 @@ package easysql.parser
 import easysql.ast.expr.*
 import easysql.ast.order.*
 
-import scala.util.parsing.combinator.*
+import scala.util.parsing.combinator.syntactical.StandardTokenParsers
+import scala.util.parsing.combinator.lexical.StdLexical
+import scala.util.parsing.input.CharArrayReader.EofCh
+import scala.util.matching.Regex
 
-class SqlParser extends JavaTokenParsers {
+class SqlParser extends StandardTokenParsers {
+    class SqlLexical extends StdLexical {
+        override def token: Parser[Token] = (
+            identChar ~ rep(identChar | digit) ^^ { 
+                case first ~ rest => processIdent((first :: rest).mkString("")) 
+            } |
+            '\"' ~> (identChar ~ rep(identChar | digit)) <~ '\"' ^^ { 
+                case first ~ rest => processIdent((first :: rest).mkString("")) 
+            } |
+            '`' ~> (identChar ~ rep(identChar | digit)) <~ '`' ^^ { 
+                case first ~ rest => processIdent((first :: rest).mkString("")) 
+            } |
+            rep1(digit) ~ opt('.' ~> rep(digit)) ^^ {
+                case i ~ None => NumericLit(i mkString "")
+                case i ~ Some(d) => NumericLit(i.mkString("") + "." + d.mkString(""))
+            } |
+            '\'' ~ rep(chrExcept('\'', '\n', EofCh)) ~ '\'' ^^ { 
+                case _ ~ chars ~ _ => StringLit(chars.mkString("")) 
+            } |
+            EofCh ^^^ EOF |
+            delim |
+            failure("illegal character")
+        )
+    }
+
+    override val lexical: SqlLexical = new SqlLexical()
+
+    lexical.reserved += (
+        "CAST", "AS", "AND", "XOR", "OR", "OVER", "BY", "PARTITION", "ORDER", "DISTINCT", "NOT",
+        "CASE", "WHEN", "THEN", "ELSE", "END", "ASC", "DESC", "TRUE", "FALSE", "NULL",
+        "BETWEEN", "IN", "LIKE", "IS",
+        "cast", "as", "and", "xor", "or", "over", "by", "partition", "order", "distinct", "not",
+        "case", "when", "then", "else", "end", "asc", "desc", "true", "false", "null",
+        "between", "in", "like", "is"
+    )
+
+    lexical.delimiters += (
+        "+", "-", "*", "/", "%", "=", "<>", "!=", ">", ">=", "<", "<=", "(", ")", ",", ".", "`", "\""
+    )
+
     def expr: Parser[SqlExpr] = 
         or
 
@@ -71,9 +113,10 @@ class SqlParser extends JavaTokenParsers {
         literal |
         caseWhen |
         cast |
+        windownFunction |
         function |
         aggFunction |
-        (opt("`" | "\"") ~> ident <~ opt("`" | "\"")) ~ opt("." ~> ((opt("`" | "\"") ~> ident <~ opt("`" | "\"")) | "*")) ^^ {
+        ident ~ opt("." ~> ident | "*") ^^ {
             case id ~ None => SqlIdentExpr(id)
             case table ~ Some("*") => SqlAllColumnExpr(Some(table))
             case table ~ Some(column) => SqlPropertyExpr(table, column)
@@ -85,13 +128,32 @@ class SqlParser extends JavaTokenParsers {
             case funcName ~ args => SqlExprFuncExpr(funcName.toUpperCase.nn, args)
         }
 
-    def aggFunction: Parser[SqlExpr] =
+    def aggFunction: Parser[SqlAggFuncExpr] =
         ("count" | "COUNT") ~ "(" ~ "*" ~ ")" ^^ (_ => SqlAggFuncExpr("COUNT", SqlAllColumnExpr(None) :: Nil, false, Map(), Nil)) |
         ident ~ ("(" ~> repsep(expr, ",") <~ ")") ^^ {
             case funcName ~ args => SqlAggFuncExpr(funcName.toUpperCase.nn, args, false, Map(), Nil)
         } |
         ident ~ ("(" ~ ("distinct" | "DISTINCT") ~> expr <~ ")") ^^ {
             case funcName ~ arg =>  SqlAggFuncExpr(funcName.toUpperCase.nn, arg :: Nil, true, Map(), Nil)
+        }
+
+    def over: Parser[(List[SqlExpr], List[SqlOrderBy])] =
+        "(" ~> ("partition" | "PARTITION") ~> ("by" | "BY") ~> rep1sep(expr, ",") ~ opt(("order" | "ORDER") ~> ("by" | "BY") ~> rep1sep(orderBy, ",")) <~ ")" ^^ {
+            case partition ~ order => (partition, order.getOrElse(Nil))
+        } |
+        "(" ~> ("order" | "ORDER") ~> ("by" | "BY") ~> rep1sep(orderBy, ",") <~ ")" ^^ {
+            case order => (Nil, order)
+        }
+
+    def windownFunction: Parser[SqlExpr] =
+        aggFunction ~ ("over" | "OVER") ~ over ^^ {
+            case agg ~ _ ~ o => SqlOverExpr(agg, o._1, o._2, None)
+        }
+
+    def orderBy: Parser[SqlOrderBy] =
+        expr ~ opt(("asc" | "ASC") | ("desc" | "DESC")) ^^ {
+            case e ~ (Some("desc") | Some("DESC")) => SqlOrderBy(e, SqlOrderByOption.Desc)
+            case e ~ _ => SqlOrderBy(e, SqlOrderByOption.Asc)
         }
 
     def cast: Parser[SqlExpr] =
@@ -107,21 +169,16 @@ class SqlParser extends JavaTokenParsers {
             }
     
     def literal: Parser[SqlExpr] = 
-        decimalNumber ^^ (i => SqlNumberExpr(BigDecimal(i))) |
-        charLiteral ^^ (xs => SqlCharExpr(xs.toString.substring(1, xs.size -1).nn)) |
+        numericLit ^^ (i => SqlNumberExpr(BigDecimal(i))) |
+        stringLit ^^ (xs => SqlCharExpr(xs)) |
         ("true" | "TRUE") ^^ (_ => SqlBooleanExpr(true)) |
         ("false" | "FALSE") ^^ (_ => SqlBooleanExpr(false)) |
         ("null" | "NULL") ^^ (_ => SqlNullExpr)
 
-    def charLiteral: Parser[String] =
-        ("'" + """([^'\x00-\x1F\x7F\\]|\\[\\'"bfnrt]|\\u[a-fA-F0-9]{4})*""" + "'").r
-
     def parse(text: String): SqlExpr = {
-        val parseResult = parseAll(expr, text)
-        parseResult match {
+        phrase(expr)(new lexical.Scanner(text)) match {
             case Success(result, _) => result
-            case Failure(_, next) => throw ParseException(next.pos.longString)
-            case Error(_, next) => throw ParseException(next.pos.longString)
+            case e => throw ParseException(e.toString)
         }
     }
 }
