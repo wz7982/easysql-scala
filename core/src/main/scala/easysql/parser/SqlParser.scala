@@ -4,12 +4,12 @@ import easysql.ast.expr.*
 import easysql.ast.order.*
 import easysql.ast.statement.*
 import easysql.ast.table.*
+import easysql.ast.limit.SqlLimit
 
 import scala.util.parsing.combinator.syntactical.StandardTokenParsers
 import scala.util.parsing.combinator.lexical.StdLexical
 import scala.util.parsing.input.CharArrayReader.EofCh
 import scala.util.matching.Regex
-import easysql.ast.limit.SqlLimit
 
 class SqlParser extends StandardTokenParsers {
     class SqlLexical extends StdLexical {
@@ -124,7 +124,7 @@ class SqlParser extends StandardTokenParsers {
         windownFunction |
         function |
         aggFunction |
-        select |
+        union |
         ident ~ opt("." ~> ident) ^^ {
             case id ~ None => SqlIdentExpr(id)
             case table ~ Some(column) => SqlPropertyExpr(table, column)
@@ -182,6 +182,29 @@ class SqlParser extends StandardTokenParsers {
         "TRUE" ^^ (_ => SqlBooleanExpr(true)) |
         "FALSE" ^^ (_ => SqlBooleanExpr(false)) |
         "NULL" ^^ (_ => SqlNullExpr)
+
+    def unionType: Parser[SqlUnionType] =
+        "UNION" ~> opt("ALL") ^^ {
+            case None => SqlUnionType.Union
+            case _ => SqlUnionType.UnionAll
+        } |
+        "EXCEPT" ~> opt("ALL") ^^ {
+            case None => SqlUnionType.Except
+            case _ => SqlUnionType.ExceptAll
+        } |
+        "INTERSECT" ~> opt("ALL") ^^ {
+            case None => SqlUnionType.Intersect
+            case _ => SqlUnionType.IntersectAll
+        }
+
+    def union: Parser[SqlQueryExpr] =
+        (opt("(") ~> select <~ opt(")")) ~ rep(unionType ~ (opt("(") ~> select <~ opt(")")) ^^ {
+            case t ~ s => (t, s)
+        }) ^^ {
+            case s ~ unions => unions.foldLeft(s) {
+                case (l, r) => SqlQueryExpr(SqlUnion(l.query, r._1, r._2.query))
+            }
+        }
 
     def select: Parser[SqlQueryExpr] =
         "SELECT" ~> opt("DISTINCT") ~ selectItems ~ opt(from) ~ opt(where) ~ opt(groupBy) ~ opt(selectOrderBy) ~ opt(limit) ^^ {
