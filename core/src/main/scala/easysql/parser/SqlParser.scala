@@ -198,7 +198,7 @@ class SqlParser extends StandardTokenParsers {
         }
 
     def union: Parser[SqlQueryExpr] =
-        (opt("(") ~> select <~ opt(")")) ~ rep(unionType ~ (opt("(") ~> select <~ opt(")")) ^^ {
+        select ~ rep(unionType ~ select ^^ {
             case t ~ s => (t, s)
         }) ^^ {
             case s ~ unions => unions.foldLeft(s) {
