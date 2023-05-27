@@ -10,7 +10,7 @@ import scala.util.matching.Regex
 
 class SqlParser extends StandardTokenParsers {
     class SqlLexical extends StdLexical {
-        override protected def processIdent(name: String) = { 
+        override protected def processIdent(name: String): Token = { 
             val upperCased = name.toUpperCase.nn
             if reserved.contains(upperCased) then Keyword(upperCased) else Identifier(name)
         }
@@ -20,10 +20,10 @@ class SqlParser extends StandardTokenParsers {
                 case first ~ rest => processIdent((first :: rest).mkString("")) 
             } |
             '\"' ~> (identChar ~ rep(identChar | digit)) <~ '\"' ^^ { 
-                case first ~ rest => processIdent((first :: rest).mkString("")) 
+                case first ~ rest => Identifier((first :: rest).mkString("")) 
             } |
             '`' ~> (identChar ~ rep(identChar | digit)) <~ '`' ^^ { 
-                case first ~ rest => processIdent((first :: rest).mkString("")) 
+                case first ~ rest => Identifier((first :: rest).mkString("")) 
             } |
             rep1(digit) ~ opt('.' ~> rep(digit)) ^^ {
                 case i ~ None => NumericLit(i.mkString(""))
