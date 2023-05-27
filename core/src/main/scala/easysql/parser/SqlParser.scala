@@ -2,26 +2,34 @@ package easysql.parser
 
 import easysql.ast.expr.*
 import easysql.ast.order.*
+import easysql.ast.statement.*
+import easysql.ast.table.*
 
 import scala.util.parsing.combinator.syntactical.StandardTokenParsers
 import scala.util.parsing.combinator.lexical.StdLexical
 import scala.util.parsing.input.CharArrayReader.EofCh
 import scala.util.matching.Regex
+import easysql.ast.limit.SqlLimit
 
 class SqlParser extends StandardTokenParsers {
     class SqlLexical extends StdLexical {
+        override protected def processIdent(name: String): Token = { 
+            val upperCased = name.toUpperCase.nn
+            if reserved.contains(upperCased) then Keyword(upperCased) else Identifier(name)
+        }
+
         override def token: Parser[Token] = (
             identChar ~ rep(identChar | digit) ^^ { 
                 case first ~ rest => processIdent((first :: rest).mkString("")) 
             } |
             '\"' ~> (identChar ~ rep(identChar | digit)) <~ '\"' ^^ { 
-                case first ~ rest => processIdent((first :: rest).mkString("")) 
+                case first ~ rest => Identifier((first :: rest).mkString("")) 
             } |
             '`' ~> (identChar ~ rep(identChar | digit)) <~ '`' ^^ { 
-                case first ~ rest => processIdent((first :: rest).mkString("")) 
+                case first ~ rest => Identifier((first :: rest).mkString("")) 
             } |
             rep1(digit) ~ opt('.' ~> rep(digit)) ^^ {
-                case i ~ None => NumericLit(i mkString "")
+                case i ~ None => NumericLit(i.mkString(""))
                 case i ~ Some(d) => NumericLit(i.mkString("") + "." + d.mkString(""))
             } |
             '\'' ~ rep(chrExcept('\'', '\n', EofCh)) ~ '\'' ^^ { 
@@ -39,9 +47,9 @@ class SqlParser extends StandardTokenParsers {
         "CAST", "AS", "AND", "XOR", "OR", "OVER", "BY", "PARTITION", "ORDER", "DISTINCT", "NOT",
         "CASE", "WHEN", "THEN", "ELSE", "END", "ASC", "DESC", "TRUE", "FALSE", "NULL",
         "BETWEEN", "IN", "LIKE", "IS",
-        "cast", "as", "and", "xor", "or", "over", "by", "partition", "order", "distinct", "not",
-        "case", "when", "then", "else", "end", "asc", "desc", "true", "false", "null",
-        "between", "in", "like", "is"
+        "SELECT", "FROM", "WHERE", "GROUP", "HAVING", "LIMIT", "OFFSET",
+        "JOIN", "OUTER", "INNER", "LEFT", "RIGHT", "FULL", "CROSS", "ON", "LATERAL",
+        "UNION", "EXCEPT", "INTERSECT", "ALL"
     )
 
     lexical.delimiters += (
@@ -52,29 +60,29 @@ class SqlParser extends StandardTokenParsers {
         or
 
     def or: Parser[SqlExpr] =
-        xor * (("or" | "OR") ^^^ { (l: SqlExpr, r: SqlExpr) => SqlBinaryExpr(l, SqlBinaryOperator.Or, r) })
+        xor * ("OR" ^^^ { (l: SqlExpr, r: SqlExpr) => SqlBinaryExpr(l, SqlBinaryOperator.Or, r) })
 
     def xor: Parser[SqlExpr] =
-        and * (("xor" | "XOR") ^^^ { (l: SqlExpr, r: SqlExpr) => SqlBinaryExpr(l, SqlBinaryOperator.Xor, r) })
+        and * ("XOR" ^^^ { (l: SqlExpr, r: SqlExpr) => SqlBinaryExpr(l, SqlBinaryOperator.Xor, r) })
 
     def and: Parser[SqlExpr] =
-        relation * (("and" | "AND") ^^^ { (l: SqlExpr, r: SqlExpr) => SqlBinaryExpr(l, SqlBinaryOperator.And, r) })
+        relation * ("AND" ^^^ { (l: SqlExpr, r: SqlExpr) => SqlBinaryExpr(l, SqlBinaryOperator.And, r) })
 
     def relation: Parser[SqlExpr] =
         add ~ rep(
             ("=" | "<>" | "!=" | ">" | ">=" | "<" | "<=") ~ add ^^ { 
                 case op ~ right => (op, right)
             } |
-            ("is" | "IS") ~ opt("not" | "NOT") ~ ("null" | "NULL") ^^ {
+            "IS" ~ opt("NOT") ~ "NULL" ^^ {
                 case op ~ n ~ right => (n.isDefined, "is", right)
             } |
-            opt("not" | "NOT") ~ ("between" | "BETWEEN") ~ add ~ ("and" | "AND") ~ add ^^ { 
+            opt("NOT") ~ "BETWEEN" ~ add ~ "AND" ~ add ^^ { 
                 case n ~ op ~ start ~ _ ~ end => (n.isDefined, "between", start, end)
             } |
-            opt("not" | "NOT") ~ ("in" | "IN") ~ "(" ~ rep1sep(expr, ",") ~ ")" ^^ { 
+            opt("NOT") ~ "IN" ~ "(" ~ rep1sep(expr, ",") ~ ")" ^^ { 
                 case n ~ op ~ _ ~ in ~ _ => (n.isDefined, "in", in)
             } |
-            opt("not" | "NOT") ~ ("like" | "LIKE") ~ add ^^ {
+            opt("NOT") ~ "LIKE" ~ add ^^ {
                 case n ~ op ~ right => (n.isDefined, "like", right)
             }
         ) ^^ { 
@@ -116,9 +124,9 @@ class SqlParser extends StandardTokenParsers {
         windownFunction |
         function |
         aggFunction |
-        ident ~ opt("." ~> ident | "*") ^^ {
+        select |
+        ident ~ opt("." ~> ident) ^^ {
             case id ~ None => SqlIdentExpr(id)
-            case table ~ Some("*") => SqlAllColumnExpr(Some(table))
             case table ~ Some(column) => SqlPropertyExpr(table, column)
         } |
         "(" ~> expr <~ ")"
@@ -133,47 +141,111 @@ class SqlParser extends StandardTokenParsers {
         ident ~ ("(" ~> repsep(expr, ",") <~ ")") ^^ {
             case funcName ~ args => SqlAggFuncExpr(funcName.toUpperCase.nn, args, false, Map(), Nil)
         } |
-        ident ~ ("(" ~ ("distinct" | "DISTINCT") ~> expr <~ ")") ^^ {
+        ident ~ ("(" ~ "DISTINCT" ~> expr <~ ")") ^^ {
             case funcName ~ arg =>  SqlAggFuncExpr(funcName.toUpperCase.nn, arg :: Nil, true, Map(), Nil)
         }
 
     def over: Parser[(List[SqlExpr], List[SqlOrderBy])] =
-        "(" ~> ("partition" | "PARTITION") ~> ("by" | "BY") ~> rep1sep(expr, ",") ~ opt(("order" | "ORDER") ~> ("by" | "BY") ~> rep1sep(orderBy, ",")) <~ ")" ^^ {
+        "(" ~> "PARTITION" ~> "BY" ~> rep1sep(expr, ",") ~ opt("ORDER" ~> "BY" ~> rep1sep(orderBy, ",")) <~ ")" ^^ {
             case partition ~ order => (partition, order.getOrElse(Nil))
         } |
-        "(" ~> ("order" | "ORDER") ~> ("by" | "BY") ~> rep1sep(orderBy, ",") <~ ")" ^^ {
+        "(" ~> "ORDER" ~> "BY" ~> rep1sep(orderBy, ",") <~ ")" ^^ {
             case order => (Nil, order)
         }
 
     def windownFunction: Parser[SqlExpr] =
-        aggFunction ~ ("over" | "OVER") ~ over ^^ {
+        aggFunction ~ "OVER" ~ over ^^ {
             case agg ~ _ ~ o => SqlOverExpr(agg, o._1, o._2, None)
         }
 
     def orderBy: Parser[SqlOrderBy] =
-        expr ~ opt(("asc" | "ASC") | ("desc" | "DESC")) ^^ {
-            case e ~ (Some("desc") | Some("DESC")) => SqlOrderBy(e, SqlOrderByOption.Desc)
+        expr ~ opt("ASC" | "DESC") ^^ {
+            case e ~ Some("DESC") => SqlOrderBy(e, SqlOrderByOption.Desc)
             case e ~ _ => SqlOrderBy(e, SqlOrderByOption.Asc)
         }
 
     def cast: Parser[SqlExpr] =
-        ("cast" | "CAST") ~> ("(" ~> expr ~ ("as" | "AS") ~ ident <~ ")") ^^ {
+        "CAST" ~> ("(" ~> expr ~ "AS" ~ ident <~ ")") ^^ {
             case expr ~ _ ~ castType => SqlCastExpr(expr, castType.toUpperCase.nn)
         }
 
     def caseWhen: Parser[SqlExpr] = 
-        ("case" | "CASE") ~>
-            rep1(("when" | "WHEN") ~> expr ~ ("then" | "THEN") ~ expr ^^ { case e ~ _ ~ te => SqlCase(e, te) }) ~ 
-            opt(("else" | "ELSE") ~> expr) <~ ("end" | "END") ^^ {
+        "CASE" ~>
+            rep1("WHEN" ~> expr ~ "THEN" ~ expr ^^ { case e ~ _ ~ te => SqlCase(e, te) }) ~ 
+            opt("ELSE" ~> expr) <~ "END" ^^ {
                 case branches ~ default => SqlCaseExpr(branches, default.getOrElse(SqlNullExpr))
             }
     
     def literal: Parser[SqlExpr] = 
         numericLit ^^ (i => SqlNumberExpr(BigDecimal(i))) |
         stringLit ^^ (xs => SqlCharExpr(xs)) |
-        ("true" | "TRUE") ^^ (_ => SqlBooleanExpr(true)) |
-        ("false" | "FALSE") ^^ (_ => SqlBooleanExpr(false)) |
-        ("null" | "NULL") ^^ (_ => SqlNullExpr)
+        "TRUE" ^^ (_ => SqlBooleanExpr(true)) |
+        "FALSE" ^^ (_ => SqlBooleanExpr(false)) |
+        "NULL" ^^ (_ => SqlNullExpr)
+
+    def select: Parser[SqlQueryExpr] =
+        "SELECT" ~> opt("DISTINCT") ~ selectItems ~ opt(from) ~ opt(where) ~ opt(groupBy) ~ opt(selectOrderBy) ~ opt(limit) ^^ {
+            case distinct ~ s ~ f ~ w ~ g ~ o ~ l => {
+                SqlQueryExpr(
+                    SqlSelect(distinct.isDefined, s, f, w, g.map(_._1).getOrElse(Nil), o.getOrElse(Nil), false, l, g.map(_._2).getOrElse(None))
+                )
+            }
+        }
+
+    def selectItems: Parser[List[SqlSelectItem]] =
+        rep1sep(selectItem, ",")
+
+    def selectItem: Parser[SqlSelectItem] =
+        "*" ^^ (_ => SqlSelectItem(SqlAllColumnExpr(None), None)) |
+        ident ~ "." ~ "*" ^^ { 
+            case e ~ _ ~ _ => SqlSelectItem(SqlAllColumnExpr(Some(e)), None) 
+        } |
+        expr ~ opt(opt("AS") ~> ident) ^^ {
+            case expr ~ alias => SqlSelectItem(expr, alias)
+        }
+
+    def simpleTable: Parser[SqlTable] =
+        ident ~ opt(opt("AS") ~> ident) ^^ {
+            case table ~ alias => SqlIdentTable(table, alias)
+        } |
+        opt("LATERAL") ~ ("(" ~> select <~ ")") ~ opt(opt("AS") ~> ident) ^^ {
+            case lateral ~ s ~ alias => SqlSubQueryTable(s.query, lateral.isDefined, alias)
+        }
+
+    def joinType: Parser[SqlJoinType] =
+        "LEFT" ~ opt("OUTER") ^^ (_ => SqlJoinType.LeftJoin) |
+        "RIGHT" ~ opt("OUTER") ^^ (_ => SqlJoinType.RightJoin) |
+        "FULL" ~ opt("OUTER") ^^ (_ => SqlJoinType.FullJoin) |
+        "CROSS" ^^ (_ => SqlJoinType.CrossJoin) |
+        "INNER" ^^ (_ => SqlJoinType.InnerJoin)
+
+    def table: Parser[SqlTable] =
+        simpleTable ~ rep(opt(joinType) ~ "JOIN" ~ simpleTable ~ opt("ON" ~> expr) ^^ {
+            case t ~ _ ~ table ~ on => (t.getOrElse(SqlJoinType.Join), table, on)
+        }) ^^ {
+            case table ~ joinTables => joinTables.foldLeft(table) {
+                case (l, r) => SqlJoinTable(l, r._1, r._2, r._3)
+            }
+        }
+
+    def from: Parser[SqlTable] =
+        "FROM" ~> table
+
+    def where: Parser[SqlExpr] =
+        "WHERE" ~> expr
+
+    def groupBy: Parser[(List[SqlExpr], Option[SqlExpr])] =
+        "GROUP" ~> "BY" ~> rep1sep(expr, ",") ~ opt("HAVING" ~> expr) ^^ {
+            case g ~ h => (g, h)
+        }
+
+    def selectOrderBy: Parser[List[SqlOrderBy]] =
+        "ORDER" ~> "BY" ~> rep1sep(orderBy, ",")
+
+    def limit: Parser[SqlLimit] =
+        "LIMIT" ~ numericLit ~ opt("OFFSET" ~> numericLit) ^^ {
+            case _ ~ limit ~ offset => SqlLimit(limit.toInt, offset.map(_.toInt).getOrElse(0))
+        }
 
     def parse(text: String): SqlExpr = {
         phrase(expr)(new lexical.Scanner(text)) match {
