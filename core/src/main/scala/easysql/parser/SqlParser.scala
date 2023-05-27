@@ -146,11 +146,11 @@ class SqlParser extends StandardTokenParsers {
         }
 
     def over: Parser[(List[SqlExpr], List[SqlOrderBy])] =
-        "(" ~> "PARTITION" ~> "BY" ~> rep1sep(expr, ",") ~ opt("ORDER" ~> "BY" ~> rep1sep(orderBy, ",")) <~ ")" ^^ {
+        "(" ~> "PARTITION" ~> "BY" ~> rep1sep(expr, ",") ~ opt("ORDER" ~> "BY" ~> rep1sep(order, ",")) <~ ")" ^^ {
             case partition ~ order => (partition, order.getOrElse(Nil))
         } |
-        "(" ~> "ORDER" ~> "BY" ~> rep1sep(orderBy, ",") <~ ")" ^^ {
-            case order => (Nil, order)
+        "(" ~> "ORDER" ~> "BY" ~> rep1sep(order, ",") <~ ")" ^^ {
+            case o => (Nil, o)
         }
 
     def windownFunction: Parser[SqlExpr] =
@@ -158,7 +158,7 @@ class SqlParser extends StandardTokenParsers {
             case agg ~ _ ~ o => SqlOverExpr(agg, o._1, o._2, None)
         }
 
-    def orderBy: Parser[SqlOrderBy] =
+    def order: Parser[SqlOrderBy] =
         expr ~ opt("ASC" | "DESC") ^^ {
             case e ~ Some("DESC") => SqlOrderBy(e, SqlOrderByOption.Desc)
             case e ~ _ => SqlOrderBy(e, SqlOrderByOption.Asc)
@@ -207,7 +207,7 @@ class SqlParser extends StandardTokenParsers {
         }
 
     def select: Parser[SqlQueryExpr] =
-        "SELECT" ~> opt("DISTINCT") ~ selectItems ~ opt(from) ~ opt(where) ~ opt(groupBy) ~ opt(selectOrderBy) ~ opt(limit) ^^ {
+        "SELECT" ~> opt("DISTINCT") ~ selectItems ~ opt(from) ~ opt(where) ~ opt(groupBy) ~ opt(orderBy) ~ opt(limit) ^^ {
             case distinct ~ s ~ f ~ w ~ g ~ o ~ l => {
                 SqlQueryExpr(
                     SqlSelect(distinct.isDefined, s, f, w, g.map(_._1).getOrElse(Nil), o.getOrElse(Nil), false, l, g.map(_._2).getOrElse(None))
@@ -262,8 +262,8 @@ class SqlParser extends StandardTokenParsers {
             case g ~ h => (g, h)
         }
 
-    def selectOrderBy: Parser[List[SqlOrderBy]] =
-        "ORDER" ~> "BY" ~> rep1sep(orderBy, ",")
+    def orderBy: Parser[List[SqlOrderBy]] =
+        "ORDER" ~> "BY" ~> rep1sep(order, ",")
 
     def limit: Parser[SqlLimit] =
         "LIMIT" ~ numericLit ~ opt("OFFSET" ~> numericLit) ^^ {
