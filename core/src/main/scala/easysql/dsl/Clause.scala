@@ -31,13 +31,13 @@ def exists[T <: SqlDataType](query: Select[Tuple1[T], _]): FuncExpr[Boolean] =
 def notExists[T <: SqlDataType](query: Select[Tuple1[T], _]): FuncExpr[Boolean] = 
     FuncExpr("NOT EXISTS", List(SubQueryExpr(query)))
 
-def all[T <: SqlDataType](query: Select[Tuple1[T], _]): FuncExpr[Boolean] = 
+def all[T <: SqlDataType](query: Select[Tuple1[T], _]): FuncExpr[T] = 
     FuncExpr("ALL", List(SubQueryExpr(query)))
 
-def any[T <: SqlDataType](query: Select[Tuple1[T], _]): FuncExpr[Boolean] = 
+def any[T <: SqlDataType](query: Select[Tuple1[T], _]): FuncExpr[T] = 
     FuncExpr("ANY", List(SubQueryExpr(query)))
 
-def some[T <: SqlDataType](query: Select[Tuple1[T], _]): FuncExpr[Boolean] = 
+def some[T <: SqlDataType](query: Select[Tuple1[T], _]): FuncExpr[T] = 
     FuncExpr("SOME", List(SubQueryExpr(query)))
 
 def cast[T <: SqlDataType](expr: Expr[_], castType: String): CastExpr[T] = 

@@ -79,6 +79,9 @@ class SqlParser extends StandardTokenParsers {
             opt("NOT") ~ "BETWEEN" ~ add ~ "AND" ~ add ^^ { 
                 case n ~ op ~ start ~ _ ~ end => (n.isDefined, "between", start, end)
             } |
+            opt("NOT") ~ "IN" ~ "(" ~ select ~ ")" ^^ { 
+                case n ~ op ~ _ ~ in ~ _ => (n.isDefined, "in", in)
+            } |
             opt("NOT") ~ "IN" ~ "(" ~ rep1sep(expr, ",") ~ ")" ^^ { 
                 case n ~ op ~ _ ~ in ~ _ => (n.isDefined, "in", in)
             } |
@@ -97,6 +100,7 @@ class SqlParser extends StandardTokenParsers {
                 case (acc, (false, "is", _)) => SqlBinaryExpr(acc, SqlBinaryOperator.Is, SqlNullExpr)
                 case (acc, (true, "is", _)) => SqlBinaryExpr(acc, SqlBinaryOperator.IsNot, SqlNullExpr)
                 case (acc, (not: Boolean, "between", l: SqlExpr, r: SqlExpr)) => SqlBetweenExpr(acc, l, r, not)
+                case (acc, (not: Boolean, "in", in: SqlQueryExpr)) => SqlInExpr(acc, in, not)
                 case (acc, (not: Boolean, "in", in: List[_])) => SqlInExpr(acc, SqlListExpr(in.asInstanceOf[List[SqlExpr]]), not)
                 case (acc, (false, "like", expr: SqlExpr)) => SqlBinaryExpr(acc, SqlBinaryOperator.Like, expr)
                 case (acc, (true, "like", expr: SqlExpr)) => SqlBinaryExpr(acc, SqlBinaryOperator.NotLike, expr)
