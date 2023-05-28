@@ -256,7 +256,7 @@ trait SqlPrinter(val prepare: Boolean) {
                     sqlBuilder.append("?")
                     args.append(bool)
                 } else {
-                    sqlBuilder.append(bool.toString)
+                    sqlBuilder.append(bool.toString.toUpperCase.nn)
                 }
             }
 
