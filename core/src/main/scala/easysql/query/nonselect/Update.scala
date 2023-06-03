@@ -4,10 +4,8 @@ import easysql.ast.SqlDataType
 import easysql.ast.expr.*
 import easysql.ast.statement.{SqlStatement, SqlUpdate}
 import easysql.ast.table.SqlIdentTable
-import easysql.database.DB
 import easysql.dsl.*
 import easysql.macros.*
-import easysql.query.ToSql
 import easysql.util.*
 
 class Update(private val ast: SqlUpdate) extends NonSelect {

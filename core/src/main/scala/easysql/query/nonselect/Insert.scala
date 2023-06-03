@@ -4,10 +4,8 @@ import easysql.ast.SqlDataType
 import easysql.ast.expr.*
 import easysql.ast.statement.{SqlInsert, SqlStatement}
 import easysql.ast.table.*
-import easysql.database.DB
 import easysql.dsl.*
 import easysql.macros.*
-import easysql.query.ToSql
 import easysql.query.select.*
 import easysql.util.*
 

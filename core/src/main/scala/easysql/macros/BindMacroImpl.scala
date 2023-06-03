@@ -1,10 +1,7 @@
 package easysql.macros
 
-import easysql.ast.SqlDataType
 import easysql.dsl.CustomSerializer
 
-import java.sql.ResultSet
-import java.util.Date
 import scala.quoted.*
 
 def entityOffsetMacro[T](using q: Quotes, tpe: Type[T]): Expr[Int] = {

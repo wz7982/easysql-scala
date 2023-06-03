@@ -2,11 +2,9 @@ package easysql.macros
 
 import easysql.util.*
 import easysql.dsl.*
-
-import scala.annotation.experimental
-import scala.collection.mutable.ListBuffer
-import scala.quoted.{Expr, Quotes, Type}
 import easysql.ast.SqlDataType
+
+import scala.quoted.{Expr, Quotes, Type}
 
 def fetchTableNameMacro[T <: Product](using quotes: Quotes, tpe: Type[T]): Expr[String] = {
     import quotes.reflect.*
@@ -27,7 +25,6 @@ def exprMetaMacro[T](name: Expr[String])(using q: Quotes, t: Type[T]): Expr[Stri
     import q.reflect.*
 
     val sym = TypeTree.of[T].symbol
-    val eles = sym.declaredFields.map(_.name)
     val ele = sym.declaredField(name.value.get)
     var eleTag = "column"
 

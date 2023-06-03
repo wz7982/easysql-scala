@@ -4,7 +4,6 @@ import easysql.ast.SqlDataType
 import easysql.dsl.CustomSerializer
 import easysql.util.*
 
-import scala.annotation.experimental
 import scala.collection.mutable.*
 import scala.quoted.{Expr, Quotes, Type}
 

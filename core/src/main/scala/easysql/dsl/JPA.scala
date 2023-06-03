@@ -5,7 +5,6 @@ import easysql.macros.columnsMeta
 import easysql.query.select.Select
 
 import scala.collection.BufferedIterator
-import scala.collection.mutable.ListBuffer
 import scala.deriving.*
 import scala.language.dynamics
 
