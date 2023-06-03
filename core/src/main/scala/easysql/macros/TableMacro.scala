@@ -1,7 +1,5 @@
 package easysql.macros
 
-import easysql.dsl.*
-
 inline def fetchTableName[T <: Product]: String = 
     ${ fetchTableNameMacro[T] }
 

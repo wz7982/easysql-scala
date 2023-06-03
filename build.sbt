@@ -5,6 +5,7 @@ lazy val commonSettings = Seq(
     version := "1.0.0",
     scalaVersion := "3.3.0",
     scalacOptions += "-Yexplicit-nulls",
+    scalacOptions += "-Wunused:all",
     libraryDependencies += "org.scala-lang.modules" %% "scala-parser-combinators" % "2.3.0"
 )
 

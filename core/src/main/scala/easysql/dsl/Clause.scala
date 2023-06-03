@@ -2,15 +2,12 @@ package easysql.dsl
 
 import easysql.ast.SqlDataType
 import easysql.ast.expr.SqlBinaryOperator
-import easysql.ast.expr.SqlOverBetween
 import easysql.ast.expr.SqlOverBetweenType
 import easysql.ast.expr.SqlNumberExpr
-import easysql.database.DB
 import easysql.macros.*
 import easysql.printer.*
 import easysql.query.nonselect.*
 import easysql.query.select.*
-import easysql.util.*
 import easysql.parser.SqlParser
 
 import scala.annotation.{experimental, targetName}

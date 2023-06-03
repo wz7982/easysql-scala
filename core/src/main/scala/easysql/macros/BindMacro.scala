@@ -1,8 +1,6 @@
 package easysql.macros
 
-import java.util.Date
 import scala.compiletime.erasedValue
-import scala.deriving.*
 import scala.language.unsafeNulls
 
 inline def entityOffset[T]: Int =

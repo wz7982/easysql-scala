@@ -4,8 +4,6 @@ import easysql.ast.table.*
 import easysql.macros.*
 import easysql.ast.SqlDataType
 
-import java.util.Date
-
 sealed trait AnyTable {
     infix def join(table: AnyTable): JoinTable = 
         JoinTable(this, SqlJoinType.Join, table, None)
