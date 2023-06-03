@@ -4,7 +4,7 @@ import easysql.ast.expr.*
 import easysql.ast.statement.*
 import easysql.database.DB
 import easysql.query.ToSql
-import easysql.util.statementToString
+import easysql.util.queryToString
 
 class With[T <: Tuple](
     private val ast: SqlWith
@@ -34,10 +34,10 @@ object With {
     given withToSql[T <: Tuple]: ToSql[With[T]] with {
         extension (q: With[T]) {
             def sql(db: DB): String =
-                statementToString(q.ast, db, false)._1
+                queryToString(q.ast, db, false)._1
             
             def preparedSql(db: DB): (String, Array[Any]) =
-                statementToString(q.ast, db, true)
+                queryToString(q.ast, db, true)
         }
     }
 }

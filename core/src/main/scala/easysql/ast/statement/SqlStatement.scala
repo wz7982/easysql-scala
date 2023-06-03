@@ -38,8 +38,6 @@ case class SqlUpsert(
     updateList: List[SqlExpr]
 ) extends SqlStatement
 
-case class SqlWith(withList: List[SqlWithItem], recursive: Boolean, query: Option[SqlQuery]) extends SqlStatement
-
 sealed trait SqlQuery
 
 case class SqlSelect(
@@ -93,3 +91,5 @@ case class SqlSelect(
 case class SqlUnion(left: SqlQuery, unionType: SqlUnionType, right: SqlQuery) extends SqlQuery
 
 case class SqlValues(values: List[List[SqlExpr]]) extends SqlQuery
+
+case class SqlWith(withList: List[SqlWithItem], recursive: Boolean, query: Option[SqlQuery]) extends SqlQuery

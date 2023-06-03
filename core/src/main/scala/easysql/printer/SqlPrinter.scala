@@ -31,7 +31,6 @@ trait SqlPrinter(val prepare: Boolean) {
             case delete: SqlDelete => printDelete(delete)
             case upsert: SqlUpsert => printUpsert(upsert)
             case truncate: SqlTruncate => printTruncate(truncate)
-            case cte: SqlWith => printWith(cte)
         }
     }
 
@@ -108,6 +107,7 @@ trait SqlPrinter(val prepare: Boolean) {
                 sqlBuilder.append(")")
             }
             case values: SqlValues => printValues(values)
+            case cte: SqlWith => printWith(cte)
         }
     }
 
