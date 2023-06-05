@@ -127,7 +127,7 @@ trait DBOperator[D, F[_] : DBMonad] {
             t <- totalPage
             c <- count
             d <- data
-        } yield Page(t, c, d)
+        } yield Page(t, c, pageNumber, pageSize, d)
     }
 
     def fetchCountMonad(x: D, query: Select[_, _])(using logger: Logger): F[Long] = {
