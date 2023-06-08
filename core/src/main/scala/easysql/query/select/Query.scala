@@ -1,7 +1,6 @@
 package easysql.query.select
 
 import easysql.ast.statement.SqlQuery
-import easysql.ast.table.SqlTable
 import easysql.ast.statement.SqlUnionType
 import easysql.ast.SqlDataType
 import easysql.dsl.*

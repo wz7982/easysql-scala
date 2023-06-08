@@ -1,11 +1,6 @@
 package easysql.query.select
 
 import easysql.ast.statement.{SqlQuery, SqlUnion, SqlUnionType}
-import easysql.ast.table.SqlTable
-import easysql.database.DB
-import easysql.dsl.{NonEmpty, TableSchema}
-import easysql.query.ToSql
-import easysql.util.queryToString
 
 class Union[T <: Tuple, A <: Tuple](
     private val selectItems: Map[String, String], 

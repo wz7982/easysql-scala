@@ -9,7 +9,6 @@ import easysql.dsl.*
 import easysql.printer.*
 
 import java.util.Date
-import easysql.parser.SqlParser
 
 def fetchPrinter(db: DB, prepare: Boolean): SqlPrinter = db match {
     case DB.MYSQL => new MysqlPrinter(prepare)
