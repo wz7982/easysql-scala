@@ -1,7 +1,7 @@
 package easysql.query.select
 
 import easysql.ast.SqlDataType
-import easysql.ast.statement.{SqlQuery, SqlValues}
+import easysql.ast.statement.SqlValues
 import easysql.dsl.*
 import easysql.util.exprToSqlExpr
 

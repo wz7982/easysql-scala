@@ -4,10 +4,8 @@ import easysql.ast.SqlDataType
 import easysql.ast.expr.*
 import easysql.ast.statement.{SqlDelete, SqlStatement}
 import easysql.ast.table.*
-import easysql.database.DB
 import easysql.dsl.*
 import easysql.macros.*
-import easysql.query.ToSql
 import easysql.util.*
 
 class Delete(private val ast: SqlDelete) extends NonSelect {
@@ -19,7 +17,6 @@ class Delete(private val ast: SqlDelete) extends NonSelect {
 
     inline def delete[T <: Product](pk: SqlDataType | Tuple): Delete = {
         val (tableName, cols) = fetchPk[T, pk.type]
-        val table = Some(SqlIdentTable(tableName, None))
 
         val conditions = inline pk match {
             case t: Tuple => t.toArray.toList.zip(cols).map { (p, c) =>

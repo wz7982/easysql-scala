@@ -1,9 +1,8 @@
 package easysql.printer
 
 import easysql.ast.expr.*
-import easysql.ast.limit.SqlLimit
 import easysql.ast.order.SqlOrderByOption
-import easysql.ast.statement.{SqlSelect, SqlSelectItem}
+import easysql.ast.statement.SqlSelect
 import easysql.ast.table.SqlIdentTable
 
 import scala.collection.mutable

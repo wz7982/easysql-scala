@@ -9,7 +9,6 @@ import easysql.ast.limit.SqlLimit
 import scala.util.parsing.combinator.syntactical.StandardTokenParsers
 import scala.util.parsing.combinator.lexical.StdLexical
 import scala.util.parsing.input.CharArrayReader.EofCh
-import scala.util.matching.Regex
 
 class SqlParser extends StandardTokenParsers {
     class SqlLexical extends StdLexical {

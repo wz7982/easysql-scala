@@ -7,7 +7,7 @@ import easysql.ast.statement.*
 import easysql.ast.table.*
 import easysql.database.DB
 import easysql.dsl.*
-import easysql.query.{ToCountSql, ToPageSql, ToSql}
+import easysql.query.{ToCountSql, ToPageSql}
 import easysql.util.*
 
 import scala.Tuple.Concat
