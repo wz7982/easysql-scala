@@ -74,25 +74,6 @@ def exprToSqlExpr(expr: Expr[_]): SqlExpr = expr match {
         expr
 }
 
-def parseIdent(column: String): SqlExpr = {
-    import scala.language.unsafeNulls
-
-    if (column.contains(".")) {
-        val split = column.split("\\.")
-        if (split.last.contains("*")) {
-            SqlAllColumnExpr(Some(split(0)))
-        } else {
-            SqlPropertyExpr(split(0), split.last)
-        }
-    } else {
-        if (column.contains("*")) {
-            SqlAllColumnExpr(None)
-        } else {
-            SqlIdentExpr(column)
-        }
-    }
-}
-
 def aggExprToSqlExpr(agg: AggExpr[_]): SqlAggFuncExpr = agg match {
     case AggExpr(name, args, distinct, attrs, orderBy) =>
         SqlAggFuncExpr(
