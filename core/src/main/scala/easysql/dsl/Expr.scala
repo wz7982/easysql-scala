@@ -7,7 +7,6 @@ import easysql.query.select.*
 
 import java.util.Date
 import scala.annotation.targetName
-import easysql.ast.expr.SqlExpr
 
 sealed trait Expr[T <: SqlDataType] {
     @targetName("eq")
