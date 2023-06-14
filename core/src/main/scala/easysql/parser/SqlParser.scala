@@ -48,7 +48,7 @@ class SqlParser extends StandardTokenParsers {
         "BETWEEN", "IN", "LIKE", "IS",
         "SELECT", "FROM", "WHERE", "GROUP", "HAVING", "LIMIT", "OFFSET",
         "JOIN", "OUTER", "INNER", "LEFT", "RIGHT", "FULL", "CROSS", "ON", "LATERAL",
-        "UNION", "EXCEPT", "INTERSECT", "ALL"
+        "UNION", "EXCEPT", "INTERSECT", "ALL", "COUNT", "SUM", "AVG", "MAX", "MIN"
     )
 
     lexical.delimiters += (
@@ -139,9 +139,12 @@ class SqlParser extends StandardTokenParsers {
             case funcName ~ args => SqlExprFuncExpr(funcName.toUpperCase.nn, args)
         }
 
+    def aggFunc: Parser[String] = 
+        ("COUNT" | "SUM" | "AVG" | "MAX" | "MIN")
+
     def aggFunction: Parser[SqlAggFuncExpr] =
-        ("count" | "COUNT") ~ "(" ~ "*" ~ ")" ^^ (_ => SqlAggFuncExpr("COUNT", SqlAllColumnExpr(None) :: Nil, false, Map(), Nil)) |
-        ident ~ ("(" ~> repsep(expr, ",") <~ ")") ^^ {
+        "COUNT" ~ "(" ~ "*" ~ ")" ^^ (_ => SqlAggFuncExpr("COUNT", SqlAllColumnExpr(None) :: Nil, false, Map(), Nil)) |
+        aggFunc ~ ("(" ~> repsep(expr, ",") <~ ")") ^^ {
             case funcName ~ args => SqlAggFuncExpr(funcName.toUpperCase.nn, args, false, Map(), Nil)
         } |
         ident ~ ("(" ~ "DISTINCT" ~> expr <~ ")") ^^ {
