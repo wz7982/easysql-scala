@@ -41,7 +41,7 @@ case class SqlUpsert(
 sealed trait SqlQuery
 
 case class SqlSelect(
-    distinct: Boolean,
+    param: Option[String],
     select: List[SqlSelectItem],
     from: Option[SqlTable],
     where: Option[SqlExpr],

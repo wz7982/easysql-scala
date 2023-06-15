@@ -103,7 +103,10 @@ class Select[T <: Tuple, A <: Tuple](
     }
 
     def distinct: Select[T, A] =
-        new Select(ast.copy(distinct = true), selectItems, joinLeft)
+        new Select(ast.copy(param = Some("DISTINCT")), selectItems, joinLeft)
+
+    def param(p: String): Select[T, A] =
+        new Select(ast.copy(param = Some(p)), selectItems, joinLeft)
 
     infix def where(expr: Expr[Boolean]): Select[T, A] =
         new Select(ast.addCondition(exprToSqlExpr(expr)), selectItems, joinLeft)
@@ -251,7 +254,7 @@ class Select[T <: Tuple, A <: Tuple](
 
 object Select {
     def apply(): Select[EmptyTuple, EmptyTuple] =
-        new Select(SqlSelect(false, Nil, None, None, Nil, Nil, false, None, None), Map(), None)
+        new Select(SqlSelect(None, Nil, None, None, Nil, Nil, false, None, None), Map(), None)
 
     given selectToCountSql: ToCountSql[Select[_, _]] with {
         extension (x: Select[_, _]) {
