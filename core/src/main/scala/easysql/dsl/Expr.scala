@@ -155,6 +155,10 @@ case object NullExpr extends Expr[Nothing]
 case class BinaryExpr[T <: SqlDataType](left: Expr[_], op: SqlBinaryOperator, right: Expr[_]) extends Expr[T]
 
 extension (x: BinaryExpr[Boolean]) {
+    @targetName("thenIsNumber")
+    infix def thenIs[R <: SqlNumberType](value: R): CaseBranch[BigDecimal] = 
+        CaseBranch(x, LiteralExpr(value))
+
     infix def thenIs[R <: SqlDataType](value: R): CaseBranch[R] = 
         CaseBranch(x, LiteralExpr(value))
 
@@ -199,6 +203,17 @@ case class CaseExpr[T <: SqlDataType](branches: List[CaseBranch[_]], default: Ex
 
     infix def elseIs(value: Option[T]): CaseExpr[T] =
         copy(default = value.map(LiteralExpr(_)).getOrElse(NullExpr))
+}
+
+extension [T <: SqlNumberType] (e: CaseExpr[BigDecimal]) {
+    infix def elseIs(value: T): CaseExpr[BigDecimal] =
+        e.copy(default = LiteralExpr(value))
+
+    infix def elseIs(value: Expr[T]): CaseExpr[BigDecimal] =
+        e.copy(default = value)
+
+    infix def elseIs(value: Option[T]): CaseExpr[BigDecimal] =
+        e.copy(default = value.map(LiteralExpr(_)).getOrElse(NullExpr))
 }
 
 case class ListExpr[T <: SqlDataType](list: List[Expr[_]]) extends Expr[T]
