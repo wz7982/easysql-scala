@@ -117,9 +117,7 @@ trait SqlPrinter(val prepare: Boolean) {
         if (select.select.isEmpty) {
             sqlBuilder.append("*")
         } else {
-            if (select.distinct) {
-                sqlBuilder.append("DISTINCT ")
-            }
+            select.param.foreach(p => sqlBuilder.append(p + " "))
 
             printList(select.select)(printSelectItem)
         }

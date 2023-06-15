@@ -215,8 +215,11 @@ class SqlParser extends StandardTokenParsers {
     def select: Parser[SqlQueryExpr] =
         "SELECT" ~> opt("DISTINCT") ~ selectItems ~ opt(from) ~ opt(where) ~ opt(groupBy) ~ opt(orderBy) ~ opt(limit) ^^ {
             case distinct ~ s ~ f ~ w ~ g ~ o ~ l => {
+                val param = 
+                    if distinct.isDefined then Some("DISTINCT")
+                    else None
                 SqlQueryExpr(
-                    SqlSelect(distinct.isDefined, s, f, w, g.map(_._1).getOrElse(Nil), o.getOrElse(Nil), false, l, g.map(_._2).getOrElse(None))
+                    SqlSelect(param, s, f, w, g.map(_._1).getOrElse(Nil), o.getOrElse(Nil), false, l, g.map(_._2).getOrElse(None))
                 )
             }
         }
