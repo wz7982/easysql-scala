@@ -3,7 +3,7 @@ package easysql.ast.expr
 enum SqlOverBetweenType(val show: String) {
     case CurrentRow extends SqlOverBetweenType("CURRENT ROW")
     case UnboundedPreceding extends SqlOverBetweenType("UNBOUNDED PRECEDING")
-    case Preceding(n: SqlNumberExpr) extends SqlOverBetweenType(s"PRECEDING")
+    case Preceding(n: SqlNumberExpr) extends SqlOverBetweenType("PRECEDING")
     case UnboundedFollowing extends SqlOverBetweenType("UNBOUNDED FOLLOWING")
     case Following(n: SqlNumberExpr) extends SqlOverBetweenType("FOLLOWING")
 }
