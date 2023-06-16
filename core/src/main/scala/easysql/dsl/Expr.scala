@@ -218,9 +218,9 @@ extension [T <: SqlNumberType] (e: CaseExpr[BigDecimal]) {
 
 case class ListExpr[T <: SqlDataType](list: List[Expr[_]]) extends Expr[T]
 
-case class InExpr[T <: SqlDataType](expr: Expr[_], inExpr: Expr[_], not: Boolean) extends Expr[Boolean]
+case class InExpr(expr: Expr[_], inExpr: Expr[_], not: Boolean) extends Expr[Boolean]
 
-case class BetweenExpr[T <: SqlDataType](expr: Expr[_], start: Expr[_], end: Expr[_], not: Boolean) extends Expr[Boolean]
+case class BetweenExpr(expr: Expr[_], start: Expr[_], end: Expr[_], not: Boolean) extends Expr[Boolean]
 
 case class AllColumnExpr(owner: Option[String]) extends Expr[Nothing]
 
