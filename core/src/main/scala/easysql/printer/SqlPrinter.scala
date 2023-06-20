@@ -114,11 +114,11 @@ trait SqlPrinter(val prepare: Boolean) {
     def printSelect(select: SqlSelect): Unit = {
         sqlBuilder.append("SELECT ")
 
+        select.param.foreach(p => sqlBuilder.append(p + " "))
+
         if (select.select.isEmpty) {
             sqlBuilder.append("*")
         } else {
-            select.param.foreach(p => sqlBuilder.append(p + " "))
-
             printList(select.select)(printSelectItem)
         }
 
