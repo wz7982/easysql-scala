@@ -36,11 +36,8 @@ class Select[T <: Tuple, A <: Tuple](
         new Select(ast.copy(from = Some(fromTable)), selectItems, Some(fromTable))
     }
 
-    infix def fromLateral(table: AliasQuery[_, _])(using inWithQuery: InWithQuery = NotIn): Select[T, A] = {
-        val fromTable = 
-            if inWithQuery == In 
-            then SqlIdentTable(table.__queryName, None)
-            else SqlSubQueryTable(table.__ast, true, Some(table.__queryName))
+    infix def fromLateral(table: AliasQuery[_, _]): Select[T, A] = {
+        val fromTable = SqlSubQueryTable(table.__ast, true, Some(table.__queryName))
         new Select(ast.copy(from = Some(fromTable)), selectItems, Some(fromTable))
     }
 
@@ -154,7 +151,7 @@ class Select[T <: Tuple, A <: Tuple](
 
     private def joinClause(table: AliasQuery[_, _], joinType: SqlJoinType, lateral: Boolean)(using inWithQuery: InWithQuery = NotIn): Select[T, A] = {
         val joinTable = 
-            if inWithQuery == In 
+            if inWithQuery == In && !lateral
             then SqlIdentTable(table.__queryName, None)
             else SqlSubQueryTable(table.__ast, lateral, Some(table.__queryName))
 
@@ -200,7 +197,7 @@ class Select[T <: Tuple, A <: Tuple](
         case t: JoinTable => joinClause(t, SqlJoinType.Join)
     }
 
-    infix def joinLateral(table: AliasQuery[_, _])(using inWithQuery: InWithQuery = NotIn): Select[T, A] =
+    infix def joinLateral(table: AliasQuery[_, _]): Select[T, A] =
         joinClause(table, SqlJoinType.Join, true)
 
     infix def leftJoin(table: TableSchema[_] | AliasQuery[_, _] | JoinTable)(using inWithQuery: InWithQuery = NotIn): Select[T, A] = table match {
@@ -209,7 +206,7 @@ class Select[T <: Tuple, A <: Tuple](
         case t: JoinTable => joinClause(t, SqlJoinType.LeftJoin)
     }
 
-    infix def leftJoinLateral(table: AliasQuery[_, _])(using inWithQuery: InWithQuery = NotIn): Select[T, A] =
+    infix def leftJoinLateral(table: AliasQuery[_, _]): Select[T, A] =
         joinClause(table, SqlJoinType.LeftJoin, true)
 
     infix def rightJoin(table: TableSchema[_] | AliasQuery[_, _] | JoinTable)(using inWithQuery: InWithQuery = NotIn): Select[T, A] = table match {
@@ -218,7 +215,7 @@ class Select[T <: Tuple, A <: Tuple](
         case t: JoinTable => joinClause(t, SqlJoinType.RightJoin)
     }
 
-    infix def rightJoinLateral(table: AliasQuery[_, _])(using inWithQuery: InWithQuery = NotIn): Select[T, A] =
+    infix def rightJoinLateral(table: AliasQuery[_, _]): Select[T, A] =
         joinClause(table, SqlJoinType.RightJoin, true)
 
     infix def innerJoin(table: TableSchema[_] | AliasQuery[_, _] | JoinTable)(using inWithQuery: InWithQuery = NotIn): Select[T, A] = table match {
@@ -227,7 +224,7 @@ class Select[T <: Tuple, A <: Tuple](
         case t: JoinTable => joinClause(t, SqlJoinType.InnerJoin)
     }
 
-    infix def innerJoinLateral(table: AliasQuery[_, _])(using inWithQuery: InWithQuery = NotIn): Select[T, A] =
+    infix def innerJoinLateral(table: AliasQuery[_, _]): Select[T, A] =
         joinClause(table, SqlJoinType.InnerJoin, true)
 
     infix def crossJoin(table: TableSchema[_] | AliasQuery[_, _] | JoinTable)(using inWithQuery: InWithQuery = NotIn): Select[T, A] = table match {
@@ -236,7 +233,7 @@ class Select[T <: Tuple, A <: Tuple](
         case t: JoinTable => joinClause(t, SqlJoinType.CrossJoin)
     }
 
-    infix def crossJoinLateral(table: AliasQuery[_, _])(using inWithQuery: InWithQuery = NotIn): Select[T, A] =
+    infix def crossJoinLateral(table: AliasQuery[_, _]): Select[T, A] =
         joinClause(table, SqlJoinType.CrossJoin, true)
 
     infix def fullJoin(table: TableSchema[_] | AliasQuery[_, _] | JoinTable)(using inWithQuery: InWithQuery = NotIn): Select[T, A] = table match {
