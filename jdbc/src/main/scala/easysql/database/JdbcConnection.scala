@@ -2,8 +2,6 @@ package easysql.database
 
 import easysql.dsl.*
 import easysql.jdbc.*
-import easysql.macros.*
-import easysql.query.ToSql
 import easysql.query.nonselect.*
 import easysql.query.select.*
 
