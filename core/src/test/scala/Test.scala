@@ -1,24 +1,11 @@
 import easysql.dsl.*
-import easysql.query.nonselect.*
 import easysql.query.select.*
 import easysql.database.DB
 import easysql.macros.*
 import easysql.ast.SqlDataType
-import easysql.ast.table.SqlJoinType
-import easysql.util.*
 
 import scala.compiletime.ops.any.*
-import scala.compiletime.ops.int.+
-import java.util.Date
-import scala.annotation.{experimental, tailrec}
-import scala.collection.mutable
-import scala.collection.mutable.ListBuffer
-import scala.reflect.ClassTag
-import java.util.Random
 import java.util.UUID
-import scala.collection.immutable.LazyList.cons
-import scala.math.ScalaNumber
-import scala.util.FromDigits.Decimal
 
 object Test extends App {
     given DB = DB.MYSQL
@@ -70,7 +57,7 @@ object Test extends App {
 //
 //    println(s.toSql)
 
-    val q1 = select (user.id, count() + sum(user.id) as "c1") from user as "q1"
+    val q1 = select (user.id, count() + sum(user.id) as "c1") from user where (user.id > 0 || user.name === "") && true as "q1"
     
     val q2 = select (q1.id, q1.c1) from q1 as "q2"
     
@@ -81,6 +68,14 @@ object Test extends App {
     val q5 = select (q4.c1) from q4
     
     println(q5.toSql)
+
+    val t1 = caseWhen(user.id > 0 thenIs 1, user.id < 0 thenIs 2.1)
+
+    val t2 = user.id > 0 thenIs ""
+
+    
+    val expr: Expr[Int] = user.id
+    val expr1 = user.id > BigDecimal(1)
 }
 
 @Table
