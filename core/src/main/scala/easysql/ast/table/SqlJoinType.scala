@@ -7,4 +7,6 @@ enum SqlJoinType(val joinType: String) {
     case RightJoin extends SqlJoinType("RIGHT JOIN")
     case FullJoin extends SqlJoinType("FULL JOIN")
     case CrossJoin extends SqlJoinType("CROSS JOIN")
+    case SemiJoin extends SqlJoinType("SEMI JOIN")
+    case AntiJoin extends SqlJoinType("ANTI JOIN")
 }
