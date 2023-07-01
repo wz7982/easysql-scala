@@ -18,6 +18,12 @@ def fetchPrinter(db: DB, prepare: Boolean): SqlPrinter = db match {
     case DB.ORACLE => new OraclePrinter(prepare)
 }
 
+def exprToString(expr: SqlExpr, db: DB): String = {
+    val printer = fetchPrinter(db, false)
+    printer.printExpr(expr)
+    printer.sql
+}
+
 def queryToString(query: SqlQuery, db: DB, prepare: Boolean): (String, Array[Any]) = {
     val printer = fetchPrinter(db, prepare)
     printer.printQuery(query)
