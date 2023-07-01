@@ -7,9 +7,10 @@ import easysql.ast.table.*
 import easysql.query.select.Query
 import easysql.database.DB
 import easysql.util.queryToString
+import easysql.ast.order.SqlOrderBy
 
 def createStandardOptimizer: SqlOptimizer = {
-    val removeAggSubQueryClause = new RemoveAggSubQueryClause
+    val removeCountQueryClause = new RemoveCountQueryClause
     val removeSubQueryPredicateClause = new RemoveSubQueryPredicateClause
     val liftSpjSubQuery = new LiftSpjSubQuery
     val simplifyHaving = new SimplifyHaving
@@ -24,7 +25,7 @@ def createStandardOptimizer: SqlOptimizer = {
     val removeUselessJoinTerm = new RemoveUselessJoinTerm
 
     val rules = List(
-        removeAggSubQueryClause, 
+        removeCountQueryClause, 
         removeSubQueryPredicateClause,
         liftSpjSubQuery, 
         simplifyHaving,
@@ -102,4 +103,38 @@ def conjunctiveTermList(expr: SqlExpr): List[SqlExpr] = expr match {
         conjunctiveTermList(left) ++ conjunctiveTermList(right)
     case _ =>
         expr :: Nil
+}
+
+def replaceTableName(expr: SqlExpr, replaceName: String): SqlExpr = expr match {
+    case SqlPropertyExpr(tableName, columnName) =>
+        SqlPropertyExpr(replaceName, columnName)
+    case SqlAllColumnExpr(Some(tableName)) =>
+         SqlAllColumnExpr(Some(replaceName))
+    case SqlBinaryExpr(left, op, right) =>
+        SqlBinaryExpr(replaceTableName(left, replaceName), op, replaceTableName(right, replaceName))
+    case SqlAggFuncExpr(name, args, distinct, attrs, orderBy) => 
+        SqlAggFuncExpr(
+            name, 
+            args.map(replaceTableName(_, replaceName)), 
+            distinct, 
+            attrs.map((k, v) => k -> replaceTableName(v, replaceName)),
+            orderBy.map(o => SqlOrderBy(replaceTableName(o.expr, replaceName) ,o.order))
+        )
+    case SqlBetweenExpr(expr, start, end, not) => 
+        SqlBetweenExpr(replaceTableName(expr, replaceName), replaceTableName(start, replaceName), replaceTableName(end, replaceName), not)
+    case SqlInExpr(expr, inExpr, not) =>
+        SqlInExpr(replaceTableName(expr, replaceName), replaceTableName(inExpr, replaceName), not)
+    case SqlOverExpr(agg, partitionBy, orderBy, between) =>
+        SqlOverExpr(
+            replaceTableName(agg, replaceName).asInstanceOf[SqlAggFuncExpr], 
+            partitionBy.map(replaceTableName(_, replaceName)),
+            orderBy.map(o => SqlOrderBy(replaceTableName(o.expr, replaceName) ,o.order)),
+            between
+        )
+    case SqlListExpr(items) =>
+        SqlListExpr(items.map(replaceTableName(_, replaceName)))
+    case SqlExprFuncExpr(name, args) =>
+        SqlExprFuncExpr(name, args.map(replaceTableName(_, replaceName)))
+    case _ =>
+        expr
 }
