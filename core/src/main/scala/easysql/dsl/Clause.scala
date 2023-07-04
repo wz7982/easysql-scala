@@ -104,7 +104,7 @@ def dynamicSelect(columns: Expr[_]*): Select[EmptyTuple, EmptyTuple] =
 def from[P <: Product](table: TableSchema[P]): Select[Tuple1[P], EmptyTuple] =
     Select().select(table).from(table)
 
-inline def find[T <: Product](pk: SqlDataType | Tuple): Select[Tuple1[T], EmptyTuple] = {
+inline def selectByPk[T <: Product](pk: SqlDataType | Tuple): Select[Tuple1[T], EmptyTuple] = {
     val (_, cols) = fetchPk[T, pk.type]
     val table = asTable[T].asInstanceOf[TableSchema[T]]
     val select = Select().select(table).from(table)
@@ -130,7 +130,7 @@ def cte[T <: Tuple](withQuery: InWithQuery ?=> With[T]) = {
 def commonTable(query: AliasQuery[_, _]*): With[EmptyTuple] =
     With().commonTable(query*)
 
-def query[T <: Product](table: TableSchema[T]): MonadicQuery[Tuple1[T], table.type] =
+def monadicQuery[T <: Product](table: TableSchema[T]): MonadicQuery[Tuple1[T], table.type] =
     MonadicQuery(table)
 
 def insertInto[T <: Tuple](table: TableSchema[_])(columns: T): Insert[InverseMap[T], Nothing] = 
