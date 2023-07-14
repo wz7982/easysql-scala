@@ -40,7 +40,8 @@ class SqlParser extends StandardTokenParsers {
         )
     }
 
-    override val lexical: SqlLexical = new SqlLexical()
+    override val lexical: SqlLexical = 
+        new SqlLexical()
 
     lexical.reserved += (
         "CAST", "AS", "AND", "XOR", "OR", "OVER", "BY", "PARTITION", "ORDER", "DISTINCT", "NOT",
@@ -240,28 +241,33 @@ class SqlParser extends StandardTokenParsers {
         ident ~ opt(opt("AS") ~> ident) ^^ {
             case table ~ alias => SqlIdentTable(table, alias)
         } |
-        opt("LATERAL") ~ ("(" ~> select <~ ")") ~ opt(opt("AS") ~> ident) ^^ {
-            case lateral ~ s ~ alias => SqlSubQueryTable(s.query, lateral.isDefined, alias)
+        opt("LATERAL") ~ ("(" ~> select <~ ")") ~ (opt("AS") ~> ident) ^^ {
+            case lateral ~ s ~ alias => SqlSubQueryTable(s.query, lateral.isDefined, Some(alias))
         }
 
     def joinType: Parser[SqlJoinType] =
-        "LEFT" ~ opt("OUTER") ^^ (_ => SqlJoinType.LeftJoin) |
-        "RIGHT" ~ opt("OUTER") ^^ (_ => SqlJoinType.RightJoin) |
-        "FULL" ~ opt("OUTER") ^^ (_ => SqlJoinType.FullJoin) |
-        "CROSS" ^^ (_ => SqlJoinType.CrossJoin) |
-        "INNER" ^^ (_ => SqlJoinType.InnerJoin)
+        "LEFT" ~ opt("OUTER") ~ "JOIN" ^^ (_ => SqlJoinType.LeftJoin) |
+        "RIGHT" ~ opt("OUTER") ~ "JOIN" ^^ (_ => SqlJoinType.RightJoin) |
+        "FULL" ~ opt("OUTER") ~ "JOIN" ^^ (_ => SqlJoinType.FullJoin) |
+        "CROSS" ~ "JOIN" ^^ (_ => SqlJoinType.CrossJoin) |
+        "INNER" ~ "JOIN" ^^ (_ => SqlJoinType.InnerJoin) |
+        "JOIN" ^^ (_ => SqlJoinType.Join)
 
     def table: Parser[SqlTable] =
-        simpleTable ~ rep(opt(joinType) ~ "JOIN" ~ simpleTable ~ opt("ON" ~> expr) ^^ {
-            case t ~ _ ~ table ~ on => (t.getOrElse(SqlJoinType.Join), table, on)
+        simpleTable |
+        "(" ~> joinTable <~ ")"
+
+    def joinTable: Parser[SqlTable] =
+        table ~ rep(joinType ~ table ~ opt("ON" ~> expr) ^^ {
+            case jt ~ t ~ o => (jt, t, o)
         }) ^^ {
-            case table ~ joinTables => joinTables.foldLeft(table) {
+            case t ~ joins => joins.foldLeft(t) {
                 case (l, r) => SqlJoinTable(l, r._1, r._2, r._3)
             }
         }
 
     def from: Parser[SqlTable] =
-        "FROM" ~> table
+        "FROM" ~> joinTable
 
     def where: Parser[SqlExpr] =
         "WHERE" ~> expr
