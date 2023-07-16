@@ -14,7 +14,7 @@ class MongoPrinter {
 
     def printSelect(s: SqlSelect): Unit = {
         s.from match {
-            case Some(SqlIdentTable(t, None)) => dslBuilder.append(s"db.$t.find(")
+            case SqlIdentTable(t, None) :: Nil => dslBuilder.append(s"db.$t.find(")
             case _ =>
         }
         s.where match {

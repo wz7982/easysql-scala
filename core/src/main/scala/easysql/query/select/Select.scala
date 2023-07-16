@@ -25,7 +25,7 @@ class Select[T <: Tuple, A <: Tuple](
 
     infix def from(table: TableSchema[_]): Select[T, A] = {
         val fromTable = SqlIdentTable(table.__tableName, table.__aliasName)
-        new Select(ast.copy(from = Some(fromTable)), selectItems, Some(fromTable))
+        new Select(ast.copy(from = List(fromTable)), selectItems, Some(fromTable))
     }
 
     infix def from(table: AliasQuery[_, _])(using inWithQuery: InWithQuery = NotIn): Select[T, A] = {
@@ -33,12 +33,12 @@ class Select[T <: Tuple, A <: Tuple](
             if inWithQuery == In
             then SqlIdentTable(table.__queryName, None)
             else SqlSubQueryTable(table.__ast, false, Some(table.__queryName))
-        new Select(ast.copy(from = Some(fromTable)), selectItems, Some(fromTable))
+        new Select(ast.copy(from = List(fromTable)), selectItems, Some(fromTable))
     }
 
     infix def fromLateral(table: AliasQuery[_, _]): Select[T, A] = {
         val fromTable = SqlSubQueryTable(table.__ast, true, Some(table.__queryName))
-        new Select(ast.copy(from = Some(fromTable)), selectItems, Some(fromTable))
+        new Select(ast.copy(from = List(fromTable)), selectItems, Some(fromTable))
     }
 
     infix def select[U <: Tuple](items: U): Select[Concat[T, InverseMap[U]], Concat[A, AliasNames[U]]] = {
@@ -146,7 +146,7 @@ class Select[T <: Tuple, A <: Tuple](
             case Some(value) => SqlJoinTable(value, joinType, joinTable, None)
         }
 
-        new Select(ast.copy(from = Some(fromTable)), selectItems, Some(fromTable))
+        new Select(ast.copy(from = List(fromTable)), selectItems, Some(fromTable))
     }
 
     private def joinClause(table: AliasQuery[_, _], joinType: SqlJoinType, lateral: Boolean)(using inWithQuery: InWithQuery = NotIn): Select[T, A] = {
@@ -160,7 +160,7 @@ class Select[T <: Tuple, A <: Tuple](
             case Some(value) => SqlJoinTable(value, joinType, joinTable, None)
         }
 
-        new Select(ast.copy(from = Some(fromTable)), selectItems, Some(fromTable))
+        new Select(ast.copy(from = List(fromTable)), selectItems, Some(fromTable))
     }
 
     private def joinClause(table: JoinTable, joinType: SqlJoinType): Select[T, A] = {
@@ -179,7 +179,7 @@ class Select[T <: Tuple, A <: Tuple](
             case Some(value) => SqlJoinTable(value, joinType, joinTable, None)
         }
 
-        new Select(ast.copy(from = Some(fromTable)), selectItems, Some(fromTable))
+        new Select(ast.copy(from = List(fromTable)), selectItems, Some(fromTable))
     }
 
     infix def on(expr: Expr[Boolean]): Select[T, A] = {
@@ -188,7 +188,7 @@ class Select[T <: Tuple, A <: Tuple](
             case f => f
         }
 
-        new Select(ast.copy(from = from), selectItems, from)
+        new Select(ast.copy(from = from), selectItems, from.headOption)
     }
 
     infix def join(table: TableSchema[_] | AliasQuery[_, _] | JoinTable)(using inWithQuery: InWithQuery = NotIn): Select[T, A] = table match {
@@ -251,7 +251,7 @@ class Select[T <: Tuple, A <: Tuple](
 
 object Select {
     def apply(): Select[EmptyTuple, EmptyTuple] =
-        new Select(SqlSelect(None, Nil, None, None, Nil, Nil, false, None, None), Map(), None)
+        new Select(SqlSelect(None, Nil, Nil, None, Nil, Nil, false, None, None), Map(), None)
 
     given selectToCountSql: ToCountSql[Select[_, _]] with {
         extension (x: Select[_, _]) {

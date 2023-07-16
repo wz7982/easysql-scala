@@ -202,7 +202,7 @@ object MonadicQuery {
         val sqlSelectItems = table.__cols.map { c =>
             SqlSelectItem(exprToSqlExpr(c), None)
         }
-        val query: SqlSelect = SqlSelect(None, sqlSelectItems, Some(fromTable), None, Nil, Nil, false, None, None)
+        val query: SqlSelect = SqlSelect(None, sqlSelectItems, List(fromTable), None, Nil, Nil, false, None, None)
         
         new MonadicQuery(query, table)
     }
@@ -221,7 +221,7 @@ object MonadicQuery {
         def exists: MonadicQuery[Tuple1[Boolean], None.type] = {
             val expr = SqlExprFuncExpr("EXISTS", SqlQueryExpr(q.query) :: Nil)
             val selectItem = SqlSelectItem(expr, None)
-            val newQuery: SqlSelect = SqlSelect(None, selectItem :: Nil, None, None, Nil, Nil, false, None, None)
+            val newQuery: SqlSelect = SqlSelect(None, selectItem :: Nil, Nil, None, Nil, Nil, false, None, None)
 
             new MonadicQuery(newQuery, None)
         }
