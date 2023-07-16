@@ -43,7 +43,7 @@ sealed trait SqlQuery
 case class SqlSelect(
     param: Option[String],
     select: List[SqlSelectItem],
-    from: Option[SqlTable],
+    from: List[SqlTable],
     where: Option[SqlExpr],
     groupBy: List[SqlExpr],
     orderBy: List[SqlOrderBy],
@@ -64,10 +64,7 @@ case class SqlSelect(
         this.copy(
             select = this.select ++ that.select,
 
-            from = for {
-                f <- this.from
-                tf <- that.from
-            } yield SqlJoinTable(f, SqlJoinType.InnerJoin, tf, None),
+            from = this.from ++ that.from,
 
             where = (this.where, that.where) match {
                 case (Some(w), Some(tw)) => Some(SqlBinaryExpr(w, SqlBinaryOperator.And, tw))

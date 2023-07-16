@@ -220,7 +220,7 @@ class SqlParser extends StandardTokenParsers {
                     if distinct.isDefined then Some("DISTINCT")
                     else None
                 SqlQueryExpr(
-                    SqlSelect(param, s, f, w, g.map(_._1).getOrElse(Nil), o.getOrElse(Nil), false, l, g.map(_._2).getOrElse(None))
+                    SqlSelect(param, s, f.getOrElse(Nil), w, g.map(_._1).getOrElse(Nil), o.getOrElse(Nil), false, l, g.map(_._2).getOrElse(None))
                 )
             }
         }
@@ -266,8 +266,8 @@ class SqlParser extends StandardTokenParsers {
             }
         }
 
-    def from: Parser[SqlTable] =
-        "FROM" ~> joinTable
+    def from: Parser[List[SqlTable]] =
+        "FROM" ~> rep1sep(joinTable, ",")
 
     def where: Parser[SqlExpr] =
         "WHERE" ~> expr

@@ -122,11 +122,11 @@ trait SqlPrinter(val prepare: Boolean) {
             printList(select.select)(printSelectItem)
         }
 
-        select.from.foreach { it =>
+        if (select.from.nonEmpty) {
             sqlBuilder.append("\n")
             printSpace(spaceNum)
             sqlBuilder.append("FROM ")
-            printTable(it)
+            printList(select.from)(printTable)
         }
 
         select.where.foreach { it =>

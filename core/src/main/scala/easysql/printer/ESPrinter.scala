@@ -14,7 +14,7 @@ class ESPrinter {
     
     def printSelect(s: SqlSelect) = {
         s.from match {
-            case Some(SqlIdentTable(t, None)) => dslBuilder.append(s"GET /$t/_search")
+            case SqlIdentTable(t, None) :: Nil => dslBuilder.append(s"GET /$t/_search")
             case _ =>
         }
         dslBuilder.append(" {\n")
