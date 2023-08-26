@@ -145,7 +145,7 @@ class SqlParser extends StandardTokenParsers {
 
     def aggFunction: Parser[SqlAggFuncExpr] =
         "COUNT" ~ "(" ~ "*" ~ ")" ^^ (_ => SqlAggFuncExpr("COUNT", SqlAllColumnExpr(None) :: Nil, false, Map(), Nil)) |
-        aggFunc ~ ("(" ~> repsep(expr, ",") <~ ")") ^^ {
+        (aggFunc | ident) ~ ("(" ~> repsep(expr, ",") <~ ")") ^^ {
             case funcName ~ args => SqlAggFuncExpr(funcName.toUpperCase.nn, args, false, Map(), Nil)
         } |
         ident ~ ("(" ~ "DISTINCT" ~> expr <~ ")") ^^ {
@@ -176,7 +176,7 @@ class SqlParser extends StandardTokenParsers {
             case expr ~ _ ~ castType => SqlCastExpr(expr, castType.toUpperCase.nn)
         }
 
-    def caseWhen: Parser[SqlExpr] = 
+    def caseWhen: Parser[SqlExpr] =
         "CASE" ~>
             rep1("WHEN" ~> expr ~ "THEN" ~ expr ^^ { case e ~ _ ~ te => SqlCase(e, te) }) ~ 
             opt("ELSE" ~> expr) <~ "END" ^^ {
