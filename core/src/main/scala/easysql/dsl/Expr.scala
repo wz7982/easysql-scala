@@ -508,16 +508,16 @@ object Expr {
             def <=(expr: Expr[R]): BinaryExpr[Boolean] = 
                 BinaryExpr(LiteralExpr(v), SqlBinaryOperator.Le, expr)
 
-            def in(list: List[Expr[R]]): Expr[Boolean] =
+            def in(list: List[Expr[Int]]): Expr[Boolean] =
                 if list.isEmpty then LiteralExpr(false) else InExpr(LiteralExpr(v), ListExpr(list), false)
 
-            def in(list: (Expr[R])*): Expr[Boolean] =
+            def in(list: Expr[Int]*): Expr[Boolean] =
                 InExpr(LiteralExpr(v), ListExpr(list.toList), false)
 
-            def notIn(list: List[Expr[R]]): Expr[Boolean] =
+            def notIn(list: List[Expr[Int]]): Expr[Boolean] =
                 if list.isEmpty then LiteralExpr(true) else InExpr(LiteralExpr(v), ListExpr(list), true)
 
-            def notIn(list: (Expr[R])*): Expr[Boolean] =
+            def notIn(list: (Expr[Int])*): Expr[Boolean] =
                 InExpr(LiteralExpr(v), ListExpr(list.toList), true)
 
             def between(start: Expr[R], end: Expr[R]): Expr[Boolean] =
@@ -578,16 +578,16 @@ object Expr {
             def <=(expr: Expr[R]): BinaryExpr[Boolean] = 
                 BinaryExpr(LiteralExpr(v), SqlBinaryOperator.Le, expr)
 
-            def in(list: List[Expr[R]]): Expr[Boolean] =
+            def in(list: List[Expr[Long]]): Expr[Boolean] =
                 if list.isEmpty then LiteralExpr(false) else InExpr(LiteralExpr(v), ListExpr(list), false)
 
-            def in(list: (Expr[R])*): Expr[Boolean] =
+            def in(list: (Expr[Long])*): Expr[Boolean] =
                 InExpr(LiteralExpr(v), ListExpr(list.toList), false)
 
-            def notIn(list: List[Expr[R]]): Expr[Boolean] =
+            def notIn(list: List[Expr[Long]]): Expr[Boolean] =
                 if list.isEmpty then LiteralExpr(true) else InExpr(LiteralExpr(v), ListExpr(list), true)
 
-            def notIn(list: (Expr[R])*): Expr[Boolean] =
+            def notIn(list: (Expr[Long])*): Expr[Boolean] =
                 InExpr(LiteralExpr(v), ListExpr(list.toList), true)
 
             def between(start: Expr[R], end: Expr[R]): Expr[Boolean] =
@@ -648,16 +648,16 @@ object Expr {
             def <=(expr: Expr[R]): BinaryExpr[Boolean] =
                 BinaryExpr(LiteralExpr(v), SqlBinaryOperator.Le, expr)
 
-            def in(list: List[Expr[R]]): Expr[Boolean] =
+            def in(list: List[Expr[Float]]): Expr[Boolean] =
                 if list.isEmpty then LiteralExpr(false) else InExpr(LiteralExpr(v), ListExpr(list), false)
 
-            def in(list: (Expr[R])*): Expr[Boolean] =
+            def in(list: (Expr[Float])*): Expr[Boolean] =
                 InExpr(LiteralExpr(v), ListExpr(list.toList), false)
 
-            def notIn(list: List[Expr[R]]): Expr[Boolean] =
+            def notIn(list: List[Expr[Float]]): Expr[Boolean] =
                 if list.isEmpty then LiteralExpr(true) else InExpr(LiteralExpr(v), ListExpr(list), true)
 
-            def notIn(list: (Expr[R])*): Expr[Boolean] =
+            def notIn(list: (Expr[Float])*): Expr[Boolean] =
                 InExpr(LiteralExpr(v), ListExpr(list.toList), true)
 
             def between(start: Expr[R], end: Expr[R]): Expr[Boolean] =
@@ -718,16 +718,16 @@ object Expr {
             def <=(expr: Expr[R]): BinaryExpr[Boolean] =
                 BinaryExpr(LiteralExpr(v), SqlBinaryOperator.Le, expr)
 
-            def in(list: List[Expr[R]]): Expr[Boolean] =
+            def in(list: List[Expr[Double]]): Expr[Boolean] =
                 if list.isEmpty then LiteralExpr(false) else InExpr(LiteralExpr(v), ListExpr(list), false)
 
-            def in(list: (Expr[R])*): Expr[Boolean] =
+            def in(list: (Expr[Double])*): Expr[Boolean] =
                 InExpr(LiteralExpr(v), ListExpr(list.toList), false)
 
-            def notIn(list: List[Expr[R]]): Expr[Boolean] =
+            def notIn(list: List[Expr[Double]]): Expr[Boolean] =
                 if list.isEmpty then LiteralExpr(true) else InExpr(LiteralExpr(v), ListExpr(list), true)
 
-            def notIn(list: (Expr[R])*): Expr[Boolean] =
+            def notIn(list: (Expr[Double])*): Expr[Boolean] =
                 InExpr(LiteralExpr(v), ListExpr(list.toList), true)
 
             def between(start: Expr[R], end: Expr[R]): Expr[Boolean] =
@@ -788,16 +788,16 @@ object Expr {
             def <=(expr: Expr[R]): BinaryExpr[Boolean] = 
                 BinaryExpr(LiteralExpr(v), SqlBinaryOperator.Le, expr)
 
-            def in(list: List[Expr[R]]): Expr[Boolean] =
+            def in(list: List[Expr[BigDecimal]]): Expr[Boolean] =
                 if list.isEmpty then LiteralExpr(false) else InExpr(LiteralExpr(v), ListExpr(list), false)
 
-            def in(list: (Expr[R])*): Expr[Boolean] =
+            def in(list: (Expr[BigDecimal])*): Expr[Boolean] =
                 InExpr(LiteralExpr(v), ListExpr(list.toList), false)
 
-            def notIn(list: List[Expr[R]]): Expr[Boolean] =
+            def notIn(list: List[Expr[BigDecimal]]): Expr[Boolean] =
                 if list.isEmpty then LiteralExpr(true) else InExpr(LiteralExpr(v), ListExpr(list), true)
 
-            def notIn(list: (Expr[R])*): Expr[Boolean] =
+            def notIn(list: (Expr[BigDecimal])*): Expr[Boolean] =
                 InExpr(LiteralExpr(v), ListExpr(list.toList), true)
 
             def between(start: Expr[R], end: Expr[R]): Expr[Boolean] =
