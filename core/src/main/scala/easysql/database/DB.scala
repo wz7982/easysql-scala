@@ -7,4 +7,5 @@ enum DB {
     case ORACLE
     case SQLSERVER
     case SQLITE
+    case DB2
 }
