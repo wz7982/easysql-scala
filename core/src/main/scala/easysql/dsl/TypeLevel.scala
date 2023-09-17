@@ -11,23 +11,23 @@ import scala.compiletime.ops.string.{CharAt, Length, Substring}
 
 type InverseMap[X <: Tuple] <: Tuple = X match {
     case Expr[x] *: t => x *: InverseMap[t]
-    case AliasExpr[x, _] *: t => x *: InverseMap[t]
+    case AliasExpr[x, ?] *: t => x *: InverseMap[t]
     case TableSchema[x] *: t => x *: InverseMap[t]
     case EmptyTuple => EmptyTuple
 }
 
 type HasAliasName[T <: Tuple] <: Boolean = T match {
-    case AliasExpr[_, n] *: t => true && HasAliasName[t]
-    case ColumnExpr[_, n] *: t => true && HasAliasName[t]
-    case PrimaryKeyExpr[_, n] *: t => true && HasAliasName[t]
+    case AliasExpr[?, n] *: t => true && HasAliasName[t]
+    case ColumnExpr[?, n] *: t => true && HasAliasName[t]
+    case PrimaryKeyExpr[?, n] *: t => true && HasAliasName[t]
     case EmptyTuple => true
     case _ => false
 }
 
 type ExtractAliasNames[T <: Tuple] <: Tuple = T match {
-    case AliasExpr[_, n] *: t => n *: ExtractAliasNames[t]
-    case ColumnExpr[_, n] *: t => n *: ExtractAliasNames[t]
-    case PrimaryKeyExpr[_, n] *: t => n *: ExtractAliasNames[t]
+    case AliasExpr[?, n] *: t => n *: ExtractAliasNames[t]
+    case ColumnExpr[?, n] *: t => n *: ExtractAliasNames[t]
+    case PrimaryKeyExpr[?, n] *: t => n *: ExtractAliasNames[t]
     case _ => EmptyTuple
 }
 

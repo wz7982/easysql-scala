@@ -33,13 +33,13 @@ object JdbcTransaction {
 def run[T <: NonSelect](query: T)(using logger: Logger, t: JdbcTransaction): Int = 
     summon[DBOperator[JdbcTransaction, Id]].runMonad(t, query).get
 
-def runAndReturnKey(query: Insert[_, _])(using logger: Logger, t: JdbcTransaction): List[Long] = 
+def runAndReturnKey(query: Insert[?, ?])(using logger: Logger, t: JdbcTransaction): List[Long] = 
     summon[DBOperator[JdbcTransaction, Id]].runAndReturnKeyMonad(t, query).get
 
-inline def query[T <: Tuple](query: Query[T, _])(using logger: Logger, t: JdbcTransaction): List[ResultType[T]] = 
+inline def query[T <: Tuple](query: Query[T, ?])(using logger: Logger, t: JdbcTransaction): List[ResultType[T]] = 
     summon[DBOperator[JdbcTransaction, Id]].queryMonad(t, query).get
 
-inline def query[T <: Tuple](query: MonadicQuery[T, _])(using logger: Logger, t: JdbcTransaction): List[ResultType[T]] = 
+inline def query[T <: Tuple](query: MonadicQuery[T, ?])(using logger: Logger, t: JdbcTransaction): List[ResultType[T]] = 
     summon[DBOperator[JdbcTransaction, Id]].queryMonad(t, query).get
 
 inline def query[T <: Tuple](query: With[T])(using logger: Logger, t: JdbcTransaction): List[ResultType[T]] = 
@@ -48,10 +48,10 @@ inline def query[T <: Tuple](query: With[T])(using logger: Logger, t: JdbcTransa
 inline def query[T <: Tuple](query: NativeSql)(using logger: Logger, t: JdbcTransaction): List[ResultType[T]] = 
     summon[DBOperator[JdbcTransaction, Id]].queryMonad[T](t, query).get
 
-inline def querySkipNoneRows[T](query: Query[Tuple1[T], _])(using logger: Logger, t: JdbcTransaction): List[T] = 
+inline def querySkipNoneRows[T](query: Query[Tuple1[T], ?])(using logger: Logger, t: JdbcTransaction): List[T] = 
     summon[DBOperator[JdbcTransaction, Id]].querySkipNoneRowsMonad(t, query).get
 
-inline def querySkipNoneRows[T](query: MonadicQuery[Tuple1[T], _])(using logger: Logger, t: JdbcTransaction): List[T] = 
+inline def querySkipNoneRows[T](query: MonadicQuery[Tuple1[T], ?])(using logger: Logger, t: JdbcTransaction): List[T] = 
     summon[DBOperator[JdbcTransaction, Id]].querySkipNoneRowsMonad(t, query).get
 
 inline def querySkipNoneRows[T](query: With[Tuple1[T]])(using logger: Logger, t: JdbcTransaction): List[T] = 
@@ -60,11 +60,11 @@ inline def querySkipNoneRows[T](query: With[Tuple1[T]])(using logger: Logger, t:
 inline def querySkipNoneRows[T](query: NativeSql)(using logger: Logger, t: JdbcTransaction): List[T] = 
     summon[DBOperator[JdbcTransaction, Id]].querySkipNoneRowsMonad[T](t, query).get
 
-inline def find[T <: Tuple](query: Select[T, _])(using logger: Logger, t: JdbcTransaction): Option[ResultType[T]] = 
+inline def find[T <: Tuple](query: Select[T, ?])(using logger: Logger, t: JdbcTransaction): Option[ResultType[T]] = 
     summon[DBOperator[JdbcTransaction, Id]].findMonad(t, query).get
 
-inline def page[T <: Tuple](query: Select[T, _])(pageSize: Int, pageNum: Int, queryCount: Boolean)(using logger: Logger, t: JdbcTransaction): Page[ResultType[T]] = 
+inline def page[T <: Tuple](query: Select[T, ?])(pageSize: Int, pageNum: Int, queryCount: Boolean)(using logger: Logger, t: JdbcTransaction): Page[ResultType[T]] = 
     summon[DBOperator[JdbcTransaction, Id]].pageMonad(t, query)(pageSize, pageNum, queryCount).get
 
-def fetchCount(query: Select[_, _])(using logger: Logger, t: JdbcTransaction): Long = 
+def fetchCount(query: Select[?, ?])(using logger: Logger, t: JdbcTransaction): Long = 
     summon[DBOperator[JdbcTransaction, Id]].fetchCountMonad(t, query).get

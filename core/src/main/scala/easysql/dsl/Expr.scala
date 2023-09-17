@@ -24,7 +24,7 @@ sealed trait Expr[T <: SqlDataType] {
         BinaryExpr(this, SqlBinaryOperator.Eq, expr)
 
     @targetName("eq")
-    def ===(q: Query[Tuple1[T], _]): BinaryExpr[Boolean] =
+    def ===(q: Query[Tuple1[T], ?]): BinaryExpr[Boolean] =
         BinaryExpr(this, SqlBinaryOperator.Eq, SubQueryExpr(q))
     
     @targetName("ne")
@@ -42,7 +42,7 @@ sealed trait Expr[T <: SqlDataType] {
         BinaryExpr(this, SqlBinaryOperator.Ne, expr)
 
     @targetName("ne")
-    def <>(q: Query[Tuple1[T], _]): BinaryExpr[Boolean] = 
+    def <>(q: Query[Tuple1[T], ?]): BinaryExpr[Boolean] = 
         BinaryExpr(this, SqlBinaryOperator.Ne, SubQueryExpr(q))
 
     @targetName("gt")
@@ -54,7 +54,7 @@ sealed trait Expr[T <: SqlDataType] {
         BinaryExpr(this, SqlBinaryOperator.Gt, expr)
 
     @targetName("gt")
-    def >(q: Query[Tuple1[T], _]): BinaryExpr[Boolean] = 
+    def >(q: Query[Tuple1[T], ?]): BinaryExpr[Boolean] = 
         BinaryExpr(this, SqlBinaryOperator.Gt, SubQueryExpr(q))
 
     @targetName("ge")
@@ -66,7 +66,7 @@ sealed trait Expr[T <: SqlDataType] {
         BinaryExpr(this, SqlBinaryOperator.Ge, expr)
 
     @targetName("ge")
-    def >=(q: Query[Tuple1[T], _]): BinaryExpr[Boolean] = 
+    def >=(q: Query[Tuple1[T], ?]): BinaryExpr[Boolean] = 
         BinaryExpr(this, SqlBinaryOperator.Ge, SubQueryExpr(q))
 
     @targetName("lt")
@@ -78,7 +78,7 @@ sealed trait Expr[T <: SqlDataType] {
         BinaryExpr(this, SqlBinaryOperator.Lt, expr)
 
     @targetName("lt")
-    def <(q: Query[Tuple1[T], _]): BinaryExpr[Boolean] = 
+    def <(q: Query[Tuple1[T], ?]): BinaryExpr[Boolean] = 
         BinaryExpr(this, SqlBinaryOperator.Lt, SubQueryExpr(q))
 
     @targetName("le")
@@ -90,13 +90,13 @@ sealed trait Expr[T <: SqlDataType] {
         BinaryExpr(this, SqlBinaryOperator.Le, expr)
 
     @targetName("le")
-    def <=(q: Query[Tuple1[T], _]): BinaryExpr[Boolean] = 
+    def <=(q: Query[Tuple1[T], ?]): BinaryExpr[Boolean] = 
         BinaryExpr(this, SqlBinaryOperator.Le, SubQueryExpr(q))
 
     def in(list: List[T | Expr[T]]): Expr[Boolean] =
         if list.isEmpty then LiteralExpr(false) else {
             val inList = list map {
-                case e: Expr[_] => e
+                case e: Expr[?] => e
                 case t: SqlDataType => LiteralExpr(t)
             }
             InExpr(this, ListExpr(inList), false)
@@ -108,7 +108,7 @@ sealed trait Expr[T <: SqlDataType] {
     def notIn(list: List[T | Expr[T]]): Expr[Boolean] =
         if list.isEmpty then LiteralExpr(true) else {
             val inList = list map {
-                case e: Expr[_] => e
+                case e: Expr[?] => e
                 case t: SqlDataType => LiteralExpr(t)
             }
             InExpr(this, ListExpr(inList), true)
@@ -117,10 +117,10 @@ sealed trait Expr[T <: SqlDataType] {
     def notIn(list: (T | Expr[T])*): Expr[Boolean] =
         notIn(list.toList)
 
-    def in(subQuery: Query[Tuple1[T], _]): Expr[Boolean] = 
+    def in(subQuery: Query[Tuple1[T], ?]): Expr[Boolean] = 
         InExpr(this, SubQueryExpr(subQuery), false)
 
-    def notIn(subQuery: Query[Tuple1[T], _]): Expr[Boolean] = 
+    def notIn(subQuery: Query[Tuple1[T], ?]): Expr[Boolean] = 
         InExpr(this, SubQueryExpr(subQuery), true)
 
     def between(start: T, end: T): Expr[Boolean] =
@@ -152,19 +152,7 @@ case class LiteralExpr[T <: SqlDataType](value: T) extends Expr[T]
 
 case object NullExpr extends Expr[Nothing]
 
-case class BinaryExpr[T <: SqlDataType](left: Expr[_], op: SqlBinaryOperator, right: Expr[_]) extends Expr[T]
-
-extension (x: BinaryExpr[Boolean]) {
-    @targetName("thenIsNumber")
-    infix def thenIs[R <: SqlNumberType](value: R): CaseBranch[BigDecimal] = 
-        CaseBranch(x, LiteralExpr(value))
-
-    infix def thenIs[R <: SqlDataType](value: R): CaseBranch[R] = 
-        CaseBranch(x, LiteralExpr(value))
-
-    infix def thenIs[R <: SqlDataType](value: Expr[R]): CaseBranch[R] = 
-        CaseBranch(x, value)
-}
+case class BinaryExpr[T <: SqlDataType](left: Expr[?], op: SqlBinaryOperator, right: Expr[?]) extends Expr[T]
 
 case class ColumnExpr[T <: SqlDataType, N <: String](
     tableName: String, 
@@ -179,22 +167,22 @@ case class PrimaryKeyExpr[T <: SqlDataType, N <: String](
     inc: Boolean
 ) extends Expr[T]
 
-case class SubQueryExpr[T <: SqlDataType](query: Query[Tuple1[T], _]) extends Expr[T]
+case class SubQueryExpr[T <: SqlDataType](query: Query[Tuple1[T], ?]) extends Expr[T]
 
-case class FuncExpr[T <: SqlDataType](name: String, args: List[Expr[_]]) extends Expr[T]
+case class FuncExpr[T <: SqlDataType](name: String, args: List[Expr[?]]) extends Expr[T]
 
 case class AggExpr[T <: SqlDataType](
     name: String, 
-    args: List[Expr[_]], 
+    args: List[Expr[?]], 
     distinct: Boolean, 
-    attrs: Map[String, Expr[_]], 
+    attrs: Map[String, Expr[?]], 
     orderBy: List[OrderBy]
 ) extends Expr[T] {
     def over: OverExpr[T] = 
         OverExpr(this, Nil, Nil, None)
 }
 
-case class CaseExpr[T <: SqlDataType](branches: List[CaseBranch[_]], default: Expr[_]) extends Expr[T] {
+case class CaseExpr[T <: SqlDataType](branches: List[CaseBranch[?]], default: Expr[?]) extends Expr[T] {
     infix def elseIs(value: T): CaseExpr[T] =
         copy(default = LiteralExpr(value))
 
@@ -216,21 +204,21 @@ extension [T <: SqlNumberType] (e: CaseExpr[BigDecimal]) {
         e.copy(default = value.map(LiteralExpr(_)).getOrElse(NullExpr))
 }
 
-case class ListExpr[T <: SqlDataType](list: List[Expr[_]]) extends Expr[T]
+case class ListExpr[T <: SqlDataType](list: List[Expr[?]]) extends Expr[T]
 
-case class InExpr(expr: Expr[_], inExpr: Expr[_], not: Boolean) extends Expr[Boolean]
+case class InExpr(expr: Expr[?], inExpr: Expr[?], not: Boolean) extends Expr[Boolean]
 
-case class BetweenExpr(expr: Expr[_], start: Expr[_], end: Expr[_], not: Boolean) extends Expr[Boolean]
+case class BetweenExpr(expr: Expr[?], start: Expr[?], end: Expr[?], not: Boolean) extends Expr[Boolean]
 
 case class AllColumnExpr(owner: Option[String]) extends Expr[Nothing]
 
 case class OverExpr[T <: SqlDataType](
     func: AggExpr[T], 
-    partitionBy: List[Expr[_]], 
+    partitionBy: List[Expr[?]], 
     orderBy: List[OrderBy],
     between: Option[SqlOverBetween]
 ) extends Expr[T] {
-    infix def partitionBy(p: Expr[_]*): OverExpr[T] =
+    infix def partitionBy(p: Expr[?]*): OverExpr[T] =
         copy(partitionBy = partitionBy ++ p)
 
     infix def orderBy(o: OrderBy*): OverExpr[T] =
@@ -243,7 +231,7 @@ case class OverExpr[T <: SqlDataType](
         copy(between = Some(SqlOverBetween.Range(start, end)))
 }
 
-case class CastExpr[T <: SqlDataType](expr: Expr[_], castType: String) extends Expr[T]
+case class CastExpr[T <: SqlDataType](expr: Expr[?], castType: String) extends Expr[T]
 
 case class DynamicExpr[T <: SqlDataType](expr: SqlExpr) extends Expr[T]
 
@@ -351,7 +339,7 @@ object Expr {
                 BinaryExpr(e, SqlBinaryOperator.Eq, expr)
 
             @targetName("eq")
-            def ===(q: Query[Tuple1[R], _]): BinaryExpr[Boolean] = 
+            def ===(q: Query[Tuple1[R], ?]): BinaryExpr[Boolean] = 
                 BinaryExpr(e, SqlBinaryOperator.Eq, SubQueryExpr(q))
 
             @targetName("ne")
@@ -369,7 +357,7 @@ object Expr {
                 BinaryExpr(e, SqlBinaryOperator.Ne, expr)
 
             @targetName("ne")
-            def <>(q: Query[Tuple1[R], _]): BinaryExpr[Boolean] = 
+            def <>(q: Query[Tuple1[R], ?]): BinaryExpr[Boolean] = 
                 BinaryExpr(e, SqlBinaryOperator.Ne, SubQueryExpr(q))
 
             @targetName("gt")
@@ -381,7 +369,7 @@ object Expr {
                 BinaryExpr(e, SqlBinaryOperator.Gt, expr)
 
             @targetName("gt")
-            def >(q: Query[Tuple1[R], _]): BinaryExpr[Boolean] = 
+            def >(q: Query[Tuple1[R], ?]): BinaryExpr[Boolean] = 
                 BinaryExpr(e, SqlBinaryOperator.Gt, SubQueryExpr(q))
 
             @targetName("ge")
@@ -393,7 +381,7 @@ object Expr {
                 BinaryExpr(e, SqlBinaryOperator.Ge, expr)
 
             @targetName("ge")
-            def >=(q: Query[Tuple1[R], _]): BinaryExpr[Boolean] = 
+            def >=(q: Query[Tuple1[R], ?]): BinaryExpr[Boolean] = 
                 BinaryExpr(e, SqlBinaryOperator.Ge, SubQueryExpr(q))
 
             @targetName("lt")
@@ -405,7 +393,7 @@ object Expr {
                 BinaryExpr(e, SqlBinaryOperator.Lt, expr)
 
             @targetName("lt")
-            def <(q: Query[Tuple1[R], _]): BinaryExpr[Boolean] = 
+            def <(q: Query[Tuple1[R], ?]): BinaryExpr[Boolean] = 
                 BinaryExpr(e, SqlBinaryOperator.Lt, SubQueryExpr(q))
 
             @targetName("le")
@@ -417,13 +405,13 @@ object Expr {
                 BinaryExpr(e, SqlBinaryOperator.Le, expr)
 
             @targetName("le")
-            def <=(q: Query[Tuple1[R], _]): BinaryExpr[Boolean] =
+            def <=(q: Query[Tuple1[R], ?]): BinaryExpr[Boolean] =
                 BinaryExpr(e, SqlBinaryOperator.Le, SubQueryExpr(q))
 
             def in(list: List[R | Expr[R]]): Expr[Boolean] =
                 if list.isEmpty then LiteralExpr(false) else {
                     val inList = list map {
-                        case expr: Expr[_] => expr
+                        case expr: Expr[?] => expr
                         case t: SqlDataType => LiteralExpr(t)
                     }
                     InExpr(e, ListExpr(inList), false)
@@ -435,7 +423,7 @@ object Expr {
             def notIn(list: List[R | Expr[R]]): Expr[Boolean] =
                 if list.isEmpty then LiteralExpr(true) else {
                     val inList = list map {
-                        case expr: Expr[_] => expr
+                        case expr: Expr[?] => expr
                         case t: SqlDataType => LiteralExpr(t)
                     }
                     InExpr(e, ListExpr(inList), true)
@@ -444,10 +432,10 @@ object Expr {
             def notIn(list: (R | Expr[R])*): Expr[Boolean] =
                 notIn(list.toList)
 
-            def in(subQuery: Query[Tuple1[R], _]): Expr[Boolean] = 
+            def in(subQuery: Query[Tuple1[R], ?]): Expr[Boolean] = 
                 InExpr(e, SubQueryExpr(subQuery), false)
 
-            def notIn(subQuery: Query[Tuple1[R], _]): Expr[Boolean] = 
+            def notIn(subQuery: Query[Tuple1[R], ?]): Expr[Boolean] = 
                 InExpr(e, SubQueryExpr(subQuery), true)
 
             def between(start: R, end: R): Expr[Boolean] =
@@ -949,14 +937,14 @@ object Expr {
     }
 }
 
-given unsafeOperator: ExprOperator[_] with {
-    extension (e: Expr[_]) {
+given unsafeOperator: ExprOperator[?] with {
+    extension (e: Expr[?]) {
         @targetName("plus")
         def +(value: SqlNumberType): BinaryExpr[Nothing] =
             BinaryExpr(e, SqlBinaryOperator.Add, LiteralExpr(value))
 
         @targetName("plus")
-        def +(expr: Expr[_]): BinaryExpr[Nothing] =
+        def +(expr: Expr[?]): BinaryExpr[Nothing] =
             BinaryExpr(e, SqlBinaryOperator.Add, expr)
 
         @targetName("minus")
@@ -964,7 +952,7 @@ given unsafeOperator: ExprOperator[_] with {
             BinaryExpr(e, SqlBinaryOperator.Sub, LiteralExpr(value))
 
         @targetName("minus")
-        def -(expr: Expr[_]): BinaryExpr[Nothing] =
+        def -(expr: Expr[?]): BinaryExpr[Nothing] =
             BinaryExpr(e, SqlBinaryOperator.Sub, expr)
 
         @targetName("times")
@@ -972,7 +960,7 @@ given unsafeOperator: ExprOperator[_] with {
             BinaryExpr(e, SqlBinaryOperator.Mul, LiteralExpr(value))
 
         @targetName("times")
-        def *(expr: Expr[_]): BinaryExpr[Nothing] =
+        def *(expr: Expr[?]): BinaryExpr[Nothing] =
             BinaryExpr(e, SqlBinaryOperator.Mul, expr)
 
         @targetName("div")
@@ -980,7 +968,7 @@ given unsafeOperator: ExprOperator[_] with {
             BinaryExpr(e, SqlBinaryOperator.Div, LiteralExpr(value))
 
         @targetName("div")
-        def /(expr: Expr[_]): BinaryExpr[Nothing] =
+        def /(expr: Expr[?]): BinaryExpr[Nothing] =
             BinaryExpr(e, SqlBinaryOperator.Div, expr)
 
         @targetName("mod")
@@ -988,7 +976,7 @@ given unsafeOperator: ExprOperator[_] with {
             BinaryExpr(e, SqlBinaryOperator.Mod, LiteralExpr(value))
 
         @targetName("mod")
-        def %(expr: Expr[_]): BinaryExpr[Nothing] =
+        def %(expr: Expr[?]): BinaryExpr[Nothing] =
             BinaryExpr(e, SqlBinaryOperator.Mod, expr)
 
         @targetName("eq")
@@ -1002,11 +990,11 @@ given unsafeOperator: ExprOperator[_] with {
         }
 
         @targetName("eq")
-        def ===(expr: Expr[_]): BinaryExpr[Boolean] =
+        def ===(expr: Expr[?]): BinaryExpr[Boolean] =
             BinaryExpr(e, SqlBinaryOperator.Eq, expr)
 
         @targetName("eq")
-        def ===[R <: SqlDataType](q: Query[Tuple1[R], _]): BinaryExpr[Boolean] =
+        def ===[R <: SqlDataType](q: Query[Tuple1[R], ?]): BinaryExpr[Boolean] =
             BinaryExpr(e, SqlBinaryOperator.Eq, SubQueryExpr(q))
 
         @targetName("ne")
@@ -1020,11 +1008,11 @@ given unsafeOperator: ExprOperator[_] with {
         }
 
         @targetName("ne")
-        def <>(expr: Expr[_]): BinaryExpr[Boolean] =
+        def <>(expr: Expr[?]): BinaryExpr[Boolean] =
             BinaryExpr(e, SqlBinaryOperator.Ne, expr)
 
         @targetName("ne")
-        def <>[R <: SqlDataType](q: Query[Tuple1[R], _]): BinaryExpr[Boolean] =
+        def <>[R <: SqlDataType](q: Query[Tuple1[R], ?]): BinaryExpr[Boolean] =
             BinaryExpr(e, SqlBinaryOperator.Ne, SubQueryExpr(q))
 
         @targetName("gt")
@@ -1036,7 +1024,7 @@ given unsafeOperator: ExprOperator[_] with {
             BinaryExpr(e, SqlBinaryOperator.Gt, expr)
 
         @targetName("gt")
-        def >[R <: SqlDataType](q: Query[Tuple1[R], _]): BinaryExpr[Boolean] =
+        def >[R <: SqlDataType](q: Query[Tuple1[R], ?]): BinaryExpr[Boolean] =
             BinaryExpr(e, SqlBinaryOperator.Gt, SubQueryExpr(q))
 
         @targetName("ge")
@@ -1048,7 +1036,7 @@ given unsafeOperator: ExprOperator[_] with {
             BinaryExpr(e, SqlBinaryOperator.Ge, expr)
 
         @targetName("ge")
-        def >=[R <: SqlDataType](q: Query[Tuple1[R], _]): BinaryExpr[Boolean] =
+        def >=[R <: SqlDataType](q: Query[Tuple1[R], ?]): BinaryExpr[Boolean] =
             BinaryExpr(e, SqlBinaryOperator.Ge, SubQueryExpr(q))
 
         @targetName("lt")
@@ -1060,7 +1048,7 @@ given unsafeOperator: ExprOperator[_] with {
             BinaryExpr(e, SqlBinaryOperator.Lt, expr)
 
         @targetName("lt")
-        def <[R <: SqlDataType](q: Query[Tuple1[R], _]): BinaryExpr[Boolean] =
+        def <[R <: SqlDataType](q: Query[Tuple1[R], ?]): BinaryExpr[Boolean] =
             BinaryExpr(e, SqlBinaryOperator.Lt, SubQueryExpr(q))
 
         @targetName("le")
@@ -1072,61 +1060,61 @@ given unsafeOperator: ExprOperator[_] with {
             BinaryExpr(e, SqlBinaryOperator.Le, expr)
 
         @targetName("le")
-        def <=[R <: SqlDataType](q: Query[Tuple1[R], _]): BinaryExpr[Boolean] =
+        def <=[R <: SqlDataType](q: Query[Tuple1[R], ?]): BinaryExpr[Boolean] =
             BinaryExpr(e, SqlBinaryOperator.Le, SubQueryExpr(q))
 
-        def in(list: List[SqlDataType | Expr[_]]): Expr[Boolean] =
+        def in(list: List[SqlDataType | Expr[?]]): Expr[Boolean] =
             if list.isEmpty then LiteralExpr(false) else {
                 val inList = list map {
-                    case expr: Expr[_] => expr
+                    case expr: Expr[?] => expr
                     case t: SqlDataType => LiteralExpr(t)
                 }
                 InExpr(e, ListExpr(inList), false)
             }
 
-        def in(list: (SqlDataType | Expr[_])*): Expr[Boolean] =
+        def in(list: (SqlDataType | Expr[?])*): Expr[Boolean] =
             in(list.toList)
 
-        def notIn(list: List[SqlDataType | Expr[_]]): Expr[Boolean] =
+        def notIn(list: List[SqlDataType | Expr[?]]): Expr[Boolean] =
             if list.isEmpty then LiteralExpr(true) else {
                 val inList = list map {
-                    case expr: Expr[_] => expr
+                    case expr: Expr[?] => expr
                     case t: SqlDataType => LiteralExpr(t)
                 }
                 InExpr(e, ListExpr(inList), true)
             }
 
-        def notIn(list: (SqlDataType | Expr[_])*): Expr[Boolean] =
+        def notIn(list: (SqlDataType | Expr[?])*): Expr[Boolean] =
             notIn(list.toList)
 
-        def in[R <: SqlDataType](subQuery: Query[Tuple1[R], _]): Expr[Boolean] = 
+        def in[R <: SqlDataType](subQuery: Query[Tuple1[R], ?]): Expr[Boolean] = 
             InExpr(e, SubQueryExpr(subQuery), false)
 
-        def notIn[R <: SqlDataType](subQuery: Query[Tuple1[R], _]): Expr[Boolean] = 
+        def notIn[R <: SqlDataType](subQuery: Query[Tuple1[R], ?]): Expr[Boolean] = 
             InExpr(e, SubQueryExpr(subQuery), true)
 
         def between(start: SqlDataType, end: SqlDataType): Expr[Boolean] =
             BetweenExpr(e, LiteralExpr(start), LiteralExpr(end), false)
 
-        def between(start: Expr[_], end: Expr[_]): Expr[Boolean] =
+        def between(start: Expr[?], end: Expr[?]): Expr[Boolean] =
             BetweenExpr(e, start, end, false)
 
         def notBetween(start: SqlDataType, end: SqlDataType): Expr[Boolean] =
             BetweenExpr(e, LiteralExpr(start), LiteralExpr(end), true)
 
-        def notBetween(start: Expr[_], end: Expr[_]): Expr[Boolean] =
+        def notBetween(start: Expr[?], end: Expr[?]): Expr[Boolean] =
             BetweenExpr(e, start, end, true)
 
         def like(value: String): BinaryExpr[Boolean] =
             BinaryExpr(e, SqlBinaryOperator.Like, LiteralExpr(value))
 
-        def like(expr: Expr[_]): BinaryExpr[Boolean] =
+        def like(expr: Expr[?]): BinaryExpr[Boolean] =
             BinaryExpr(e, SqlBinaryOperator.Like, expr)
 
         def notLike(value: String): BinaryExpr[Boolean] =
             BinaryExpr(e, SqlBinaryOperator.NotLike, LiteralExpr(value))
 
-        def notLike(expr: Expr[_]): BinaryExpr[Boolean] =
+        def notLike(expr: Expr[?]): BinaryExpr[Boolean] =
             BinaryExpr(e, SqlBinaryOperator.NotLike, expr)
 
         @targetName("json")
@@ -1147,8 +1135,20 @@ given unsafeOperator: ExprOperator[_] with {
     }
 }
 
+extension (x: Expr[Boolean]) {
+    @targetName("thenIsNumber")
+    infix def thenIs[R <: SqlNumberType](value: R): CaseBranch[BigDecimal] = 
+        CaseBranch(x, LiteralExpr(value))
+
+    infix def thenIs[R <: SqlDataType](value: R): CaseBranch[R] = 
+        CaseBranch(x, LiteralExpr(value))
+
+    infix def thenIs[R <: SqlDataType](value: Expr[R]): CaseBranch[R] = 
+        CaseBranch(x, value)
+}
+
 case class AliasExpr[T <: SqlDataType, Alias <: String](expr: Expr[T], name: Alias)
 
-case class CaseBranch[T](expr: Expr[_], thenValue: Expr[_])
+case class CaseBranch[T](expr: Expr[?], thenValue: Expr[?])
 
-case class OrderBy(expr: Expr[_], order: SqlOrderByOption)
+case class OrderBy(expr: Expr[?], order: SqlOrderByOption)

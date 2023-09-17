@@ -48,13 +48,13 @@ class Update(private val ast: SqlUpdate) extends NonSelect {
         new Update(SqlUpdate(table, updateList, Some(where)))
     }
 
-    def update(table: TableSchema[_]): Update =
+    def update(table: TableSchema[?]): Update =
         new Update(ast.copy(table = Some(SqlIdentTable(table.__tableName, None))))
 
-    infix def set(items: (ColumnExpr[_, _] | DynamicExpr[_], Expr[_])*): Update = {
+    infix def set(items: (ColumnExpr[?, ?] | DynamicExpr[?], Expr[?])*): Update = {
         val updateList = items map { (column, value) =>
             val columnExpr = column match {
-                case c: ColumnExpr[_, _] => SqlIdentExpr(c.columnName)
+                case c: ColumnExpr[?, ?] => SqlIdentExpr(c.columnName)
                 case DynamicExpr(expr) => expr
             }
             val valueExpr = exprToSqlExpr(value)

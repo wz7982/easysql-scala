@@ -18,7 +18,7 @@ trait Query[T <: Tuple, A <: Tuple] {
 
     def getSelectItems: Map[String, String]
 
-    def unionClause[RT <: Tuple](unionType: SqlUnionType, right: Query[RT, _]): Union[UnionType[T, RT], A] =
+    def unionClause[RT <: Tuple](unionType: SqlUnionType, right: Query[RT, ?]): Union[UnionType[T, RT], A] =
         Union(getSelectItems, getAst, unionType, right.getAst)
 
     def unionClause[RT <: Tuple](unionType: SqlUnionType, right: RT): Union[UnionType[T, RT], A] =
@@ -27,7 +27,7 @@ trait Query[T <: Tuple, A <: Tuple] {
     def unionClause[RT <: Tuple](unionType: SqlUnionType, right: List[RT]): Union[UnionType[T, RT], A] =
         Union(getSelectItems, getAst, unionType, Values(right).ast)
 
-    infix def union[RT <: Tuple](right: Query[RT, _]): Union[UnionType[T, RT], A] =
+    infix def union[RT <: Tuple](right: Query[RT, ?]): Union[UnionType[T, RT], A] =
         unionClause(SqlUnionType.Union, right)
 
     infix def union[RT <: Tuple](right: RT): Union[UnionType[T, RT], A] =
@@ -36,7 +36,7 @@ trait Query[T <: Tuple, A <: Tuple] {
     infix def union[RT <: Tuple](right: List[RT]): Union[UnionType[T, RT], A] =
         unionClause(SqlUnionType.Union, right)
 
-    infix def unionAll[RT <: Tuple](right: Query[RT, _]): Union[UnionType[T, RT], A] =
+    infix def unionAll[RT <: Tuple](right: Query[RT, ?]): Union[UnionType[T, RT], A] =
         unionClause(SqlUnionType.UnionAll, right)
 
     infix def unionAll[RT <: Tuple](right: RT): Union[UnionType[T, RT], A] =
@@ -45,7 +45,7 @@ trait Query[T <: Tuple, A <: Tuple] {
     infix def unionAll[RT <: Tuple](right: List[RT]): Union[UnionType[T, RT], A] =
         unionClause(SqlUnionType.UnionAll, right)
 
-    infix def except[RT <: Tuple](right: Query[RT, _]): Union[UnionType[T, RT], A] =
+    infix def except[RT <: Tuple](right: Query[RT, ?]): Union[UnionType[T, RT], A] =
         unionClause(SqlUnionType.Except, right)
 
     infix def except[RT <: Tuple](right: RT): Union[UnionType[T, RT], A] =
@@ -54,7 +54,7 @@ trait Query[T <: Tuple, A <: Tuple] {
     infix def except[RT <: Tuple](right: List[RT]): Union[UnionType[T, RT], A] =
         unionClause(SqlUnionType.Except, right)
 
-    infix def exceptAll[RT <: Tuple](right: Query[RT, _]): Union[UnionType[T, RT], A] =
+    infix def exceptAll[RT <: Tuple](right: Query[RT, ?]): Union[UnionType[T, RT], A] =
         unionClause(SqlUnionType.ExceptAll, right)
 
     infix def exceptAll[RT <: Tuple](right: RT): Union[UnionType[T, RT], A] =
@@ -63,7 +63,7 @@ trait Query[T <: Tuple, A <: Tuple] {
     infix def exceptAll[RT <: Tuple](right: List[RT]): Union[UnionType[T, RT], A] =
         unionClause(SqlUnionType.ExceptAll, right)
 
-    infix def intersect[RT <: Tuple](right: Query[RT, _]): Union[UnionType[T, RT], A] =
+    infix def intersect[RT <: Tuple](right: Query[RT, ?]): Union[UnionType[T, RT], A] =
         unionClause(SqlUnionType.Intersect, right)
 
     infix def intersect[RT <: Tuple](right: RT): Union[UnionType[T, RT], A] =
@@ -72,7 +72,7 @@ trait Query[T <: Tuple, A <: Tuple] {
     infix def intersect[RT <: Tuple](right: List[RT]): Union[UnionType[T, RT], A] =
         unionClause(SqlUnionType.Intersect, right)
 
-    infix def intersectAll[RT <: Tuple](right: Query[RT, _]): Union[UnionType[T, RT], A] =
+    infix def intersectAll[RT <: Tuple](right: Query[RT, ?]): Union[UnionType[T, RT], A] =
         unionClause(SqlUnionType.IntersectAll, right)
 
     infix def intersectAll[RT <: Tuple](right: RT): Union[UnionType[T, RT], A] =
@@ -89,13 +89,13 @@ trait Query[T <: Tuple, A <: Tuple] {
 }
 
 object Query {
-    extension [T <: SqlDataType] (s: Query[Tuple1[T], _]) {
+    extension [T <: SqlDataType] (s: Query[Tuple1[T], ?]) {
         def toExpr: SubQueryExpr[T] =
             SubQueryExpr(s)
     }
 
-    given queryToSql: ToSql[Query[_, _]] with {
-        extension (x: Query[_, _]) {
+    given queryToSql: ToSql[Query[?, ?]] with {
+        extension (x: Query[?, ?]) {
             def sql(db: DB): String =
                 queryToString(x.getAst, db, false)._1
 
@@ -110,7 +110,7 @@ class AliasQuery[T <: Tuple, A <: Tuple](
     private[select] val __ast: SqlQuery,
     private[select] val __queryName: String
 ) extends Dynamic {
-    transparent inline def selectDynamic[N <: String & Singleton](inline name: N): ColumnExpr[_, _] = {
+    transparent inline def selectDynamic[N <: String & Singleton](inline name: N): ColumnExpr[?, ?] = {
         inline erasedValue[A] match {
             case _: EmptyTuple => error("value " + name + " is not a member of this query")
             case _ => {

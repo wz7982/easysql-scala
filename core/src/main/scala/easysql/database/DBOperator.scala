@@ -25,14 +25,14 @@ trait DBOperator[D, F[_] : DBMonad] {
         runSql(x, info._1, info._2)
     }
 
-    def runAndReturnKeyMonad(x: D, query: Insert[_, _])(using logger: Logger): F[List[Long]] = {
+    def runAndReturnKeyMonad(x: D, query: Insert[?, ?])(using logger: Logger): F[List[Long]] = {
         val info = query.preparedSql(db(x))
         logger.apply(s"execute sql: \n${info._1}")
 
         runSqlAndReturnKey(x, info._1, info._2)
     }
 
-    inline def queryMonad[T <: Tuple](x: D, query: Query[T, _])(using logger: Logger): F[List[ResultType[T]]] = {
+    inline def queryMonad[T <: Tuple](x: D, query: Query[T, ?])(using logger: Logger): F[List[ResultType[T]]] = {
         val info = query.preparedSql(db(x))
         logger.apply(s"execute sql: \n${info._1}")
 
@@ -41,7 +41,7 @@ trait DBOperator[D, F[_] : DBMonad] {
         } yield data.map(bind[ResultType[T]](0, _))
     }
 
-    inline def queryMonad[T <: Tuple](x: D, query: MonadicQuery[T, _])(using logger: Logger): F[List[ResultType[T]]] = {
+    inline def queryMonad[T <: Tuple](x: D, query: MonadicQuery[T, ?])(using logger: Logger): F[List[ResultType[T]]] = {
         val info = query.preparedSql(db(x))
         logger.apply(s"execute sql: \n${info._1}")
 
@@ -68,13 +68,13 @@ trait DBOperator[D, F[_] : DBMonad] {
         } yield data.map(bind[ResultType[T]](0, _))
     }
 
-    inline def querySkipNoneRowsMonad[T](x: D, query: Query[Tuple1[T], _])(using logger: Logger): F[List[T]] = {
+    inline def querySkipNoneRowsMonad[T](x: D, query: Query[Tuple1[T], ?])(using logger: Logger): F[List[T]] = {
         for {
             data <- queryMonad(x, query)
         } yield data.filter(_.nonEmpty).map(_.get)
     }
 
-    inline def querySkipNoneRowsMonad[T](x: D, query: MonadicQuery[Tuple1[T], _])(using logger: Logger): F[List[T]] = {
+    inline def querySkipNoneRowsMonad[T](x: D, query: MonadicQuery[Tuple1[T], ?])(using logger: Logger): F[List[T]] = {
         for {
             data <- queryMonad(x, query)
         } yield data.filter(_.nonEmpty).map(_.get)
@@ -92,13 +92,13 @@ trait DBOperator[D, F[_] : DBMonad] {
         } yield data.filter(_.nonEmpty).map(_.get)
     }
 
-    inline def findMonad[T <: Tuple](x: D, query: Select[T, _])(using logger: Logger): F[Option[ResultType[T]]] = {
+    inline def findMonad[T <: Tuple](x: D, query: Select[T, ?])(using logger: Logger): F[Option[ResultType[T]]] = {
         for {
             data <- queryMonad(x, query.limit(1))
         } yield data.headOption
     }
     
-    inline def pageMonad[T <: Tuple](x: D, query: Select[T, _])(pageSize: Int, pageNumber: Int, queryCount: Boolean)(using logger: Logger): F[Page[ResultType[T]]] = {
+    inline def pageMonad[T <: Tuple](x: D, query: Select[T, ?])(pageSize: Int, pageNumber: Int, queryCount: Boolean)(using logger: Logger): F[Page[ResultType[T]]] = {
         val data = if (pageSize == 0) {
             summon[DBMonad[F]].pure(Nil)
         } else {
@@ -130,7 +130,7 @@ trait DBOperator[D, F[_] : DBMonad] {
         } yield Page(t, c, pageNumber, pageSize, d)
     }
 
-    def fetchCountMonad(x: D, query: Select[_, _])(using logger: Logger): F[Long] = {
+    def fetchCountMonad(x: D, query: Select[?, ?])(using logger: Logger): F[Long] = {
         val info = query.preparedSql(db(x))
         logger.apply(s"execute sql: \n${info._1}")
 

@@ -12,7 +12,7 @@ class With[T <: Tuple](
     def getAst: SqlWith = 
         ast
 
-    def commonTable(query: AliasQuery[_, _]*): With[T] = {
+    def commonTable(query: AliasQuery[?, ?]*): With[T] = {
         val withInfo = query.toList map { q =>
             SqlWithItem(SqlIdentExpr(q.__queryName), q.__ast, q.__selectItems.values.map(SqlIdentExpr(_)).toList)
         }

@@ -39,7 +39,7 @@ def camelListToSnakeList(s: List[Char]): List[Char] = s match {
 def camelToSnake(s: String): String = 
     camelListToSnakeList(s.toList).mkString
 
-def exprToSqlExpr(expr: Expr[_]): SqlExpr = expr match {
+def exprToSqlExpr(expr: Expr[?]): SqlExpr = expr match {
     case NullExpr => 
         SqlNullExpr
     case LiteralExpr(value) => 
@@ -54,7 +54,7 @@ def exprToSqlExpr(expr: Expr[_]): SqlExpr = expr match {
         SqlQueryExpr(query.getAst)
     case FuncExpr(name, args) => 
         SqlExprFuncExpr(name, args.map(exprToSqlExpr))
-    case agg: AggExpr[_] =>
+    case agg: AggExpr[?] =>
         aggExprToSqlExpr(agg)
     case CaseExpr(branches, default) =>
         SqlCaseExpr(branches.map(b => SqlCase(exprToSqlExpr(b.expr), exprToSqlExpr(b.thenValue))), exprToSqlExpr(default))
@@ -74,7 +74,7 @@ def exprToSqlExpr(expr: Expr[_]): SqlExpr = expr match {
         expr
 }
 
-def aggExprToSqlExpr(agg: AggExpr[_]): SqlAggFuncExpr = agg match {
+def aggExprToSqlExpr(agg: AggExpr[?]): SqlAggFuncExpr = agg match {
     case AggExpr(name, args, distinct, attrs, orderBy) =>
         SqlAggFuncExpr(
             name,

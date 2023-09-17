@@ -52,7 +52,7 @@ def insertMetaDataMacro[T <: Product](entity: Expr[T])(using q: Quotes, tpe: Typ
                     val vdt = vd.tpt.tpe.asType
                     vdt match {
                         case '[t] => {
-                            val expr = statement.asExprOf[CustomSerializer[t, _]]
+                            val expr = statement.asExprOf[CustomSerializer[t, ?]]
                             val fieldExpr = fieldTerm.asExprOf[t]
                             '{ $expr.toValue($fieldExpr) }.asTerm
                         }
@@ -136,7 +136,7 @@ def updateMetaDataMacro[T <: Product](entity: Expr[T])(using q: Quotes, tpe: Typ
                     val vdt = vd.tpt.tpe.asType
                     vdt match {
                         case '[t] => {
-                            val expr = statement.asExprOf[CustomSerializer[t, _]]
+                            val expr = statement.asExprOf[CustomSerializer[t, ?]]
                             val fieldExpr = fieldTerm.asExprOf[t]
                             '{ $expr.toValue($fieldExpr) }.asTerm
                         }
