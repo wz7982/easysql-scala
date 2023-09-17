@@ -835,21 +835,21 @@ object Expr {
                 BinaryExpr(e, SqlBinaryOperator.JsonText, LiteralExpr(json))
 
             @targetName("plus")
-            def +(expr: Expr[Date]): BinaryExpr[BigDecimal] = 
+            def +(expr: Expr[Date]): BinaryExpr[Date] = 
                 BinaryExpr(e, SqlBinaryOperator.Add, expr)
 
             @targetName("minus")
-            def -(expr: Expr[Date]): BinaryExpr[BigDecimal] = 
+            def -(expr: Expr[Date]): BinaryExpr[Date] = 
                 BinaryExpr(e, SqlBinaryOperator.Sub, expr)
         }
 
         extension (v: String) {
             @targetName("plus")
-            def +(expr: Expr[Date]): BinaryExpr[BigDecimal] = 
+            def +(expr: Expr[Date]): BinaryExpr[Date] = 
                 BinaryExpr(value(v), SqlBinaryOperator.Add, expr)
 
             @targetName("minus")
-            def -(expr: Expr[Date]): BinaryExpr[BigDecimal] = 
+            def -(expr: Expr[Date]): BinaryExpr[Date] = 
                 BinaryExpr(value(v), SqlBinaryOperator.Sub, expr)
 
             def unsafeAs(name: String): AliasExpr[String, name.type] =
@@ -939,11 +939,11 @@ object Expr {
                 BinaryExpr(e, SqlBinaryOperator.Le, LiteralExpr(s))
 
             @targetName("plus")
-            def +(expr: Expr[Date]): BinaryExpr[BigDecimal] = 
+            def +(expr: Expr[Date]): BinaryExpr[Date] = 
                 BinaryExpr(e, SqlBinaryOperator.Add, expr)
 
             @targetName("minus")
-            def -(expr: Expr[Date]): BinaryExpr[BigDecimal] = 
+            def -(expr: Expr[Date]): BinaryExpr[Date] = 
                 BinaryExpr(e, SqlBinaryOperator.Sub, expr)
 
             def between(start: String, end: String): Expr[Boolean] =
