@@ -160,6 +160,7 @@ inline def delete[T <: Product](pk: SqlDataType | Tuple): Delete =
 def truncate(table: TableSchema[?]): Truncate = 
     Truncate().truncate(table)
 
+@experimental
 def jpa[E <: Product](table: TableSchema[E]): JPA[E] =
     JPA(table)
 
