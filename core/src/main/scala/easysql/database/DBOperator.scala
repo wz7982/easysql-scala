@@ -59,13 +59,13 @@ trait DBOperator[D, F[_] : DBMonad] {
         } yield data.map(bind[ResultType[T]](0, _))
     }
 
-    inline def queryMonad[T <: Tuple](x: D, query: NativeSql)(using logger: Logger): F[List[ResultType[T]]] = {
+    inline def queryMonad[T](x: D, query: NativeSql)(using logger: Logger): F[List[NativeSqlResultType[T]]] = {
         val info = query.preparedSql(db(x))
         logger.apply(s"execute sql: \n${info._1}")
 
         for {
             data <- querySql(x, info._1, info._2)
-        } yield data.map(bind[ResultType[T]](0, _))
+        } yield data.map(bind[NativeSqlResultType[T]](0, _))
     }
 
     inline def querySkipNoneRowsMonad[T](x: D, query: Query[Tuple1[T], ?])(using logger: Logger): F[List[T]] = {

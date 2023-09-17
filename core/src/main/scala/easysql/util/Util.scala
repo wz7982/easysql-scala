@@ -16,6 +16,7 @@ def fetchPrinter(db: DB, prepare: Boolean): SqlPrinter = db match {
     case DB.SQLSERVER => new SqlserverPrinter(prepare)
     case DB.SQLITE => new SqlitePrinter(prepare)
     case DB.ORACLE => new OraclePrinter(prepare)
+    case DB.DB2 => new Db2Printer(prepare)
 }
 
 def queryToString(query: SqlQuery, db: DB, prepare: Boolean): (String, Array[Any]) = {

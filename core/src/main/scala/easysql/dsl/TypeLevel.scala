@@ -85,6 +85,11 @@ type ResultType[T <: Tuple] = T match {
     case _ => MapOption[T]
 }
 
+type NativeSqlResultType[T] = T match {
+    case Tuple => ResultType[T]
+    case _ => Option[T]
+}
+
 type MapOption[T <: Tuple] = T match {
     case h *: t => Option[h] *: MapOption[t]
     case EmptyTuple => EmptyTuple

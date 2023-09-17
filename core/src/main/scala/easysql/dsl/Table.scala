@@ -47,6 +47,9 @@ class TableSchema[E <: Product](
 
     def * : this.type =
         this
+
+    def apply[T <: Tuple](columns: T): (this.type, T) =
+        (this, columns)
 }
 
 case class JoinTable(

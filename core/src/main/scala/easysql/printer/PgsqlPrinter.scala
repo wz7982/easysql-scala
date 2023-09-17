@@ -8,7 +8,7 @@ class PgsqlPrinter(override val prepare: Boolean) extends SqlPrinter(prepare) {
         sqlBuilder.append("INTERVAL")
         sqlBuilder.append(" '")
         sqlBuilder.append(expr.value)
-        sqlBuilder.append("' ")
+        sqlBuilder.append("'")
     }
 
     override def printUpsert(upsert: SqlUpsert): Unit = {
