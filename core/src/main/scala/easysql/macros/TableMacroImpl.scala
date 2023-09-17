@@ -115,11 +115,7 @@ def identNamesMacro[T](using q: Quotes, t: Type[T]): Expr[List[String]] = {
     import q.reflect.*
 
     val sym = TypeTree.of[T].symbol
-    val fields = sym.declaredFields.map { f =>
-        var fieldName = f.name
-
-        Expr(fieldName)
-    }
+    val fields = sym.declaredFields.map(f => Expr(f.name))
 
     Expr.ofList(fields)
 }
@@ -129,7 +125,6 @@ def tableInfoMacro[T <: Product](using q: Quotes, t: Type[T]): Expr[Any] = {
 
     val sym = TypeTree.of[T].symbol
     val fields = sym.declaredFields
-    var typ = TypeRepr.of[TableSchema[T]]
     val tableName = fetchTableNameMacro[T]
     val typs = fields.map { field =>
         val singletonName = Singleton(Expr(field.name).asTerm)
@@ -186,7 +181,7 @@ def tableInfoMacro[T <: Product](using q: Quotes, t: Type[T]): Expr[Any] = {
         }
     }
 
-    var refinement = Refinement(typ, typs.head._1, typs.head._2)
+    var refinement = Refinement(TypeRepr.of[TableSchema[T]], typs.head._1, typs.head._2)
     for (i <- 1 until typs.size) {
         refinement = Refinement(refinement, typs(i)._1, typs(i)._2)
     }
