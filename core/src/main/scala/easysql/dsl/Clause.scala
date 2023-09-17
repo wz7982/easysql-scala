@@ -88,14 +88,14 @@ extension (n: Int) {
 transparent inline def asTable[T <: Product]: Any = 
     tableInfo[T]
 
-extension [T <: SqlDataType] (expr: ColumnExpr[T, ?] | DynamicExpr[T]) {
-    infix def toExpr[R <: UpdateType[T]](value: Expr[R]): (ColumnExpr[T, ?] | DynamicExpr[T], Expr[R]) = 
-        (expr, value)
-
-    infix def to[R <: UpdateType[T]](value: R): (ColumnExpr[T, ?] | DynamicExpr[T], Expr[R]) = 
+extension [T <: SqlDataType] (expr: ColumnExpr[T, ?]) {
+    def :=(value: T): (ColumnExpr[T, ?], Expr[?]) =
         (expr, LiteralExpr(value))
 
-    infix def toOption[R <: UpdateType[T]](value: Option[R]): (ColumnExpr[T, ?] | DynamicExpr[T], Expr[?]) = {
+    def :=(value: Expr[T]): (ColumnExpr[T, ?], Expr[?]) =
+        (expr, value)
+
+    def :=(value: Option[T]): (ColumnExpr[T, ?], Expr[?]) = {
         val updateExpr = value match {
             case None => NullExpr
             case Some(value) => LiteralExpr(value)
@@ -158,8 +158,13 @@ def commonTable(query: AliasQuery[?, ?]*): With[EmptyTuple] =
 def monadicQuery[T <: Product](table: TableSchema[T]): MonadicQuery[Tuple1[T], table.type] =
     MonadicQuery(table)
 
-def insertInto[T <: Tuple](table: TableSchema[?])(columns: T): Insert[InverseMap[T], Nothing] = 
-    Insert().insertInto(table)(columns)
+class InsertToken {
+    infix def into[T <: Tuple](table: (TableSchema[?], T)): Insert[InverseMap[T], Nothing] = 
+        Insert().insertInto(table._1)(table._2)
+}
+
+def insert: InsertToken =
+    new InsertToken
 
 inline def insert[T <: Product](entities: T*): Insert[EmptyTuple, InsertEntity] = 
     Insert().insert(entities*)
@@ -170,14 +175,24 @@ inline def insert[T <: Product](entityList: List[T]) =
 inline def save[T <: Product](entity: T): Save = 
     Save().save(entity)
 
-def update(table: TableSchema[?]): Update = 
-    Update().update(table)
+class UpdateToken {
+    infix def table(table: TableSchema[?]): Update =
+        Update().update(table)
+}
+
+def update: UpdateToken =
+    new UpdateToken
 
 inline def update[T <: Product](entity: T, skipNone: Boolean): Update = 
     Update().update(entity, skipNone)
 
-def deleteFrom(table: TableSchema[?]): Delete = 
-    Delete().deleteFrom(table)
+class DeleteToken {
+    infix def from(table: TableSchema[?]): Delete =
+        Delete().deleteFrom(table)
+}
+
+def delete: DeleteToken =
+    new DeleteToken
 
 inline def delete[T <: Product](pk: SqlDataType | Tuple): Delete = 
     Delete().delete[T](pk)
