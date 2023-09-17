@@ -13,7 +13,7 @@ class JPA[E <: Product](val table: TableSchema[E]) extends Dynamic {
         inline name: N
     )(using m: Mirror.ProductOf[E])(
         args: JPAArgsType[m.MirroredElemTypes, m.MirroredElemLabels, SplitUnderline[N]]
-    ): Select[Tuple1[E], _] = {
+    ): Select[Tuple1[E], ?] = {
         import scala.language.unsafeNulls
 
         val query = select(table).from(table)

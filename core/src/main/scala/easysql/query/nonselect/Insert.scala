@@ -37,17 +37,17 @@ class Insert[T <: Tuple, S <: InsertState](private val ast: SqlInsert) extends N
         new Insert(ast.copy(table = table, values = insertList, columns = columns))
     }
 
-    def insertInto[C <: Tuple](table: TableSchema[_])(columns: C): Insert[InverseMap[C], Nothing] = {
+    def insertInto[C <: Tuple](table: TableSchema[?])(columns: C): Insert[InverseMap[C], Nothing] = {
         val insertTable = Some(SqlIdentTable(table.__tableName, None))
         val insertColumns = columns.toList.filter {
-            case e: DynamicExpr[_] => true
-            case e: ColumnExpr[_, _] => true
-            case e: PrimaryKeyExpr[_, _] => true
+            case e: DynamicExpr[?] => true
+            case e: ColumnExpr[?, ?] => true
+            case e: PrimaryKeyExpr[?, ?] => true
             case _ => false
         }.map {
-            case e: DynamicExpr[_] => e.expr
-            case e: ColumnExpr[_, _] => SqlIdentExpr(e.columnName)
-            case e: PrimaryKeyExpr[_, _] => SqlIdentExpr(e.columnName)
+            case e: DynamicExpr[?] => e.expr
+            case e: ColumnExpr[?, ?] => SqlIdentExpr(e.columnName)
+            case e: PrimaryKeyExpr[?, ?] => SqlIdentExpr(e.columnName)
         }
 
         new Insert(ast.copy(table = insertTable, columns = insertColumns))
@@ -57,7 +57,7 @@ class Insert[T <: Tuple, S <: InsertState](private val ast: SqlInsert) extends N
         val insertInfo = values.toList.map { v =>
             v.toList.map {
                 case d: SqlDataType => exprToSqlExpr(LiteralExpr(d))
-                case o: Option[_] => o match {
+                case o: Option[?] => o match {
                     case Some(value) => exprToSqlExpr(LiteralExpr(value.asInstanceOf[SqlDataType]))
                     case _ => exprToSqlExpr(NullExpr)
                 }

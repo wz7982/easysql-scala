@@ -52,7 +52,7 @@ def bindEntityMacro[T](nextIndex: Expr[Int], data: Expr[Array[Any]])(using q: Qu
                             }
                             case Some(value) => {
                                 val offset = Expr(i)
-                                val expr = value(1).asExprOf[CustomSerializer[t, _]]
+                                val expr = value(1).asExprOf[CustomSerializer[t, ?]]
                                 '{ $expr.fromValue($data($nextIndex + $offset)) }
                             }
                         }

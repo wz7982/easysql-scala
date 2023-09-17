@@ -32,13 +32,13 @@ class MonadicQuery[T <: Tuple, From](
         val selectList = f(from)
 
         val selectInfo = selectList.toArray.map {
-            case expr: Expr[_] => expr match {
+            case expr: Expr[?] => expr match {
                 case ColumnExpr(_, columnName, identName) => List(SqlSelectItem(exprToSqlExpr(expr), None))
                 case PrimaryKeyExpr(_, columnName, identName, _) => List(SqlSelectItem(exprToSqlExpr(expr), None))
                 case _ => List(SqlSelectItem(exprToSqlExpr(expr), None))
             }
             case AliasExpr(expr, name) => List(SqlSelectItem(exprToSqlExpr(expr), Some(name)))
-            case table: TableSchema[_] => table.__cols.map(c => SqlSelectItem(exprToSqlExpr(c), None))
+            case table: TableSchema[?] => table.__cols.map(c => SqlSelectItem(exprToSqlExpr(c), None))
         }.toList
 
         val sqlSelectItems = for {
@@ -67,7 +67,7 @@ class MonadicQuery[T <: Tuple, From](
         new MonadicQuery(query.copy(select = sqlSelectItem :: Nil), None)
     }
 
-    def flatMap[MT <: Tuple](f: From => MonadicQuery[MT, _]): MonadicQuery[MT, None.type] = {
+    def flatMap[MT <: Tuple](f: From => MonadicQuery[MT, ?]): MonadicQuery[MT, None.type] = {
         val thatQuery = f(from)
 
         new MonadicQuery(this.query.combine(thatQuery.query).copy(select = thatQuery.query.select), None)
@@ -85,7 +85,7 @@ class MonadicQuery[T <: Tuple, From](
         new MonadicQuery(this.query.copy(limit = sqlLimit), from)
     }
 
-    def groupBy(f: From => Expr[_]): MonadicQuery[T, From] = {
+    def groupBy(f: From => Expr[?]): MonadicQuery[T, From] = {
         val expr = f(from)
         val sqlExpr = exprToSqlExpr(expr)
 
@@ -106,7 +106,7 @@ class MonadicQuery[T <: Tuple, From](
     ): MonadicQuery[Tuple.Concat[T, Tuple1[E]], MonadicJoin[From, table.type]] = {
         val from = {
             this.from match {
-                case t: TableSchema[_] => (t, table)
+                case t: TableSchema[?] => (t, table)
                 case t: Tuple => t ++ Tuple1(table)
             }
         }.asInstanceOf[MonadicJoin[From, table.type]]
@@ -207,8 +207,8 @@ object MonadicQuery {
         new MonadicQuery(query, table)
     }
 
-    given monadicQueryToSql: ToSql[MonadicQuery[_, _]] with {
-        extension (x: MonadicQuery[_, _]) {
+    given monadicQueryToSql: ToSql[MonadicQuery[?, ?]] with {
+        extension (x: MonadicQuery[?, ?]) {
             def sql(db: DB): String =
                 queryToString(x.query, db, false)._1
 
@@ -217,7 +217,7 @@ object MonadicQuery {
         }
     }
 
-    extension [T <: SqlDataType] (q: MonadicQuery[Tuple1[T], _]) {
+    extension [T <: SqlDataType] (q: MonadicQuery[Tuple1[T], ?]) {
         def exists: MonadicQuery[Tuple1[Boolean], None.type] = {
             val expr = SqlExprFuncExpr("EXISTS", SqlQueryExpr(q.query) :: Nil)
             val selectItem = SqlSelectItem(expr, None)

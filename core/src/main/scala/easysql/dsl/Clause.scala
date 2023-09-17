@@ -98,7 +98,7 @@ def select[I <: SqlDataType, N <: String](item: AliasExpr[I, N]): Select[Tuple1[
 def select[P <: Product](table: TableSchema[P]): Select[Tuple1[P], EmptyTuple] = 
     Select().select(table)
 
-def dynamicSelect(columns: Expr[_]*): Select[EmptyTuple, EmptyTuple] =
+def dynamicSelect(columns: Expr[?]*): Select[EmptyTuple, EmptyTuple] =
     Select().dynamicsSelect(columns*)
 
 def from[P <: Product](table: TableSchema[P]): Select[Tuple1[P], EmptyTuple] =
@@ -127,17 +127,17 @@ def cte[T <: Tuple](withQuery: InWithQuery ?=> With[T]) = {
     withQuery
 }
 
-def commonTable(query: AliasQuery[_, _]*): With[EmptyTuple] =
+def commonTable(query: AliasQuery[?, ?]*): With[EmptyTuple] =
     With().commonTable(query*)
 
 def monadicQuery[T <: Product](table: TableSchema[T]): MonadicQuery[Tuple1[T], table.type] =
     MonadicQuery(table)
 
-def insertInto[T <: Tuple](table: TableSchema[_])(columns: T): Insert[InverseMap[T], Nothing] = 
+def insertInto[T <: Tuple](table: TableSchema[?])(columns: T): Insert[InverseMap[T], Nothing] = 
     Insert().insertInto(table)(columns)
 
 inline def insert[T <: Product](entities: T*): Insert[EmptyTuple, InsertEntity] = 
-    Insert().insert(entities: _*)
+    Insert().insert(entities*)
 
 inline def insert[T <: Product](entityList: List[T]) =
     Insert().insert(entityList*)
@@ -145,25 +145,25 @@ inline def insert[T <: Product](entityList: List[T]) =
 inline def save[T <: Product](entity: T): Save = 
     Save().save(entity)
 
-def update(table: TableSchema[_]): Update = 
+def update(table: TableSchema[?]): Update = 
     Update().update(table)
 
 inline def update[T <: Product](entity: T, skipNone: Boolean): Update = 
     Update().update(entity, skipNone)
 
-def deleteFrom(table: TableSchema[_]): Delete = 
+def deleteFrom(table: TableSchema[?]): Delete = 
     Delete().deleteFrom(table)
 
 inline def delete[T <: Product](pk: SqlDataType | Tuple): Delete = 
     Delete().delete[T](pk)
 
-def truncate(table: TableSchema[_]): Truncate = 
+def truncate(table: TableSchema[?]): Truncate = 
     Truncate().truncate(table)
 
 def jpa[E <: Product](table: TableSchema[E]): JPA[E] =
     JPA(table)
 
-extension (s: Select[_, _]) {
+extension (s: Select[?, ?]) {
     @experimental
     def toEsDsl = {
         val visitor = new ESPrinter()

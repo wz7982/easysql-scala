@@ -8,7 +8,7 @@ class Truncate(private val ast: SqlTruncate) extends NonSelect {
     override def getAst: SqlStatement =
         ast
 
-    def truncate(table: TableSchema[_]): Truncate = {
+    def truncate(table: TableSchema[?]): Truncate = {
         val truncateTable = Some(SqlIdentTable(table.__tableName, None))
 
         new Truncate(ast.copy(table = truncateTable))

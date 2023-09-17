@@ -27,9 +27,9 @@ sealed trait AnyTable {
 class TableSchema[E <: Product](
     private[easysql] val __tableName: String,
     private[easysql] val __aliasName: Option[String],
-    private[easysql] val __cols: List[ColumnExpr[_, _]]
+    private[easysql] val __cols: List[ColumnExpr[?, ?]]
 ) extends AnyTable with Selectable {
-    transparent inline def selectDynamic[N <: String & Singleton](inline name: N): Expr[_] = {
+    transparent inline def selectDynamic[N <: String & Singleton](inline name: N): Expr[?] = {
         val tableName = __aliasName.getOrElse(__tableName)
         val columnInfo = __cols.find(_.identName == name).get
         inline exprMeta[E](name) match {

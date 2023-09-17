@@ -131,7 +131,7 @@ def tableInfoMacro[T <: Product](using q: Quotes, t: Type[T]): Expr[Any] = {
         val annoNames = List("PrimaryKey", "IncrKey", "Column", "PrimaryKeyGenerator", "CustomColumn")
         var columnName = field.name
 
-        val columnType: (String, Option[Type[_]], List[Term]) = field.annotations.find {
+        val columnType: (String, Option[Type[?]], List[Term]) = field.annotations.find {
             case Apply(Select(New(TypeIdent(name)), _), _) if annoNames.contains(name) => true
             case Apply(TypeApply(Select(New(TypeIdent(name)), _), _), _) if name == "CustomColumn" => true
             case _ => false

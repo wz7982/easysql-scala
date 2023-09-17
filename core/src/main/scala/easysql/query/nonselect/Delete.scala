@@ -12,7 +12,7 @@ class Delete(private val ast: SqlDelete) extends NonSelect {
     override def getAst: SqlStatement =
         ast
 
-    infix def deleteFrom(table: TableSchema[_]): Delete =
+    infix def deleteFrom(table: TableSchema[?]): Delete =
         new Delete(ast.copy(table = Some(SqlIdentTable(table.__tableName, None))))
 
     inline def delete[T <: Product](pk: SqlDataType | Tuple): Delete = {

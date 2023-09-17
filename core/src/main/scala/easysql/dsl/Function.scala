@@ -5,10 +5,10 @@ import easysql.ast.*
 def count(): AggExpr[Long] =
     AggExpr("COUNT", Nil, false, Map(), Nil)
 
-def count(expr: Expr[_]): AggExpr[Long] =
+def count(expr: Expr[?]): AggExpr[Long] =
     AggExpr("COUNT", List(expr), false, Map(), Nil)
 
-def countDistinct(expr: Expr[_]): AggExpr[Long] =
+def countDistinct(expr: Expr[?]): AggExpr[Long] =
     AggExpr("COUNT", List(expr), true, Map(), Nil)
 
 def sum[T <: SqlNumberType](expr: Expr[T]): AggExpr[BigDecimal] =
@@ -32,21 +32,21 @@ def denseRank(): AggExpr[Long] =
 def rowNumber(): AggExpr[Long] =
     AggExpr("ROW_NUMBER", List(), false, Map(), Nil)
 
-def cube(expr: Expr[_]*): FuncExpr[Nothing] =
+def cube(expr: Expr[?]*): FuncExpr[Nothing] =
     FuncExpr("CUBE", expr.toList)
 
-def rollup(expr: Expr[_]*): FuncExpr[Nothing] =
+def rollup(expr: Expr[?]*): FuncExpr[Nothing] =
     FuncExpr("ROLLUP", expr.toList)
 
-def groupingSets(expr: (Expr[_] | Tuple | Unit)*): FuncExpr[Nothing] = {
+def groupingSets(expr: (Expr[?] | Tuple | Unit)*): FuncExpr[Nothing] = {
     val name = "GROUPING SETS"
     val args = expr.toList.map {
-        case e: Expr[_] => ListExpr(List(e))
+        case e: Expr[?] => ListExpr(List(e))
         case t: Tuple => {
             val list = t.toList
-            val exprList: List[Expr[_]] = list.map {
+            val exprList: List[Expr[?]] = list.map {
                 case v: SqlDataType => LiteralExpr(v)
-                case expr: Expr[_] => expr
+                case expr: Expr[?] => expr
             }
             ListExpr(exprList)
         }
