@@ -22,22 +22,22 @@ def col[T <: SqlDataType](text: String): DynamicExpr[T] =
 def caseWhen[T <: SqlDataType](branches: CaseBranch[T]*): CaseExpr[T] = 
     CaseExpr(branches.toList, NullExpr)
 
-def exists[T <: SqlDataType](query: Select[Tuple1[T], _]): FuncExpr[Boolean] = 
+def exists[T <: SqlDataType](query: Select[Tuple1[T], ?]): FuncExpr[Boolean] = 
     FuncExpr("EXISTS", List(SubQueryExpr(query)))
 
-def notExists[T <: SqlDataType](query: Select[Tuple1[T], _]): FuncExpr[Boolean] = 
+def notExists[T <: SqlDataType](query: Select[Tuple1[T], ?]): FuncExpr[Boolean] = 
     FuncExpr("NOT EXISTS", List(SubQueryExpr(query)))
 
-def all[T <: SqlDataType](query: Select[Tuple1[T], _]): FuncExpr[T] = 
+def all[T <: SqlDataType](query: Select[Tuple1[T], ?]): FuncExpr[T] = 
     FuncExpr("ALL", List(SubQueryExpr(query)))
 
-def any[T <: SqlDataType](query: Select[Tuple1[T], _]): FuncExpr[T] = 
+def any[T <: SqlDataType](query: Select[Tuple1[T], ?]): FuncExpr[T] = 
     FuncExpr("ANY", List(SubQueryExpr(query)))
 
-def some[T <: SqlDataType](query: Select[Tuple1[T], _]): FuncExpr[T] = 
+def some[T <: SqlDataType](query: Select[Tuple1[T], ?]): FuncExpr[T] = 
     FuncExpr("SOME", List(SubQueryExpr(query)))
 
-def cast[T <: SqlDataType](expr: Expr[_], castType: String): CastExpr[T] = 
+def cast[T <: SqlDataType](expr: Expr[?], castType: String): CastExpr[T] = 
     CastExpr(expr, castType)
 
 def table(name: String): TableSchema[Nothing] = 
@@ -63,14 +63,14 @@ extension (n: Int) {
 transparent inline def asTable[T <: Product]: Any = 
     tableInfo[T]
 
-extension [T <: SqlDataType] (expr: ColumnExpr[T, _] | DynamicExpr[T]) {
-    infix def toExpr[R <: UpdateType[T]](value: Expr[R]): (ColumnExpr[T, _] | DynamicExpr[T], Expr[R]) = 
+extension [T <: SqlDataType] (expr: ColumnExpr[T, ?] | DynamicExpr[T]) {
+    infix def toExpr[R <: UpdateType[T]](value: Expr[R]): (ColumnExpr[T, ?] | DynamicExpr[T], Expr[R]) = 
         (expr, value)
 
-    infix def to[R <: UpdateType[T]](value: R): (ColumnExpr[T, _] | DynamicExpr[T], Expr[R]) = 
+    infix def to[R <: UpdateType[T]](value: R): (ColumnExpr[T, ?] | DynamicExpr[T], Expr[R]) = 
         (expr, LiteralExpr(value))
 
-    infix def toOption[R <: UpdateType[T]](value: Option[R]): (ColumnExpr[T, _] | DynamicExpr[T], Expr[_]) = {
+    infix def toOption[R <: UpdateType[T]](value: Option[R]): (ColumnExpr[T, ?] | DynamicExpr[T], Expr[?]) = {
         val updateExpr = value match {
             case None => NullExpr
             case Some(value) => LiteralExpr(value)
