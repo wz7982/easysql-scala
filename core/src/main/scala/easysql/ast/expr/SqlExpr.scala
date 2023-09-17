@@ -53,3 +53,5 @@ case class SqlOverExpr(
 ) extends SqlExpr
 
 case class SqlCaseExpr(caseList: List[SqlCase], default: SqlExpr) extends SqlExpr
+
+case class SqlUnaryExpr(expr: SqlExpr, op: SqlUnaryOperator) extends SqlExpr

@@ -229,6 +229,11 @@ trait SqlPrinter(val prepare: Boolean) {
 
     def printExpr(expr: SqlExpr): Unit = {
         expr match {
+            case SqlUnaryExpr(expr, op) => {
+                sqlBuilder.append(op.operator)
+                printExpr(expr)
+            }
+
             case binary: SqlBinaryExpr => printBinaryExpr(binary)
 
             case SqlCharExpr(text) => {
