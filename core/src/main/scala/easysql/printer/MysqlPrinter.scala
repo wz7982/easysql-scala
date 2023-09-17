@@ -3,6 +3,7 @@ package easysql.printer
 import easysql.ast.expr.SqlListExpr
 import easysql.ast.limit.SqlLimit
 import easysql.ast.statement.*
+import easysql.ast.expr.SqlIntervalExpr
 
 class MysqlPrinter(override val prepare: Boolean) extends SqlPrinter(prepare) {
     override val quote = "`"
@@ -15,6 +16,14 @@ class MysqlPrinter(override val prepare: Boolean) extends SqlPrinter(prepare) {
         } else {
             sqlBuilder.append(s"LIMIT ${limit.offset}, ${limit.limit}")
         }
+    }
+
+    override def printlnIntervalExpr(expr: SqlIntervalExpr): Unit = {
+        sqlBuilder.append("INTERVAL")
+        sqlBuilder.append(" '")
+        sqlBuilder.append(expr.value)
+        sqlBuilder.append("' ")
+        sqlBuilder.append(expr.unit.get.unit)
     }
 
     override def printUpsert(upsert: SqlUpsert): Unit = {

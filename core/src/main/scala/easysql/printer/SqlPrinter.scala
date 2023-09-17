@@ -229,6 +229,11 @@ trait SqlPrinter(val prepare: Boolean) {
 
     def printExpr(expr: SqlExpr): Unit = {
         expr match {
+            case SqlUnaryExpr(expr, op) => {
+                sqlBuilder.append(op.operator)
+                printExpr(expr)
+            }
+
             case binary: SqlBinaryExpr => printBinaryExpr(binary)
 
             case SqlCharExpr(text) => {
@@ -386,8 +391,13 @@ trait SqlPrinter(val prepare: Boolean) {
                 printExpr(default)
                 sqlBuilder.append(" END")
             }
+
+            case interval: SqlIntervalExpr => printlnIntervalExpr(interval)
         }
     }
+
+    def printlnIntervalExpr(expr: SqlIntervalExpr): Unit = 
+        ???
 
     def printBinaryExpr(expr: SqlBinaryExpr): Unit = {
         def hasBrackets(parent: SqlBinaryExpr, child: SqlExpr): Boolean = {

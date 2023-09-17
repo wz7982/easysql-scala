@@ -235,6 +235,8 @@ case class CastExpr[T <: SqlDataType](expr: Expr[?], castType: String) extends E
 
 case class DynamicExpr[T <: SqlDataType](expr: SqlExpr) extends Expr[T]
 
+case class IntervalExpr(value: String, unit: Option[SqlIntervalUnit]) extends Expr[Date]
+
 trait ExprOperator[T <: SqlDataType] {
     extension (v: T) {
         @targetName("eq")
@@ -831,9 +833,25 @@ object Expr {
             @targetName("jsonText")
             def ->>(json: String): BinaryExpr[String] =
                 BinaryExpr(e, SqlBinaryOperator.JsonText, LiteralExpr(json))
+
+            @targetName("plus")
+            def +(expr: Expr[Date]): BinaryExpr[Date] = 
+                BinaryExpr(e, SqlBinaryOperator.Add, expr)
+
+            @targetName("minus")
+            def -(expr: Expr[Date]): BinaryExpr[Date] = 
+                BinaryExpr(e, SqlBinaryOperator.Sub, expr)
         }
 
         extension (v: String) {
+            @targetName("plus")
+            def +(expr: Expr[Date]): BinaryExpr[Date] = 
+                BinaryExpr(value(v), SqlBinaryOperator.Add, expr)
+
+            @targetName("minus")
+            def -(expr: Expr[Date]): BinaryExpr[Date] = 
+                BinaryExpr(value(v), SqlBinaryOperator.Sub, expr)
+
             def unsafeAs(name: String): AliasExpr[String, name.type] =
                 AliasExpr(LiteralExpr(v), name)
 
@@ -919,6 +937,14 @@ object Expr {
             @targetName("le")
             def <=(s: String): BinaryExpr[Boolean] =
                 BinaryExpr(e, SqlBinaryOperator.Le, LiteralExpr(s))
+
+            @targetName("plus")
+            def +(expr: Expr[Date]): BinaryExpr[Date] = 
+                BinaryExpr(e, SqlBinaryOperator.Add, expr)
+
+            @targetName("minus")
+            def -(expr: Expr[Date]): BinaryExpr[Date] = 
+                BinaryExpr(e, SqlBinaryOperator.Sub, expr)
 
             def between(start: String, end: String): Expr[Boolean] =
                 BetweenExpr(e, LiteralExpr(start), LiteralExpr(end), false)

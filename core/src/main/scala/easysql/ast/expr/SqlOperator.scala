@@ -22,3 +22,9 @@ enum SqlBinaryOperator(val operator: String) {
     case Json extends SqlBinaryOperator("->")
     case JsonText extends SqlBinaryOperator("->>")
 }
+
+enum SqlUnaryOperator(val operator: String) {
+    case Positive extends SqlUnaryOperator("+")
+    case Negative extends SqlUnaryOperator("-")
+    case Not extends SqlUnaryOperator("!")
+}

@@ -112,10 +112,10 @@ class AliasQuery[T <: Tuple, A <: Tuple](
 ) extends Dynamic {
     transparent inline def selectDynamic[N <: String & Singleton](inline name: N): ColumnExpr[?, ?] = {
         inline erasedValue[A] match {
-            case _: EmptyTuple => error("value " + name + " is not a member of this query")
+            case _: EmptyTuple => error("value " + name + " is not a column of this query")
             case _ => {
                 inline erasedValue[FindTypeByName[Zip[T, A], Size[T] - 1, N]] match {
-                    case _: Nothing => error("value " + name + " is not a member of this query")
+                    case _: Nothing => error("value " + name + " is not a column of this query")
                     case _ => {
                         val item = __selectItems(name)
                         ColumnExpr[FindTypeByName[Zip[T, A], Size[T] - 1, N] & SqlDataType, N](__queryName, item, name)
