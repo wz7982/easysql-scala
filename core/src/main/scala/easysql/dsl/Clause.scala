@@ -1,9 +1,7 @@
 package easysql.dsl
 
 import easysql.ast.SqlDataType
-import easysql.ast.expr.SqlBinaryOperator
-import easysql.ast.expr.SqlOverBetweenType
-import easysql.ast.expr.SqlNumberExpr
+import easysql.ast.expr.*
 import easysql.macros.*
 import easysql.printer.*
 import easysql.query.nonselect.*
@@ -39,6 +37,33 @@ def some[T <: SqlDataType](query: Select[Tuple1[T], ?]): FuncExpr[T] =
 
 def cast[T <: SqlDataType](expr: Expr[?], castType: String): CastExpr[T] = 
     CastExpr(expr, castType)
+
+def interval(value: String): IntervalExpr =
+    IntervalExpr(value, None)
+
+def interval(value: String, unit: SqlIntervalUnit): IntervalExpr =
+    IntervalExpr(value, Some(unit))
+
+def year: SqlIntervalUnit =
+    SqlIntervalUnit.Year
+
+def month: SqlIntervalUnit =
+    SqlIntervalUnit.Month
+
+def week: SqlIntervalUnit =
+    SqlIntervalUnit.Week
+
+def day: SqlIntervalUnit =
+    SqlIntervalUnit.Day
+
+def hour: SqlIntervalUnit =
+    SqlIntervalUnit.Hour
+
+def minute: SqlIntervalUnit =
+    SqlIntervalUnit.Minute
+
+def second: SqlIntervalUnit =
+    SqlIntervalUnit.Second
 
 def table(name: String): TableSchema[Nothing] = 
     TableSchema(name, None, Nil)

@@ -7,7 +7,6 @@ import easysql.query.select.*
 
 import java.util.Date
 import scala.annotation.targetName
-import easysql.ast.expr.SqlBinaryOperator
 
 sealed trait Expr[T <: SqlDataType] {
     @targetName("eq")
@@ -235,6 +234,8 @@ case class OverExpr[T <: SqlDataType](
 case class CastExpr[T <: SqlDataType](expr: Expr[?], castType: String) extends Expr[T]
 
 case class DynamicExpr[T <: SqlDataType](expr: SqlExpr) extends Expr[T]
+
+case class IntervalExpr(value: String, unit: Option[SqlIntervalUnit]) extends Expr[Date]
 
 trait ExprOperator[T <: SqlDataType] {
     extension (v: T) {
@@ -832,9 +833,25 @@ object Expr {
             @targetName("jsonText")
             def ->>(json: String): BinaryExpr[String] =
                 BinaryExpr(e, SqlBinaryOperator.JsonText, LiteralExpr(json))
+
+            @targetName("plus")
+            def +(expr: Expr[Date]): BinaryExpr[BigDecimal] = 
+                BinaryExpr(e, SqlBinaryOperator.Add, expr)
+
+            @targetName("minus")
+            def -(expr: Expr[Date]): BinaryExpr[BigDecimal] = 
+                BinaryExpr(e, SqlBinaryOperator.Sub, expr)
         }
 
         extension (v: String) {
+            @targetName("plus")
+            def +(expr: Expr[Date]): BinaryExpr[BigDecimal] = 
+                BinaryExpr(value(v), SqlBinaryOperator.Add, expr)
+
+            @targetName("minus")
+            def -(expr: Expr[Date]): BinaryExpr[BigDecimal] = 
+                BinaryExpr(value(v), SqlBinaryOperator.Sub, expr)
+
             def unsafeAs(name: String): AliasExpr[String, name.type] =
                 AliasExpr(LiteralExpr(v), name)
 
@@ -920,6 +937,14 @@ object Expr {
             @targetName("le")
             def <=(s: String): BinaryExpr[Boolean] =
                 BinaryExpr(e, SqlBinaryOperator.Le, LiteralExpr(s))
+
+            @targetName("plus")
+            def +(expr: Expr[Date]): BinaryExpr[BigDecimal] = 
+                BinaryExpr(e, SqlBinaryOperator.Add, expr)
+
+            @targetName("minus")
+            def -(expr: Expr[Date]): BinaryExpr[BigDecimal] = 
+                BinaryExpr(e, SqlBinaryOperator.Sub, expr)
 
             def between(start: String, end: String): Expr[Boolean] =
                 BetweenExpr(e, LiteralExpr(start), LiteralExpr(end), false)

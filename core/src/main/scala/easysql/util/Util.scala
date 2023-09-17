@@ -72,6 +72,8 @@ def exprToSqlExpr(expr: Expr[?]): SqlExpr = expr match {
         SqlListExpr(list.map(exprToSqlExpr))
     case DynamicExpr(expr) => 
         expr
+    case IntervalExpr(value, unit) => 
+        SqlIntervalExpr(value, unit)
 }
 
 def aggExprToSqlExpr(agg: AggExpr[?]): SqlAggFuncExpr = agg match {
