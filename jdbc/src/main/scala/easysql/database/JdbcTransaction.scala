@@ -45,7 +45,7 @@ inline def query[T <: Tuple](query: MonadicQuery[T, ?])(using logger: Logger, t:
 inline def query[T <: Tuple](query: With[T])(using logger: Logger, t: JdbcTransaction): List[ResultType[T]] = 
     summon[DBOperator[JdbcTransaction, Id]].queryMonad(t, query).get
 
-inline def query[T <: Tuple](query: NativeSql)(using logger: Logger, t: JdbcTransaction): List[ResultType[T]] = 
+inline def query[T](query: NativeSql)(using logger: Logger, t: JdbcTransaction): List[NativeSqlResultType[T]] = 
     summon[DBOperator[JdbcTransaction, Id]].queryMonad[T](t, query).get
 
 inline def querySkipNoneRows[T](query: Query[Tuple1[T], ?])(using logger: Logger, t: JdbcTransaction): List[T] = 
