@@ -13,7 +13,7 @@ import java.text.SimpleDateFormat
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 
-trait SqlPrinter(val prepare: Boolean) {
+abstract class SqlPrinter(val prepare: Boolean) {
     val sqlBuilder: StringBuilder = StringBuilder()
 
     val quote = "\""
