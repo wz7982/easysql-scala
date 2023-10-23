@@ -414,7 +414,7 @@ abstract class SqlPrinter(val prepare: Boolean) {
                 case (Xor, SqlBinaryExpr(_, Or, _)) => true
                 case (Mul | Div | Mod, SqlBinaryExpr(_, Add | Sub, _)) => true
                 case (Sub, SqlBinaryExpr(_, Add | Sub, _)) => true
-                case (Mul, SqlBinaryExpr(_, Mul | Div | Mod, _)) => true
+                case (Div | Mod, SqlBinaryExpr(_, Mul | Div | Mod, _)) => true
                 case _ => false
             }
         }
