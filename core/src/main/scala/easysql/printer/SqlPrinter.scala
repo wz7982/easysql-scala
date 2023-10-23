@@ -396,11 +396,10 @@ abstract class SqlPrinter(val prepare: Boolean) {
         }
     }
 
-    def printlnIntervalExpr(expr: SqlIntervalExpr): Unit = 
-        ???
+    def printlnIntervalExpr(expr: SqlIntervalExpr): Unit
 
     def printBinaryExpr(expr: SqlBinaryExpr): Unit = {
-        def hasBrackets(parent: SqlBinaryExpr, child: SqlExpr): Boolean = {
+        def hasBracketsLeft(parent: SqlBinaryExpr, child: SqlExpr): Boolean = {
             (parent.op, child) match {
                 case (And, SqlBinaryExpr(_, Or | Xor, _)) => true
                 case (Xor, SqlBinaryExpr(_, Or, _)) => true
@@ -409,7 +408,18 @@ abstract class SqlPrinter(val prepare: Boolean) {
             }
         }
 
-        val leftBrackets = hasBrackets(expr, expr.left)
+        def hasBracketsRight(parent: SqlBinaryExpr, child: SqlExpr): Boolean = {
+            (parent.op, child) match {
+                case (And, SqlBinaryExpr(_, Or | Xor, _)) => true
+                case (Xor, SqlBinaryExpr(_, Or, _)) => true
+                case (Mul | Div | Mod, SqlBinaryExpr(_, Add | Sub, _)) => true
+                case (Sub, SqlBinaryExpr(_, Add | Sub, _)) => true
+                case (Mul, SqlBinaryExpr(_, Mul | Div | Mod, _)) => true
+                case _ => false
+            }
+        }
+
+        val leftBrackets = hasBracketsLeft(expr, expr.left)
         if (leftBrackets) {
             sqlBuilder.append("(")
             printExpr(expr.left)
@@ -418,7 +428,7 @@ abstract class SqlPrinter(val prepare: Boolean) {
             printExpr(expr.left)
         }
         sqlBuilder.append(s" ${expr.op.operator} ")
-        val rightBrackets = hasBrackets(expr, expr.right)
+        val rightBrackets = hasBracketsRight(expr, expr.right)
         if (rightBrackets) {
             sqlBuilder.append("(")
             printExpr(expr.right)
