@@ -2,6 +2,7 @@ package easysql.printer
 
 import easysql.ast.limit.SqlLimit
 import easysql.ast.statement.*
+import easysql.ast.expr.SqlIntervalExpr
 
 class SqlserverPrinter(override val prepare: Boolean) extends SqlPrinter(prepare) {
     override def printLimit(limit: SqlLimit): Unit = {
@@ -131,4 +132,6 @@ class SqlserverPrinter(override val prepare: Boolean) extends SqlPrinter(prepare
         printList(upsert.value)(printExpr)
         sqlBuilder.append(")")
     }
+
+    override def printlnIntervalExpr(expr: SqlIntervalExpr): Unit = {}
 }

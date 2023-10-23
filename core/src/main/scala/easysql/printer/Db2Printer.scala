@@ -1,6 +1,7 @@
 package easysql.printer
 
 import easysql.ast.statement.SqlUpsert
+import easysql.ast.expr.SqlIntervalExpr
 
 class Db2Printer(override val prepare: Boolean) extends SqlPrinter(prepare) {
     override def printUpsert(upsert: SqlUpsert): Unit = {
@@ -58,4 +59,6 @@ class Db2Printer(override val prepare: Boolean) extends SqlPrinter(prepare) {
     }
 
     override def printWithRecursive(): Unit = {}
+
+    override def printlnIntervalExpr(expr: SqlIntervalExpr): Unit = {}
 }
