@@ -154,7 +154,7 @@ object DBOperator {
         }
     }
 
-    given dbMoandFuture(using ExecutionContext): DBMonad[Future] with {
+    given dbMonadFuture(using ExecutionContext): DBMonad[Future] with {
         def pure[T](x: T): Future[T] = 
             Future(x)
 

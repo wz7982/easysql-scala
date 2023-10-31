@@ -4,7 +4,7 @@ import easysql.ast.statement.SqlUpsert
 import easysql.ast.expr.SqlIntervalExpr
 
 class PgsqlPrinter(override val prepare: Boolean) extends SqlPrinter(prepare) {
-    override def printlnIntervalExpr(expr: SqlIntervalExpr): Unit = {
+    override def printIntervalExpr(expr: SqlIntervalExpr): Unit = {
         sqlBuilder.append("INTERVAL")
         sqlBuilder.append(" '")
         sqlBuilder.append(expr.value)

@@ -392,11 +392,11 @@ abstract class SqlPrinter(val prepare: Boolean) {
                 sqlBuilder.append(" END")
             }
 
-            case interval: SqlIntervalExpr => printlnIntervalExpr(interval)
+            case interval: SqlIntervalExpr => printIntervalExpr(interval)
         }
     }
 
-    def printlnIntervalExpr(expr: SqlIntervalExpr): Unit
+    def printIntervalExpr(expr: SqlIntervalExpr): Unit
 
     def printBinaryExpr(expr: SqlBinaryExpr): Unit = {
         def hasBracketsLeft(parent: SqlBinaryExpr, child: SqlExpr): Boolean = {
