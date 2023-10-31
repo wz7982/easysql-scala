@@ -60,5 +60,5 @@ class Db2Printer(override val prepare: Boolean) extends SqlPrinter(prepare) {
 
     override def printWithRecursive(): Unit = {}
 
-    override def printlnIntervalExpr(expr: SqlIntervalExpr): Unit = {}
+    override def printIntervalExpr(expr: SqlIntervalExpr): Unit = {}
 }

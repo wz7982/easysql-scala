@@ -133,5 +133,5 @@ class SqlserverPrinter(override val prepare: Boolean) extends SqlPrinter(prepare
         sqlBuilder.append(")")
     }
 
-    override def printlnIntervalExpr(expr: SqlIntervalExpr): Unit = {}
+    override def printIntervalExpr(expr: SqlIntervalExpr): Unit = {}
 }
